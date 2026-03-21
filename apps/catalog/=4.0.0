@@ -1,0 +1,12 @@
+Collecting reportlab
+  Obtaining dependency information for reportlab from https://files.pythonhosted.org/packages/8a/2e/e1798b8b248e1517e74c6cdf10dd6edd485044e7edf46b5f11ffcc5a0add/reportlab-4.4.10-py3-none-any.whl.metadata
+  Downloading reportlab-4.4.10-py3-none-any.whl.metadata (1.7 kB)
+Requirement already satisfied: pillow>=9.0.0 in /Users/vinic/.pyenv/versions/3.11.7/lib/python3.11/site-packages (from reportlab) (12.1.1)
+Requirement already satisfied: charset-normalizer in /Users/vinic/.pyenv/versions/3.11.7/lib/python3.11/site-packages (from reportlab) (3.4.4)
+Downloading reportlab-4.4.10-py3-none-any.whl (2.0 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.0/2.0 MB 11.1 MB/s eta 0:00:00
+Installing collected packages: reportlab
+Successfully installed reportlab-4.4.10
+
+[notice] A new release of pip is available: 23.2.1 -> 26.0.1
+[notice] To update, run: pip install --upgrade pip

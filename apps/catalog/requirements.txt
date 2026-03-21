@@ -1,0 +1,31 @@
+# FastAPI and server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Database and ORM
+sqlmodel>=0.0.14
+psycopg2-binary>=2.9.9
+alembic>=1.12.0
+pgvector>=0.2.4
+
+# Configuration and environment
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# JWT Authentication
+PyJWT[crypto]>=2.8.0
+
+# Additional utilities
+python-multipart>=0.0.6
+
+# PDF Generation
+reportlab>=4.0.0
+
+# Computer Vision (DETIC) — desabilitado no MVP, requer GPU
+# torch>=2.0.0
+# torchvision>=0.15.0
+# detectron2 @ git+https://github.com/facebookresearch/detectron2.git
+# pillow>=10.0.0
+# numpy>=1.24.0
+# opencv-python>=4.8.0

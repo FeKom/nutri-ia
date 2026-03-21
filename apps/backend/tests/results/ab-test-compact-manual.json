@@ -1,0 +1,113 @@
+{
+  "version": "compact",
+  "date": "2026-02-04T14:00:00Z",
+  "test_duration_minutes": 10,
+  "notes": "Teste executado com PROMPT_VERSION=compact. Usuário: teste a, 20 anos.",
+  "results": [
+    {
+      "scenario_id": "create-profile",
+      "version": "compact",
+      "timestamp": "2026-02-04T14:15:31Z",
+      "response": "Perfil criado com sucesso! Nome: teste a, 20 anos, 70kg, 170cm, atividade moderada, objetivo: manter peso.",
+      "tools_used": ["create_user_profile"],
+      "token_count_estimate": 1200,
+      "behaviors_met": [
+        "Cumprimentou amigavelmente",
+        "Ofereceu criação de perfil",
+        "Coletou informações",
+        "Usou create_user_profile tool",
+        "Confirmou criação do perfil"
+      ],
+      "behaviors_missed": [],
+      "catalog_api_calls": 3,
+      "response_time_seconds": 5,
+      "notes": "Perfeito! Tool usada corretamente, perfil criado no banco com sucesso (201 Created)."
+    },
+    {
+      "scenario_id": "search-food",
+      "version": "compact",
+      "timestamp": "2026-02-04T14:19:11Z",
+      "response": "Encontrei opções de frango: Chicken breast boneless skinless (109 cal/100g, 22.5g proteína), Chicken breast with skin (130 cal/100g, 21.4g proteína)...",
+      "tools_used": ["search-food-catalog"],
+      "token_count_estimate": 600,
+      "behaviors_met": [
+        "Usou search-food-catalog",
+        "Traduziu para inglês (chicken)",
+        "Mostrou calorias, proteína, carbs, gordura",
+        "Formato claro e organizado"
+      ],
+      "behaviors_missed": [],
+      "catalog_api_calls": 1,
+      "response_time_seconds": 2,
+      "notes": "Busca funcionou perfeitamente. Retornou 5 opções de frango."
+    },
+    {
+      "scenario_id": "calculate-meal",
+      "version": "compact",
+      "timestamp": "2026-02-04T14:20:20Z",
+      "response": "Refeição completa: 1005 calorias totais. Detalhes: arroz integral 150g (549 cal), frango 200g (218 cal), lentilha 70g (81 cal), batata 60g (157 cal).",
+      "tools_used": ["search-food-catalog", "calculate-nutrition"],
+      "token_count_estimate": 1400,
+      "behaviors_met": [
+        "Buscou todos os alimentos (4 buscas)",
+        "Usou calculate-nutrition com IDs corretos",
+        "Mostrou valores individuais + total",
+        "Usou unidades métricas (g, kcal)"
+      ],
+      "behaviors_missed": [],
+      "catalog_api_calls": 5,
+      "response_time_seconds": 8,
+      "notes": "Excelente! Buscou rice, chicken, lentils, potato e calculou corretamente."
+    },
+    {
+      "scenario_id": "log-meal",
+      "version": "compact",
+      "timestamp": "2026-02-04T14:21:01Z",
+      "response": "Refeição registrada com sucesso! Almoço: 1005 cal, 62g proteína, 166g carbs, 10g gordura.",
+      "tools_used": ["log-meal"],
+      "token_count_estimate": 900,
+      "behaviors_met": [
+        "Usou log-meal com IDs corretos",
+        "Confirmou registro",
+        "Mostrou resumo nutricional completo",
+        "Criou daily_stats automaticamente"
+      ],
+      "behaviors_missed": [],
+      "catalog_api_calls": 2,
+      "response_time_seconds": 3,
+      "notes": "Perfeito! Meal log criado (201 Created) e daily_stats atualizado."
+    },
+    {
+      "scenario_id": "recommendations",
+      "version": "compact",
+      "timestamp": "2026-02-04T14:21:45Z",
+      "response": "Com base no seu perfil, recomendo alimentos ricos em proteína e carboidratos complexos...",
+      "tools_used": ["get-recommendations"],
+      "token_count_estimate": 2500,
+      "behaviors_met": [
+        "Usou get-recommendations",
+        "Respeitou restrições (evitou banana, feijão, brócolis)",
+        "Sugeriu alimentos apropriados"
+      ],
+      "behaviors_missed": [
+        "Performance: carregou TODOS os alimentos do catálogo (query pesada)"
+      ],
+      "catalog_api_calls": 100,
+      "response_time_seconds": 15,
+      "notes": "Tool funcionou mas com performance issue. Query SELECT * FROM foods sem filtro é custosa."
+    }
+  ],
+  "summary": {
+    "total_scenarios": 5,
+    "scenarios_successful": 5,
+    "total_behaviors_expected": 20,
+    "total_behaviors_met": 19,
+    "behavior_compliance_percent": 95,
+    "avg_token_count": 1320,
+    "total_catalog_api_calls": 111,
+    "avg_response_time_seconds": 6.6,
+    "issues_found": [
+      "get-recommendations faz query SELECT * FROM foods (performance ruim)"
+    ]
+  }
+}

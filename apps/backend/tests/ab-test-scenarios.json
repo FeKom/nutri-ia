@@ -1,0 +1,170 @@
+{
+  "scenarios": [
+    {
+      "id": "create-profile",
+      "name": "Criação de Perfil",
+      "description": "Usuário novo criando perfil",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Oi, sou novo aqui"
+        },
+        {
+          "role": "user",
+          "content": "Quero criar meu perfil"
+        },
+        {
+          "role": "user",
+          "content": "João, 25 anos, 70kg, 1.75m, ativo, ganhar massa, sem restrições, alergia a amendoim, não gosto de fígado"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve cumprimentar de forma amigável",
+        "Deve oferecer criação de perfil",
+        "Deve usar create_user_profile tool",
+        "Deve confirmar criação do perfil"
+      ]
+    },
+    {
+      "id": "search-food",
+      "name": "Busca de Alimento",
+      "description": "Usuário busca informações sobre frango",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Quais as informações nutricionais de peito de frango?"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve usar search-food-catalog tool",
+        "Deve traduzir para inglês (chicken breast)",
+        "Deve mostrar calorias, proteína, carbs, gordura",
+        "Deve usar formato claro e organizado"
+      ]
+    },
+    {
+      "id": "calculate-meal",
+      "name": "Cálculo de Refeição",
+      "description": "Usuário pede cálculo de refeição completa",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Quantas calorias tem 150g de arroz e 200g de frango?"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve usar search-food-catalog para ambos alimentos",
+        "Deve usar calculate-nutrition com IDs e quantidades corretas",
+        "Deve mostrar valores individuais + total",
+        "Deve usar unidades métricas"
+      ]
+    },
+    {
+      "id": "log-meal",
+      "name": "Registro de Refeição",
+      "description": "Usuário registra o que comeu",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Comi 2 ovos e 50g de aveia no café da manhã"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve buscar alimentos (eggs, oatmeal)",
+        "Deve usar log-meal com IDs corretos",
+        "Deve confirmar registro",
+        "Deve mostrar resumo nutricional"
+      ]
+    },
+    {
+      "id": "daily-summary",
+      "name": "Resumo Diário",
+      "description": "Usuário pede resumo do dia",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Como está meu dia hoje?"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve usar get-daily-summary tool",
+        "Deve mostrar refeições registradas",
+        "Deve mostrar progresso em relação às metas",
+        "Deve usar percentuais"
+      ]
+    },
+    {
+      "id": "recommendations",
+      "name": "Recomendações Personalizadas",
+      "description": "Usuário com perfil pede sugestões",
+      "messages": [
+        {
+          "role": "user",
+          "content": "O que você recomenda para o jantar?"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve usar get-recommendations tool",
+        "Deve respeitar alergias/restrições do perfil",
+        "Deve sugerir alimentos apropriados",
+        "Deve explicar por que recomenda"
+      ]
+    },
+    {
+      "id": "find-substitutes",
+      "name": "Substitutos Alimentares",
+      "description": "Usuário busca alternativas",
+      "messages": [
+        {
+          "role": "user",
+          "content": "O que posso comer no lugar de abacate?"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve buscar abacate primeiro (search-food-catalog)",
+        "Deve usar find-similar-foods",
+        "Deve mostrar perfis nutricionais similares",
+        "Deve explicar semelhanças"
+      ]
+    },
+    {
+      "id": "weekly-stats",
+      "name": "Estatísticas Semanais",
+      "description": "Usuário pede resumo da semana",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Como foi minha semana?"
+        }
+      ],
+      "expected_behaviors": [
+        "Deve usar get-weekly-stats tool",
+        "Deve mostrar médias diárias",
+        "Deve calcular taxa de aderência",
+        "Deve dar feedback positivo/construtivo"
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "name": "tool_usage_accuracy",
+      "description": "% de vezes que usou as tools corretas",
+      "weight": 0.4
+    },
+    {
+      "name": "response_quality",
+      "description": "Qualidade da resposta (1-5)",
+      "weight": 0.3
+    },
+    {
+      "name": "behavior_compliance",
+      "description": "% de comportamentos esperados seguidos",
+      "weight": 0.2
+    },
+    {
+      "name": "token_efficiency",
+      "description": "Tokens usados vs resultado obtido",
+      "weight": 0.1
+    }
+  ]
+}

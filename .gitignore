@@ -27,6 +27,7 @@ env/
 # Environment variables
 .env
 .env.local
+.env.production
 .env.*.local
 *.env
 
@@ -43,6 +44,21 @@ Thumbs.db
 
 # Docker
 *.log
+
+# Secrets
+*.pem
+*.key
+*.cert
+secrets/
+credentials/
+
+# Database
+*.db
+*.sqlite
+postgres_data/
+
+# Logs
+logs/
 
 # Hugging Face / ML (catalog)
 models/

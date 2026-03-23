@@ -1,5 +1,24 @@
+# ==========================================
+# Dev Stage - Hot reload development
+# ==========================================
+FROM node:20-slim AS dev
+
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+EXPOSE 4111
+
+CMD ["pnpm", "dev"]
+
+# ==========================================
+# Production Stages
+# ==========================================
 FROM node:20-slim AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # --- Dependencies (all, for build) ---
 FROM base AS deps

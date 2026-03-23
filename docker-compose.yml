@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # PostgreSQL with pgvector
+  # ==========================================
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: nutria-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/catalog/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nutria-network
+    restart: unless-stopped
+
+  # ==========================================
+  # Catalog API (FastAPI)
+  # ==========================================
+  catalog:
+    build:
+      context: ./apps/catalog
+      dockerfile: Dockerfile
+    container_name: nutria-catalog
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./apps/catalog:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nutria-network
+    restart: unless-stopped
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+
+  # ==========================================
+  # Backend (Mastra.ai)
+  # ==========================================
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: nutria-backend
+    ports:
+      - "4111:4111"
+    environment:
+      CATALOG_API_URL: http://catalog:8000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      NODE_ENV: development
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+      - /app/.mastra
+    depends_on:
+      - catalog
+    networks:
+      - nutria-network
+    restart: unless-stopped
+    command: pnpm dev
+
+  # ==========================================
+  # Frontend (Next.js)
+  # ==========================================
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: nutria-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:4111
+      NODE_ENV: development
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - nutria-network
+    restart: unless-stopped
+    command: pnpm dev
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  nutria-network:
+    driver: bridge

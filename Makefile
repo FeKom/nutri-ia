@@ -1,90 +1,81 @@
-.PHONY: help install build start stop test clean logs
+.PHONY: help dev build stop clean logs logs-f restart ps
 
-# Default target
 help:
-	@echo "Nutri-IA Monorepo - Available Commands:"
+	@echo "Nutri-IA Monorepo - Comandos Docker"
 	@echo ""
-	@echo "  make install    - Install dependencies for all apps"
-	@echo "  make build      - Build all apps (Docker)"
-	@echo "  make start      - Start all apps"
-	@echo "  make stop       - Stop all apps"
-	@echo "  make test       - Run tests for all apps"
-	@echo "  make clean      - Clean builds and dependencies"
-	@echo "  make logs       - Show logs from all apps"
+	@echo "  make dev        - Sobe todos os serviços em desenvolvimento"
+	@echo "  make build      - Rebuilda as imagens Docker"
+	@echo "  make stop       - Para todos os serviços"
+	@echo "  make restart    - Reinicia todos os serviços"
+	@echo "  make logs       - Mostra logs recentes de todos os serviços"
+	@echo "  make logs-f     - Mostra logs em tempo real (follow mode)"
+	@echo "  make clean      - Remove containers, volumes e imagens"
+	@echo "  make ps         - Lista serviços rodando"
 	@echo ""
-	@echo "Individual commands:"
-	@echo "  make frontend-*   - Frontend commands"
-	@echo "  make backend-*    - Backend commands"
-	@echo "  make catalog-*    - Catalog commands"
+	@echo "Comandos individuais:"
+	@echo "  make logs-frontend  - Logs do frontend"
+	@echo "  make logs-backend   - Logs do backend"
+	@echo "  make logs-catalog   - Logs do catalog"
+	@echo "  make logs-postgres  - Logs do postgres"
 
-# Install dependencies
-install: frontend-install backend-install catalog-install
+dev:
+	@echo "🚀 Subindo todos os serviços..."
+	@if [ ! -f .env ]; then \
+		echo "⚠️  Arquivo .env não encontrado. Criando a partir do .env.example..."; \
+		cp .env.example .env; \
+		echo "⚠️  IMPORTANTE: Configure as variáveis em .env antes de continuar!"; \
+		exit 1; \
+	fi
+	docker-compose up -d
+	@echo ""
+	@echo "✅ Serviços disponíveis:"
+	@echo "   Frontend:  http://localhost:3000"
+	@echo "   Backend:   http://localhost:4111"
+	@echo "   Catalog:   http://localhost:8000"
+	@echo "   Postgres:  localhost:5432"
+	@echo ""
+	@echo "💡 Use 'make logs-f' para ver logs em tempo real"
 
-frontend-install:
-	@echo "Installing frontend dependencies..."
-	cd apps/frontend && npm install
+build:
+	@echo "🔨 Rebuilding imagens..."
+	docker-compose build --no-cache
 
-backend-install:
-	@echo "Installing backend dependencies..."
-	cd apps/backend && npm install
-
-catalog-install:
-	@echo "Installing catalog dependencies..."
-	cd apps/catalog && pip install -r requirements.txt
-
-# Build (Docker)
-build: frontend-build backend-build catalog-build
-
-frontend-build:
-	cd apps/frontend && docker-compose build
-
-backend-build:
-	cd apps/backend && docker-compose build
-
-catalog-build:
-	cd apps/catalog && docker-compose build
-
-# Start services
-start: frontend-start backend-start catalog-start
-
-frontend-start:
-	cd apps/frontend && docker-compose up -d
-
-backend-start:
-	cd apps/backend && docker-compose up -d
-
-catalog-start:
-	cd apps/catalog && docker-compose up -d
-
-# Stop services
 stop:
-	cd apps/frontend && docker-compose down
-	cd apps/backend && docker-compose down
-	cd apps/catalog && docker-compose down
+	@echo "🛑 Parando serviços..."
+	docker-compose down
 
-# Tests
-test: frontend-test backend-test catalog-test
+restart: stop dev
 
-frontend-test:
-	cd apps/frontend && npm test
-
-backend-test:
-	cd apps/backend && npm test
-
-catalog-test:
-	cd apps/catalog && pytest
-
-# Logs
 logs:
-	@echo "=== Frontend Logs ==="
-	cd apps/frontend && docker-compose logs --tail=50
-	@echo "\n=== Backend Logs ==="
-	cd apps/backend && docker-compose logs --tail=50
-	@echo "\n=== Catalog Logs ==="
-	cd apps/catalog && docker-compose logs --tail=50
+	docker-compose logs --tail=100
 
-# Clean
+logs-f:
+	docker-compose logs -f
+
+logs-frontend:
+	docker-compose logs -f frontend
+
+logs-backend:
+	docker-compose logs -f backend
+
+logs-catalog:
+	docker-compose logs -f catalog
+
+logs-postgres:
+	docker-compose logs -f postgres
+
 clean:
-	cd apps/frontend && rm -rf node_modules .next
-	cd apps/backend && rm -rf node_modules dist
-	cd apps/catalog && rm -rf __pycache__ .pytest_cache venv
+	@echo "🧹 Limpando containers, volumes e imagens..."
+	@read -p "⚠️  Isso vai deletar todos os dados do banco. Continuar? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker-compose down -v --rmi local; \
+		rm -rf apps/frontend/node_modules apps/backend/node_modules; \
+		rm -rf apps/frontend/.next apps/backend/dist apps/backend/.mastra; \
+		echo "✅ Limpeza completa!"; \
+	else \
+		echo "❌ Cancelado."; \
+	fi
+
+ps:
+	@docker-compose ps

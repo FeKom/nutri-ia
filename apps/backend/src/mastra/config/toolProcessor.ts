@@ -18,6 +18,8 @@ import { createUserProfileTool } from "../tools/create-user-profile";
 import { updateUserProfileTool } from "../tools/update-user-profile";
 import { calculateMacrosTool } from "../tools/calculate-macros";
 import { exportMealPlanPdfTool } from "../tools/export-meal-plan-pdf";
+import { searchRecipesTool } from "../tools/search-recipes";
+import { getRecipeTool } from "../tools/get-recipe";
 
 export const toolSearch = new ToolSearchProcessor({
   tools: {
@@ -39,6 +41,8 @@ export const toolSearch = new ToolSearchProcessor({
     updateUserProfileTool,
     calculateMacrosTool,
     exportMealPlanPdfTool,
+    searchRecipesTool,
+    getRecipeTool,
   },
   search: {
     topK: 5,

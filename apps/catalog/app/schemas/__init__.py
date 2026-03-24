@@ -10,6 +10,16 @@ from app.schemas.food import (
     NutritionDetail,
     FoodQuantity,
 )
+from app.schemas.recipe import (
+    RecipeBase,
+    RecipeCreate,
+    RecipeUpdate,
+    RecipeResponse,
+    RecipeSimpleResponse,
+    RecipeSearchRequest,
+    RecipeSearchResponse,
+    RecipeListResponse,
+)
 from app.schemas.common import (
     PaginationParams,
     PaginatedResponse,
@@ -27,6 +37,14 @@ __all__ = [
     "NutritionTotals",
     "NutritionDetail",
     "FoodQuantity",
+    "RecipeBase",
+    "RecipeCreate",
+    "RecipeUpdate",
+    "RecipeResponse",
+    "RecipeSimpleResponse",
+    "RecipeSearchRequest",
+    "RecipeSearchResponse",
+    "RecipeListResponse",
     "PaginationParams",
     "PaginatedResponse",
     "StandardResponse",

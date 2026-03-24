@@ -1124,6 +1124,128 @@ export const analyzeImageWithDetic = async (
   return response;
 };
 
+// ============================================
+// RECIPE TYPES
+// ============================================
+
+export interface Recipe {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  prep_time_minutes: number;
+  difficulty: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  ingredients?: string[];
+  instructions?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SearchRecipesRequest {
+  query?: string;
+  category?: string;
+  difficulty?: string;
+  max_prep_time?: number;
+  max_calories?: number;
+  min_protein?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SearchRecipesResponse {
+  success: boolean;
+  recipes: Recipe[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface GetRecipeResponse {
+  success: boolean;
+  recipe: Recipe;
+}
+
+// ============================================
+// RECIPE FUNCTIONS
+// ============================================
+
+/**
+ * Busca receitas por filtros
+ *
+ * @example
+ * const result = await searchRecipes({
+ *   category: 'cafe-da-manha',
+ *   max_calories: 300,
+ *   difficulty: 'facil'
+ * });
+ */
+export const searchRecipes = async (
+  request: SearchRecipesRequest,
+  config = defaultConfig,
+  authToken?: string,
+): Promise<SearchRecipesResponse> => {
+  console.log(
+    `🔍 [CatalogClient] Buscando receitas (query: "${request.query || 'N/A'}")`,
+  );
+
+  const response = await postRequest<SearchRecipesResponse>(
+    "/api/v1/recipes/search",
+    {
+      query: request.query,
+      category: request.category,
+      difficulty: request.difficulty,
+      max_prep_time: request.max_prep_time,
+      max_calories: request.max_calories,
+      min_protein: request.min_protein,
+      limit: request.limit ?? 20,
+      offset: request.offset ?? 0,
+    },
+    config,
+    authToken,
+  );
+
+  console.log(`✅ [CatalogClient] Encontradas ${response.total} receitas`);
+
+  return response;
+};
+
+/**
+ * Obtém uma receita específica por ID
+ *
+ * @example
+ * const result = await getRecipe('uuid-here');
+ */
+export const getRecipe = async (
+  recipeId: string,
+  config = defaultConfig,
+  authToken?: string,
+): Promise<Recipe> => {
+  console.log(`📖 [CatalogClient] Obtendo receita: ${recipeId}`);
+
+  const url = `${config.baseUrl}/api/v1/recipes/${recipeId}`;
+
+  const headers: Record<string, string> = {};
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
+  const result = await executeRequest<Recipe>(
+    url,
+    { method: "GET", headers },
+    config.timeout,
+  );
+
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
+
+  console.log(`✅ [CatalogClient] Receita obtida: "${result.data.name}"`);
+
+  return result.data;
+};
+
 /**
  * Verifica se a API está disponível
  */
@@ -1178,6 +1300,9 @@ export const createClient = (customConfig?: Partial<ClientConfig>) => {
     ) => updateMealPlan(planId, userId, updates, config),
     deleteMealPlan: (planId: string, userId: string) =>
       deleteMealPlan(planId, userId, config),
+    searchRecipes: (request: SearchRecipesRequest) =>
+      searchRecipes(request, config),
+    getRecipe: (recipeId: string) => getRecipe(recipeId, config),
     healthCheck: () => healthCheck(config),
     config,
   };

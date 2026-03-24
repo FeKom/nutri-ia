@@ -49,3 +49,34 @@ export const recommendationOutputSchema = baseOutputSchema.extend({
   count: z.number(),
   filters_applied: filtersAppliedSchema,
 });
+
+// Recipe schemas
+export const recipeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category: z.string(),
+  prep_time_minutes: z.number(),
+  difficulty: z.string(),
+  calories: z.number(),
+  protein_g: z.number(),
+  carbs_g: z.number(),
+  fat_g: z.number(),
+});
+
+export const recipeFullSchema = recipeSchema.extend({
+  ingredients: z.array(z.string()),
+  instructions: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const searchRecipesOutputSchema = baseOutputSchema.extend({
+  recipes: z.array(recipeSchema),
+  total: z.number(),
+  count: z.number(),
+});
+
+export const getRecipeOutputSchema = baseOutputSchema.extend({
+  recipe: recipeFullSchema,
+});

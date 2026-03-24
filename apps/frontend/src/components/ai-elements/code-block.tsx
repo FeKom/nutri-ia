@@ -12,7 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { type BundledLanguage, codeToHtml, type ShikiTransformer } from "shiki";
+import type { BundledLanguage, ShikiTransformer } from "shiki";
 
 type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   code: string;
@@ -54,6 +54,9 @@ export async function highlightCode(
   language: BundledLanguage,
   showLineNumbers = false
 ) {
+  // Dynamically import shiki only when needed (avoids bundling server-only code)
+  const { codeToHtml } = await import("shiki");
+
   const transformers: ShikiTransformer[] = showLineNumbers
     ? [lineNumberTransformer]
     : [];

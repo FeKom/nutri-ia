@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Settings,
   ClipboardList,
+  FlaskConical,
   Leaf,
 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
@@ -23,6 +24,7 @@ const menuItems = [
   { label: 'Atividades', icon: Activity, href: '/atividades' },
   { label: 'Progresso', icon: TrendingUp, href: '/progresso' },
   { label: 'Configuracoes', icon: Settings, href: '/configuracoes' },
+  { label: 'Eval Lab', icon: FlaskConical, href: '/eval' },
 ];
 
 export function Sidebar() {

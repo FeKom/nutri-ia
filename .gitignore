@@ -62,6 +62,7 @@ logs/
 
 # Hugging Face / ML (catalog)
 models/
+!apps/*/app/models/
 *.pt
 *.pth
 *.onnx

@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     JWT_AUDIENCE: str = "nutria"
     JWT_ALGORITHM: str = "EdDSA"
 
+    # Mastra backend URL
+    MASTRA_URL: str = "http://localhost:4111"
+
+    # OpenRouter (usado pelo RAGAS para avaliação)
+    OPENROUTER_API_KEY: str = ""
+
     # CORS Configuration - usando str para evitar JSON parsing automático
     BACKEND_CORS_ORIGINS: Union[List[str], str] = ""
 

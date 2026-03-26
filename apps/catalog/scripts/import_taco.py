@@ -11,25 +11,28 @@ Uso:
     python scripts/import_taco.py --file taco_data.xlsx --dry-run  # Apenas visualiza
 """
 
-import sys
 import argparse
-import pandas as pd
-from pathlib import Path
-from typing import List, Dict, Optional
-from decimal import Decimal
-from datetime import datetime
 import re
+import sys
+from decimal import Decimal
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import numpy as np
+import pandas as pd
 
 # Adiciona o diretório raiz ao path para imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
 from sentence_transformers import SentenceTransformer
-import numpy as np
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from app.models.food import Food, FoodNutrient, FoodSource
 from app.core.config import settings
+from app.models.food import Food, FoodNutrient, FoodSource
+
+# Import excel table for sanitize
+df = pd.read_excel("../data/taco_data.xlsx", sheet_name="CMVCOL taco3")
 
 
 # Mapeamento de categorias TACO → categorias do banco
@@ -58,11 +61,12 @@ def normalize_name(name: str) -> str:
     Remove acentos, converte para minúsculas.
     """
     import unicodedata
+
     # Remove acentos
-    nfkd = unicodedata.normalize('NFKD', name)
-    name_no_accents = ''.join([c for c in nfkd if not unicodedata.combining(c)])
+    nfkd = unicodedata.normalize("NFKD", name)
+    name_no_accents = "".join([c for c in nfkd if not unicodedata.combining(c)])
     # Lowercase e remove espaços extras
-    return ' '.join(name_no_accents.lower().split())
+    return " ".join(name_no_accents.lower().split())
 
 
 def sanitize_decimal(value) -> Optional[Decimal]:
@@ -80,9 +84,9 @@ def sanitize_decimal(value) -> Optional[Decimal]:
             if any(x in value.lower() for x in ["tr", "traço", "nd", "na", "-"]):
                 return None
             # Remove caracteres não numéricos exceto . e ,
-            value = re.sub(r'[^\d.,]', '', value)
+            value = re.sub(r"[^\d.,]", "", value)
             # Substitui vírgula por ponto
-            value = value.replace(',', '.')
+            value = value.replace(",", ".")
 
         decimal_value = Decimal(str(value))
         # Valida range (sem valores negativos)
@@ -138,18 +142,19 @@ def map_taco_to_food(row: pd.Series, category_mapping: Dict) -> Dict:
     Ajuste os nomes das colunas conforme seu arquivo Excel.
     """
     # Nome do alimento (ajuste conforme sua planilha)
-    name = None
-    for col in ['Descrição', 'Alimento', 'Nome', 'Descrição do Alimento']:
+    name = str
+    for col in ["Descrição", "Alimento", "Nome", "Descrição do Alimento"]:
         if col in row.index:
             name = str(row[col]).strip()
             break
 
-    if not name or name == 'nan':
-        return None
+    if not name or name == "nan":
+        non_null = pd.DataFrame.replace("*", np.nan, inplace=True)
+        return non_null.dropna(inplace=True)
 
     # Categoria (ajuste conforme sua planilha)
     category_raw = None
-    for col in ['Categoria', 'Grupo', 'Grupo de Alimentos']:
+    for col in ["Categoria", "Grupo", "Grupo de Alimentos"]:
         if col in row.index:
             category_raw = str(row[col])
             break
@@ -158,21 +163,21 @@ def map_taco_to_food(row: pd.Series, category_mapping: Dict) -> Dict:
 
     # Calorias
     calories = None
-    for col in ['Energia (kcal)', 'Calorias', 'Energia']:
+    for col in ["Energia (kcal)", "Calorias", "Energia"]:
         if col in row.index:
             calories = sanitize_decimal(row[col])
             break
 
     return {
-        'name': name,
-        'name_normalized': normalize_name(name),
-        'category': category,
-        'serving_size_g': Decimal('100.00'),  # TACO usa 100g como padrão
-        'serving_unit': 'g',
-        'calorie_per_100g': calories,
-        'source': FoodSource.TACO,
-        'is_verified': True,  # TACO é fonte oficial
-        'usda_id': None,
+        "name": name,
+        "name_normalized": normalize_name(name),
+        "category": category,
+        "serving_size_g": Decimal("100.00"),  # TACO usa 100g como padrão
+        "serving_unit": "g",
+        "calorie_per_100g": calories,
+        "source": FoodSource.TACO,
+        "is_verified": True,  # TACO é fonte oficial
+        "usda_id": None,
     }
 
 
@@ -183,88 +188,88 @@ def map_taco_to_nutrients(row: pd.Series) -> Dict:
     """
     # Macronutrientes
     protein = None
-    for col in ['Proteína (g)', 'Proteína', 'Proteinas']:
+    for col in ["Proteína (g)", "Proteína", "Proteinas"]:
         if col in row.index:
             protein = sanitize_decimal(row[col])
             break
 
     carbs = None
-    for col in ['Carboidrato (g)', 'Carboidratos', 'CHO']:
+    for col in ["Carboidrato (g)", "Carboidratos", "CHO"]:
         if col in row.index:
             carbs = sanitize_decimal(row[col])
             break
 
     fat = None
-    for col in ['Lipídeos (g)', 'Gorduras', 'Lipídeos', 'Lipideos']:
+    for col in ["Lipídeos (g)", "Gorduras", "Lipídeos", "Lipideos"]:
         if col in row.index:
             fat = sanitize_decimal(row[col])
             break
 
     # Calorias (para o campo calories_100g em FoodNutrient)
     calories = None
-    for col in ['Energia (kcal)', 'Calorias', 'Energia']:
+    for col in ["Energia (kcal)", "Calorias", "Energia"]:
         if col in row.index:
             calories = sanitize_decimal(row[col])
             break
 
     # Detalhes de gordura
     saturated_fat = None
-    for col in ['Gordura Saturada (g)', 'Saturada', 'AG saturados']:
+    for col in ["Gordura Saturada (g)", "Saturada", "AG saturados"]:
         if col in row.index:
             saturated_fat = sanitize_decimal(row[col])
             break
 
     # Carboidratos detalhados
     fiber = None
-    for col in ['Fibra Alimentar (g)', 'Fibra', 'Fibras']:
+    for col in ["Fibra Alimentar (g)", "Fibra", "Fibras"]:
         if col in row.index:
             fiber = sanitize_decimal(row[col])
             break
 
     sugar = None
-    for col in ['Açúcares (g)', 'Açúcar', 'Açucares']:
+    for col in ["Açúcares (g)", "Açúcar", "Açucares"]:
         if col in row.index:
             sugar = sanitize_decimal(row[col])
             break
 
     # Minerais
     sodium = None
-    for col in ['Sódio (mg)', 'Sódio', 'Sodio']:
+    for col in ["Sódio (mg)", "Sódio", "Sodio"]:
         if col in row.index:
             sodium = sanitize_decimal(row[col])
             break
 
     calcium = None
-    for col in ['Cálcio (mg)', 'Cálcio', 'Calcio']:
+    for col in ["Cálcio (mg)", "Cálcio", "Calcio"]:
         if col in row.index:
             calcium = sanitize_decimal(row[col])
             break
 
     iron = None
-    for col in ['Ferro (mg)', 'Ferro']:
+    for col in ["Ferro (mg)", "Ferro"]:
         if col in row.index:
             iron = sanitize_decimal(row[col])
             break
 
     # Vitaminas
     vitamin_c = None
-    for col in ['Vitamina C (mg)', 'Vitamina C', 'Vit C']:
+    for col in ["Vitamina C (mg)", "Vitamina C", "Vit C"]:
         if col in row.index:
             vitamin_c = sanitize_decimal(row[col])
             break
 
     return {
-        'calories_100g': calories,
-        'protein_g_100g': protein,
-        'carbs_g_100g': carbs,
-        'fat_g_100g': fat,
-        'saturated_fat_g_100g': saturated_fat,
-        'fiber_g_100g': fiber,
-        'sugar_g_100g': sugar,
-        'sodium_mg_100g': sodium,
-        'calcium_mg_100g': calcium,
-        'iron_mg_100g': iron,
-        'vitamin_c_mg_100g': vitamin_c,
+        "calories_100g": calories,
+        "protein_g_100g": protein,
+        "carbs_g_100g": carbs,
+        "fat_g_100g": fat,
+        "saturated_fat_g_100g": saturated_fat,
+        "fiber_g_100g": fiber,
+        "sugar_g_100g": sugar,
+        "sodium_mg_100g": sodium,
+        "calcium_mg_100g": calcium,
+        "iron_mg_100g": iron,
+        "vitamin_c_mg_100g": vitamin_c,
     }
 
 
@@ -278,10 +283,7 @@ def generate_embedding(text: str, model: SentenceTransformer) -> List[float]:
 
 
 def import_taco_data(
-    file_path: Path,
-    db_url: str,
-    dry_run: bool = False,
-    batch_size: int = 50
+    file_path: Path, db_url: str, dry_run: bool = False, batch_size: int = 50
 ):
     """
     Importa dados do TACO para o banco de dados.
@@ -299,13 +301,16 @@ def import_taco_data(
 
     # 2. Carrega modelo de embedding
     print("🤖 Carregando modelo de embeddings (all-MiniLM-L6-v2)...")
-    embedding_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     print("✅ Modelo carregado\n")
 
     # 3. Conecta ao banco
     if not dry_run:
-        print(f"🔌 Conectando ao banco: {db_url.split('@')[1] if '@' in db_url else db_url}")
-        engine = create_engine(db_url)
+        db_url_str = str(db_url)
+        print(
+            f"🔌 Conectando ao banco: {db_url_str.split('@')[1] if '@' in db_url_str else db_url_str}"
+        )
+        engine = create_engine(db_url_str)
         session = Session(engine)
     else:
         print("🔍 Modo DRY-RUN ativado (não salvará no banco)\n")
@@ -330,15 +335,17 @@ def import_taco_data(
             nutrient_data = map_taco_to_nutrients(row)
 
             # Gera embedding
-            embedding = generate_embedding(food_data['name'], embedding_model)
-            food_data['embedding'] = embedding
+            embedding = generate_embedding(food_data["name"], embedding_model)
+            food_data["embedding"] = embedding
 
             # Preview
             if dry_run or (imported_count < 5):
                 print(f"{'[DRY-RUN] ' if dry_run else ''}Alimento #{idx + 1}:")
                 print(f"  Nome: {food_data['name']}")
                 print(f"  Categoria: {food_data['category']}")
-                print(f"  Calorias: {nutrient_data.get('calories_100g', 'N/A')} kcal/100g")
+                print(
+                    f"  Calorias: {nutrient_data.get('calories_100g', 'N/A')} kcal/100g"
+                )
                 print(f"  Proteína: {nutrient_data.get('protein_g_100g', 'N/A')}g")
                 print(f"  Carbos: {nutrient_data.get('carbs_g_100g', 'N/A')}g")
                 print(f"  Gordura: {nutrient_data.get('fat_g_100g', 'N/A')}g")
@@ -348,9 +355,11 @@ def import_taco_data(
             # Salva no banco
             if not dry_run:
                 # Verifica se já existe (por nome normalizado)
-                existing = session.query(Food).filter(
-                    Food.name_normalized == food_data['name_normalized']
-                ).first()
+                existing = (
+                    session.query(Food)
+                    .filter(Food.name_normalized == food_data["name_normalized"])
+                    .first()
+                )
 
                 if existing:
                     print(f"⚠️  Alimento já existe: {food_data['name']} (pulando)")
@@ -363,7 +372,7 @@ def import_taco_data(
                 session.flush()  # Para obter o food.id
 
                 # Cria FoodNutrient
-                nutrient_data['food_id'] = food.id
+                nutrient_data["food_id"] = food.id
                 nutrient = FoodNutrient(**nutrient_data)
                 session.add(nutrient)
 
@@ -387,14 +396,14 @@ def import_taco_data(
         session.close()
 
     # Relatório final
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📊 RELATÓRIO DE IMPORTAÇÃO")
-    print("="*60)
+    print("=" * 60)
     print(f"✅ Importados: {imported_count}")
     print(f"⚠️  Pulados: {skipped_count}")
     print(f"❌ Erros: {error_count}")
     print(f"📁 Total no arquivo: {len(df)}")
-    print("="*60)
+    print("=" * 60)
 
     if dry_run:
         print("\n💡 Execute novamente sem --dry-run para salvar no banco")
@@ -407,27 +416,24 @@ def main():
         description="Importa dados do TACO para o banco de dados Nutria"
     )
     parser.add_argument(
-        '--file',
-        type=Path,
-        required=True,
-        help='Caminho para o arquivo Excel do TACO'
+        "--file", type=Path, required=True, help="Caminho para o arquivo Excel do TACO"
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Apenas visualiza os dados sem salvar no banco'
+        "--dry-run",
+        action="store_true",
+        help="Apenas visualiza os dados sem salvar no banco",
     )
     parser.add_argument(
-        '--batch-size',
+        "--batch-size",
         type=int,
         default=50,
-        help='Tamanho do batch para commits (padrão: 50)'
+        help="Tamanho do batch para commits (padrão: 50)",
     )
     parser.add_argument(
-        '--db-url',
+        "--db-url",
         type=str,
         default=None,
-        help='URL do banco (padrão: usa DATABASE_URL do .env)'
+        help="URL do banco (padrão: usa DATABASE_URL do .env)",
     )
 
     args = parser.parse_args()
@@ -449,7 +455,7 @@ def main():
             file_path=args.file,
             db_url=db_url,
             dry_run=args.dry_run,
-            batch_size=args.batch_size
+            batch_size=args.batch_size,
         )
     except KeyboardInterrupt:
         print("\n\n⚠️  Importação cancelada pelo usuário")
@@ -457,6 +463,7 @@ def main():
     except Exception as e:
         print(f"\n\n❌ Erro fatal: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

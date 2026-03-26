@@ -14,6 +14,10 @@ from sqlmodel import SQLModel
 
 # Import all models here to ensure they are registered with SQLModel
 from app.models.food import Food, FoodNutrient
+from app.models.recipe import Recipe
+from app.models.tracking import DailyStats, MealLog
+from app.models.user import MealPlan, UserProfile
+from app.models.eval import DocumentChunk, EvalExperiment, EvalRun, EvalResult
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

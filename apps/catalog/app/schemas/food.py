@@ -43,7 +43,7 @@ class FoodBase(BaseModel):
 
     name: str = Field(..., max_length=255)
     category: Optional[str] = Field(None, max_length=50)
-    serving_size_g: Decimal = Field(default=100, ge=0)
+    serving_size_g: Decimal = Field(default=Decimal(100), ge=Decimal(0))
     serving_unit: str = Field(default="g", max_length=20)
     calorie_per_100g: Optional[Decimal] = Field(None, ge=0)
 
@@ -54,6 +54,7 @@ class FoodResponse(FoodBase):
     id: UUID
     name_normalized: str
     usda_id: Optional[str] = None
+    taco_id: Optional[str] = None
     source: FoodSource
     is_verified: bool
     created_at: datetime
@@ -111,8 +112,10 @@ class FoodSearchRequest(BaseModel):
     )
     filters: Optional[FoodSearchFilters] = Field(None, description="Optional filters")
     min_similarity: float = Field(
-        default=0.0, ge=0.0, le=1.0,
-        description="Minimum similarity threshold (0-1). Results below this score are filtered out."
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity threshold (0-1). Results below this score are filtered out.",
     )
 
     @field_validator("query")
@@ -255,16 +258,19 @@ class FoodResolveRequest(BaseModel):
     """Request schema for batch food name resolution"""
 
     queries: List[str] = Field(
-        ..., min_length=1, max_length=50,
-        description="List of food names to resolve (max 50)"
+        ...,
+        min_length=1,
+        max_length=50,
+        description="List of food names to resolve (max 50)",
     )
     min_similarity: float = Field(
-        default=0.4, ge=0.0, le=1.0,
-        description="Minimum similarity threshold (0-1). Foods below this score go to unresolved."
+        default=0.4,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity threshold (0-1). Foods below this score go to unresolved.",
     )
     limit_per_query: int = Field(
-        default=1, ge=1, le=5,
-        description="Number of top matches to return per query"
+        default=1, ge=1, le=5, description="Number of top matches to return per query"
     )
 
     @field_validator("queries")
@@ -318,20 +324,19 @@ class ImageAnalysisRequest(BaseModel):
     """Request schema for food image analysis"""
 
     image: str = Field(
-        ...,
-        description="Base64-encoded image (with or without data:image prefix)"
+        ..., description="Base64-encoded image (with or without data:image prefix)"
     )
     top_k_per_food: int = Field(
         default=3,
         ge=1,
         le=10,
-        description="Number of catalog matches to return per detected food"
+        description="Number of catalog matches to return per detected food",
     )
     confidence_threshold: float = Field(
         default=0.5,
         ge=0.1,
         le=1.0,
-        description="Minimum confidence threshold for DETIC detection (0-1)"
+        description="Minimum confidence threshold for DETIC detection (0-1)",
     )
 
     @field_validator("image")
@@ -375,7 +380,9 @@ class ImageAnalysisResponse(BaseModel):
     catalog_matches: List[DetectedFoodMatch] = Field(
         ..., description="Catalog matches for each detected food"
     )
-    total_detected: int = Field(..., description="Total number of unique foods detected")
+    total_detected: int = Field(
+        ..., description="Total number of unique foods detected"
+    )
     total_catalog_matches: int = Field(
         ..., description="Total number of catalog matches found"
     )

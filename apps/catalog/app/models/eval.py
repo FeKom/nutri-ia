@@ -76,6 +76,7 @@ class EvalRun(UUIDMixin, TimestampMixin, SQLModel, table=True):
     model_answer: Optional[str] = Field(default=None)
     context_used: Optional[dict] = Field(default=None, sa_column=Column(JSON, nullable=True))
     latency_ms: Optional[int] = Field(default=None)
+    weight: float = Field(default=1.0)
 
     __table_args__ = (
         Index("idx_eval_run_experiment_id", "experiment_id"),

@@ -8,18 +8,22 @@ class GoldenDatasetItem(BaseModel):
     """
     Entry from golden_dataset.json — fixed, never changes.
     Has expected_answer for full automated scoring.
+    weight: optional multiplier for weighted average scoring (default 1.0).
     """
     question: str = Field(..., min_length=1)
     expected_answer: str = Field(..., min_length=1)
+    weight: Optional[float] = Field(default=1.0, ge=0.0)
 
 
 class OverfittingDatasetItem(BaseModel):
     """
     Entry from overfitting datasets — questions the model has never seen.
     model_answer is populated after the run for embedding comparison.
+    weight: optional multiplier for weighted average scoring (default 1.0).
     """
     question: str = Field(..., min_length=1)
     model_answer: Optional[str] = None
+    weight: Optional[float] = Field(default=1.0, ge=0.0)
 
 
 DatasetItem = Union[GoldenDatasetItem, OverfittingDatasetItem]
@@ -42,6 +46,7 @@ class EvalExperimentCreate(BaseModel):
     prompt: str = Field(..., min_length=1, description="System prompt to test")
     retrieval_source: str = Field(default="json", description="json | pdf | md")
     dataset_filename: str = Field(default="golden_dataset.json", description="Dataset file inside tests/eval/datasets/")
+    agent_mode: str = Field(default="direct", description="direct | production | test")
 
 class EvalResultResponse(BaseModel):
     faithfulness: Optional[float] = None
@@ -54,14 +59,22 @@ class EvalResultResponse(BaseModel):
 class EvalRunResponse(BaseModel):
     id: UUID
     question: str
-    expected_answer: Optional[str]   # golden dataset — for RAGAS scoring
-    model_answer: Optional[str]       # overfitting dataset — for embedding comparison
+    expected_answer: Optional[str]   # golden dataset
+    model_answer: Optional[str]       # overfitting dataset
     answer: Optional[str]             # what the agent responded
     latency_ms: Optional[int]
+    weight: float = 1.0              # for weighted average scoring
     result: Optional[EvalResultResponse] = None
 
     class Config:
         from_attributes = True
+
+
+class IngestResponse(BaseModel):
+    filename: str
+    source_type: str
+    chunks_created: int
+    chunks_skipped: int
 
 
 class EvalExperimentResponse(BaseModel):
@@ -92,4 +105,19 @@ class EvalExperimentSummary(BaseModel):
 
 class EvalListResponse(BaseModel):
     experiments: List[EvalExperimentSummary]
+    count: int
+
+
+class ChunkSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1)
+    retrieval_source: str = Field(default="json", description="json | pdf | md")
+    limit: int = Field(default=5, ge=1, le=20)
+
+class ChunkResult(BaseModel):
+    content: str
+    source_name: str
+    chunk_index: int
+
+class ChunkSearchResponse(BaseModel):
+    chunks: List[ChunkResult]
     count: int

@@ -9,70 +9,49 @@
  */
 
 import { env } from "../config/env";
+import type {
+  UserProfile,
+  CreateUserProfileRequest,
+  UpdateUserProfileRequest,
+} from "../schemas/user";
+import type {
+  MealPlan,
+  CreateMealPlanRequest,
+  UpdateMealPlanRequest,
+  MealPlanListResponse,
+} from "../schemas/meal_plan";
+import type {
+  FoodLogItem,
+  LogMealRequest,
+  MealLogResponse,
+  MealSummary,
+  NutritionProgress,
+  DailySummaryResponse,
+  DayStats,
+  WeeklyStatsResponse,
+} from "../schemas/tracking";
+
+export type {
+  UserProfile,
+  CreateUserProfileRequest,
+  UpdateUserProfileRequest,
+  MealPlan,
+  CreateMealPlanRequest,
+  UpdateMealPlanRequest,
+  MealPlanListResponse,
+  FoodLogItem,
+  LogMealRequest,
+  MealLogResponse,
+  MealSummary,
+  NutritionProgress,
+  DailySummaryResponse,
+  DayStats,
+  WeeklyStatsResponse,
+};
 
 // ============================================
 // TIPOS
 // ============================================
-
-export interface UserProfile {
-  id: string;
-  user_id: string;
-  name: string;
-  age: number;
-  weight_kg?: number;
-  height_cm?: number;
-  gender?: string;
-  activity_level?: "sedentary" | "light" | "moderate" | "active" | "very_active";
-  diet_goal?: "weight_loss" | "weight_gain" | "maintain";
-  dietary_restrictions?: string[];
-  allergies?: string[];
-  disliked_foods?: string[];
-  preferred_cuisines?: string[];
-}
-
-export interface MealPlan {
-  id: string;
-  user_id: string;
-  plan_name: string;
-  description?: string;
-  daily_calories: number;
-  daily_protein_g: number;
-  daily_fat_g: number;
-  daily_carbs_g: number;
-  created_by: string;
-  meals: Record<string, unknown>[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateMealPlanRequest {
-  user_id: string;
-  plan_name: string;
-  description?: string;
-  daily_calories: number;
-  daily_protein_g: number;
-  daily_fat_g: number;
-  daily_carbs_g: number;
-  created_by?: "user" | "ai";
-  meals?: Record<string, unknown>[];
-}
-
-export interface UpdateMealPlanRequest {
-  plan_name?: string;
-  description?: string;
-  daily_calories?: number;
-  daily_protein_g?: number;
-  daily_fat_g?: number;
-  daily_carbs_g?: number;
-  meals?: Record<string, unknown>[];
-}
-
-export interface MealPlanListResponse {
-  plans: MealPlan[];
-  total: number;
-  page: number;
-  page_size: number;
-}
 
 export interface SearchFilters {
   category?: string;
@@ -212,101 +191,8 @@ export interface UserFiltersResponse {
 }
 
 // ============================================
-// TRACKING TYPES
+// TRACKING TYPES — re-exported from ../schemas/tracking
 // ============================================
-
-export interface FoodLogItem {
-  food_id: string;
-  quantity_g: number;
-  name?: string;
-}
-
-export interface LogMealRequest {
-  user_id: string;
-  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
-  foods: FoodLogItem[];
-  consumed_at?: string;
-  notes?: string;
-}
-
-export interface MealLogResponse {
-  id: string;
-  user_id: string;
-  consumed_at: string;
-  meal_type: string;
-  foods: Record<string, unknown>[];
-  total_calories: number;
-  total_protein_g: number;
-  total_carbs_g: number;
-  total_fat_g: number;
-  total_fiber_g?: number;
-  total_sodium_mg?: number;
-  notes?: string;
-  created_at: string;
-}
-
-export interface MealSummary {
-  id: string;
-  meal_type: string;
-  consumed_at: string;
-  total_calories: number;
-  total_protein_g: number;
-  total_carbs_g: number;
-  total_fat_g: number;
-  num_foods: number;
-  notes?: string;
-}
-
-export interface NutritionProgress {
-  calories_pct: number;
-  protein_pct: number;
-  carbs_pct: number;
-  fat_pct: number;
-}
-
-export interface DailySummaryResponse {
-  date: string;
-  meals: MealSummary[];
-  totals: {
-    calories: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-    fiber_g: number;
-    sodium_mg: number;
-  };
-  targets: {
-    calories: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-  };
-  progress: NutritionProgress;
-  num_meals: number;
-}
-
-export interface DayStats {
-  date: string;
-  total_calories: number;
-  total_protein_g: number;
-  total_carbs_g: number;
-  total_fat_g: number;
-  num_meals: number;
-  target_calories?: number;
-  target_protein_g?: number;
-}
-
-export interface WeeklyStatsResponse {
-  user_id: string;
-  stats: DayStats[];
-  averages: {
-    calories: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-  };
-  adherence_rate: number;
-}
 
 export interface ClientConfig {
   baseUrl: string;
@@ -999,21 +885,6 @@ export const deleteMealPlan = async (
   console.log(`✅ [CatalogClient] Plano deletado`);
 };
 
-export interface CreateUserProfileRequest {
-  user_id: string;
-  name: string;
-  age: number;
-  weight_kg?: number;
-  height_cm?: number;
-  gender?: string;
-  activity_level?: string;
-  diet_goal?: string;
-  dietary_restrictions?: string[];
-  allergies?: string[];
-  disliked_foods?: string[];
-  preferred_cuisines?: string[];
-}
-
 export const createUserProfile = async (
   request: CreateUserProfileRequest,
   config = defaultConfig,
@@ -1034,19 +905,6 @@ export const createUserProfile = async (
 
   return response;
 };
-
-export interface UpdateUserProfileRequest {
-  weight_kg?: number;
-  height_cm?: number;
-  age?: number;
-  gender?: string;
-  activity_level?: string;
-  diet_goal?: string;
-  dietary_restrictions?: string[];
-  allergies?: string[];
-  disliked_foods?: string[];
-  preferred_cuisines?: string[];
-}
 
 export const updateUserProfile = async (
   request: UpdateUserProfileRequest,

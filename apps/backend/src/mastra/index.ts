@@ -5,17 +5,20 @@ import {
   MASTRA_THREAD_ID_KEY,
 } from "@mastra/core/request-context";
 import { toAISdkStream } from "@mastra/ai-sdk";
-import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse, generateText } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { PinoLogger } from "@mastra/loggers";
 import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
+import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
 import { asyncContext } from "../lib/async-context";
 import { getUserProfileFromDB } from "./utils/user-profile-loader";
 import { userProfileToContext } from "../mastra/config/memory";
 import { sharedStorage } from "./config/storage";
 import { getObservabilityConfig } from "./config/observabilityOptions";
-import { validateEnv } from "./config/env";
+import { validateEnv, env } from "./config/env";
 import { auth } from "../lib/auth";
+import { scoreAll } from "./eval/scorers";
 
 validateEnv();
 
@@ -117,38 +120,34 @@ export const mastra = new Mastra({
 
             // AsyncLocalStorage garante que userId/JWT propagam para as tools
             // mesmo quando o requestContext do Mastra não é repassado internamente
-            return asyncContext.run(
-              { userId, jwtToken: token },
-              async () => {
-                const mastra = c.get("mastra");
-                const nutritionAgent =
-                  mastra.getAgent("nutritionAnalystAgent");
+            return asyncContext.run({ userId, jwtToken: token }, async () => {
+              const mastra = c.get("mastra");
+              const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
 
-                if (!nutritionAgent) {
-                  return c.json({ error: "Agent não encontrado" }, 500);
-                }
+              if (!nutritionAgent) {
+                return c.json({ error: "Agent não encontrado" }, 500);
+              }
 
-                const result = await nutritionAgent.stream(messages, {
-                  context: contextMessages,
-                  requestContext,
-                });
+              const result = await nutritionAgent.stream(messages, {
+                context: contextMessages,
+                requestContext,
+              });
 
-                const uiMessageStream = createUIMessageStream({
-                  originalMessages: messages,
-                  execute: async ({ writer }) => {
-                    for await (const part of toAISdkStream(result, {
-                      from: "agent",
-                    })) {
-                      await writer.write(part);
-                    }
-                  },
-                });
+              const uiMessageStream = createUIMessageStream({
+                originalMessages: messages,
+                execute: async ({ writer }) => {
+                  for await (const part of toAISdkStream(result, {
+                    from: "agent",
+                  })) {
+                    await writer.write(part);
+                  }
+                },
+              });
 
-                return createUIMessageStreamResponse({
-                  stream: uiMessageStream,
-                });
-              },
-            );
+              return createUIMessageStreamResponse({
+                stream: uiMessageStream,
+              });
+            });
           } catch (error) {
             console.error("❌ Erro no endpoint /chat:", error);
             return c.json(
@@ -156,6 +155,115 @@ export const mastra = new Mastra({
                 error: "Erro ao processar a requisição",
                 details:
                   error instanceof Error ? error.message : "Erro desconhecido",
+              },
+              500,
+            );
+          }
+        },
+      }),
+      registerApiRoute("/eval/run", {
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const body = await c.req.json();
+            const { prompt, question, retrieval_source, expected_answer, agent_mode = "direct" } = body;
+
+            if (!question || !retrieval_source) {
+              return c.json(
+                { error: "question and retrieval_source are required" },
+                400,
+              );
+            }
+
+            const start = Date.now();
+            let answer: string;
+            let contextChunks: Array<{ content: string; source_name: string }> = [];
+            let contextTexts: string[] = [];
+
+            if (agent_mode === "production" || agent_mode === "test") {
+              // Run via the real agent (with tools, no memory)
+              const agent =
+                agent_mode === "production"
+                  ? nutritionAnalystAgent
+                  : createEvalAgent(prompt ?? "");
+
+              const result = await agent.generate(question, { memoryConfig: { disabled: true } });
+              answer = result.text;
+
+              // Extract context from tool call results so metrics are meaningful
+              const toolTexts: string[] = [];
+              for (const step of result.steps ?? []) {
+                for (const toolResult of step.toolResults ?? []) {
+                  const content = toolResult.result;
+                  if (content && typeof content === "object") {
+                    const text = JSON.stringify(content);
+                    if (text.length > 10) toolTexts.push(text);
+                  } else if (typeof content === "string" && content.length > 10) {
+                    toolTexts.push(content);
+                  }
+                }
+              }
+              contextTexts = toolTexts;
+              contextChunks = toolTexts.map((t) => ({ content: t, source_name: "tool_result" }));
+            } else {
+              // "direct" — manual RAG + generateText, no tools
+              const chunksRes = await fetch(
+                `${env.CATALOG_API_URL}/api/v1/eval/chunks/search`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ query: question, retrieval_source, limit: 5 }),
+                },
+              );
+
+              const chunksData = chunksRes.ok ? await chunksRes.json() : { chunks: [] };
+              contextChunks = chunksData.chunks ?? [];
+              contextTexts = contextChunks.map((ch: any) => ch.content);
+              const context = contextTexts.join("\n\n");
+
+              const openai = createOpenAI({
+                apiKey: process.env.GITHUB_TOKEN ?? "",
+                baseURL: "https://models.inference.ai.azure.com",
+              });
+              const modelId = env.MODEL.replace("github-models/", "").replace("openai/", "");
+
+              const { text } = await generateText({
+                model: openai.chat(modelId),
+                system: prompt ?? "",
+                messages: [
+                  {
+                    role: "user",
+                    content: context ? `Contexto:\n${context}\n\nPergunta: ${question}` : question,
+                  },
+                ],
+              });
+              answer = text;
+            }
+
+            const latency_ms = Date.now() - start;
+
+            // Score via embedding similarity
+            const scores = await scoreAll(
+              question,
+              answer,
+              contextTexts,
+              env.CATALOG_API_URL,
+              expected_answer ?? undefined,
+            );
+
+            return c.json({
+              answer,
+              context_used: contextChunks,
+              latency_ms,
+              scores,
+            });
+          } catch (error) {
+            console.error("❌ Error in /eval/run:", error);
+            return c.json(
+              {
+                error: "Failed to run eval",
+                details:
+                  error instanceof Error ? error.message : "Unknown error",
               },
               500,
             );

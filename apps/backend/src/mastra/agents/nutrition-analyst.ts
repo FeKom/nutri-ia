@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { env } from "../config/env";
 import { loadNutritionAnalystInstructions } from "../utils/context-loader";
 import { createNutritionMemory } from "../config/memory";
 import { createUserProfileTool } from "../tools/create-user-profile";
@@ -20,7 +21,7 @@ export const nutritionAnalystAgent = new Agent({
   description:
     "Agente especializado em análise nutricional, identificação de alimentos em imagens e busca de alimentos",
   instructions: loadNutritionAnalystInstructions(),
-  model: "github-models/openai/gpt-4o-mini",
+  model: env.MODEL,
   memory: createNutritionMemory(),
   inputProcessors: [toolSearch],
   tools: {

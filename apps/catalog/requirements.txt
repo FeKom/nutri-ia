@@ -22,6 +22,12 @@ python-multipart>=0.0.6
 # PDF Generation
 reportlab>=4.0.0
 
+# PDF parsing for eval ingestion
+pdfplumber>=0.10.0
+
+# Embeddings for eval document_chunks
+sentence-transformers>=3.0.0
+
 # Computer Vision (DETIC) — desabilitado no MVP, requer GPU
 # torch>=2.0.0
 # torchvision>=0.15.0

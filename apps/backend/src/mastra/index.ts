@@ -24,6 +24,8 @@ validateEnv();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
+const logger = new PinoLogger({ name: "NutriAI", level: "info" });
+
 export const mastra = new Mastra({
   storage: sharedStorage,
   workflows: {},
@@ -65,7 +67,7 @@ export const mastra = new Mastra({
             try {
               jwtPayload = await verifyJwt(token);
             } catch (err) {
-              console.error("❌ JWT verification failed:", err);
+              logger.error({ err }, "JWT verification failed");
               return c.json({ error: "Token inválido ou expirado" }, 401);
             }
 
@@ -87,11 +89,9 @@ export const mastra = new Mastra({
 
             if (userProfile) {
               contextMessages.push(userProfileToContext(userProfile));
-              console.log(`✅ [Chat] Usuário ${userId} com perfil carregado`);
+              logger.info({ userId }, "[Chat] user profile loaded");
             } else {
-              console.log(
-                `⚠️ [Chat] Usuário ${userId} sem perfil - continuando sem personalização`,
-              );
+              logger.warn({ userId }, "[Chat] user has no profile — continuing without personalisation");
               contextMessages.push({
                 role: "system" as const,
                 content:
@@ -99,18 +99,7 @@ export const mastra = new Mastra({
               });
             }
 
-            console.log(
-              "📥 Mastra received:",
-              JSON.stringify(
-                {
-                  userId,
-                  userEmail,
-                  messageCount: messages.length,
-                },
-                null,
-                2,
-              ),
-            );
+            logger.info({ userId, userEmail, messageCount: messages.length }, "chat request received");
 
             // Configura contexto do request para que tools possam acessar userId e JWT
             const requestContext = c.get("requestContext");
@@ -149,7 +138,7 @@ export const mastra = new Mastra({
               });
             });
           } catch (error) {
-            console.error("❌ Erro no endpoint /chat:", error);
+            logger.error({ error }, "error in /chat endpoint");
             return c.json(
               {
                 error: "Erro ao processar a requisição",
@@ -258,7 +247,7 @@ export const mastra = new Mastra({
               scores,
             });
           } catch (error) {
-            console.error("❌ Error in /eval/run:", error);
+            logger.error({ error }, "error in /eval/run endpoint");
             return c.json(
               {
                 error: "Failed to run eval",

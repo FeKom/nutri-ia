@@ -107,8 +107,11 @@ export const mastra = new Mastra({
             requestContext.set(MASTRA_THREAD_ID_KEY, `chat-${userId}`);
             requestContext.set("jwt_token", token);
 
-            // AsyncLocalStorage garante que userId/JWT propagam para as tools
-            // mesmo quando o requestContext do Mastra não é repassado internamente
+            // Mastra v1.4.0 does not reliably forward requestContext into tool
+            // execute() calls. AsyncLocalStorage is the guaranteed propagation path.
+            // Both are set so that utils/auth-context.ts#extractAuthContext can
+            // read from whichever is available. Do not remove either until the
+            // framework bug is resolved upstream.
             return asyncContext.run({ userId, jwtToken: token }, async () => {
               const mastra = c.get("mastra");
               const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");

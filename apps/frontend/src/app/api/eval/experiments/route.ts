@@ -1,4 +1,4 @@
-const CATALOG_API_URL = process.env.CATALOG_API_URL || "http://localhost:8000";
+import { CATALOG_URL as CATALOG_API_URL } from "@/lib/config";
 
 export async function GET() {
   try {

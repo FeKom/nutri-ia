@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { BACKEND_URL } from "@/lib/config";
+
+const ChatRequestSchema = z.object({
+  messages: z.array(z.object({ role: z.string(), parts: z.array(z.any()).optional() }).passthrough()).min(1),
+  id: z.string().optional(),
+  trigger: z.string().optional(),
+});
 
 const MASTRA_API_URL = BACKEND_URL;
 
@@ -31,7 +38,14 @@ function parseAISDKToMastra(params: any) {
 }
 
 export async function POST(req: Request) {
-  const params = await req.json();
+  const raw = await req.json();
+  const parsed = ChatRequestSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  }
 
   try {
     const token = req.headers.get("Authorization");
@@ -39,7 +53,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const mastraPayload = parseAISDKToMastra(params);
+    const mastraPayload = parseAISDKToMastra(parsed.data);
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",

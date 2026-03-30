@@ -8,7 +8,7 @@
  * GitHub Models usa o formato: provider/model-name
  */
 export function getLLMModel(): string {
-  const model = process.env.MODEL || 'github-models/openai/gpt-4.1-mini';
+  const model = process.env.MODEL || 'github-models/gpt-4.1-mini';
 
   if (!process.env.GITHUB_TOKEN) {
     console.warn('⚠️ GITHUB_TOKEN not set. Agent may not work properly.');

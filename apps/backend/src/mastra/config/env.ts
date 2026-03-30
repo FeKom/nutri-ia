@@ -72,7 +72,7 @@ export const env = {
   /**
    * Modelo de LLM a ser usado
    */
-  MODEL: process.env.MODEL || "github-models/openai/gpt-4.1-mini",
+  MODEL: process.env.MODEL || "github-models/openai/gpt-4o-mini",
 
   /**
    * Token do GitHub para acessar GitHub Models

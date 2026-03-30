@@ -45,109 +45,75 @@ def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
         logger.info("Carregando modelo SentenceTransformer (primeira chamada)...")
-        _model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        _model = SentenceTransformer('intfloat/multilingual-e5-small')
         logger.info("Modelo carregado.")
     return _model
 
 
 @profile
-def generate_embedding(text: str) -> List[float]:
+def generate_embedding(text: str, is_query: bool = True) -> List[float]:
     """
-    Gera embedding para um texto usando sentence-transformers.
+    Gera embedding para um texto usando multilingual-e5-small.
+    E5 usa prefixos assimétricos: 'query:' para buscas, 'passage:' para documentos.
 
     Args:
         text: Texto para gerar embedding
-
-    Returns:
-        Lista de floats representando o embedding das palavras
-        ex: [0.123, -0.234, ..., 0.456]
+        is_query: True para queries de busca, False para documentos (alimentos)
     """
     model = _get_model()
+    prefix = "query: " if is_query else "passage: "
     try:
-        embedding = model.encode(text, convert_to_numpy=True)
+        embedding = model.encode(prefix + text, convert_to_numpy=True, normalize_embeddings=True)
         return embedding.tolist()
     except Exception as e:
         logger.error(f"Erro ao gerar embedding: {e}")
         raise
 
 @profile
-def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
+def generate_embeddings_batch(texts: List[str], is_query: bool = False) -> List[List[float]]:
     """
-    Gera embeddings para múltiplos textos em batch (mais eficiente que gerar um a um).
-
-    Usa model.encode() nativo do SentenceTransformer que processa todos os textos
-    juntos, aproveitando batching interno e GPU (se disponível).
+    Gera embeddings em batch. Por padrão usa 'passage:' (documentos a indexar).
 
     Args:
-        texts: Lista de textos para gerar embeddings
-
-    Returns:
-        Lista de embeddings (cada um é uma lista de floats)
+        texts: Lista de textos
+        is_query: False para documentos (indexação), True para queries de busca
     """
     model = _get_model()
+    prefix = "query: " if is_query else "passage: "
+    prefixed = [prefix + t for t in texts]
     try:
-        embeddings = model.encode(texts, convert_to_numpy=True)
+        embeddings = model.encode(prefixed, convert_to_numpy=True, normalize_embeddings=True)
         return [emb.tolist() for emb in embeddings]
     except Exception as e:
         logger.error(f"Erro ao gerar embeddings em batch: {e}")
         raise
 
 
+def _sanitize_food_name(name: str) -> str:
+    """
+    Converte nomes estruturados (TACO/USDA) em texto natural para embedding.
+    'Ovo, de galinha, inteiro, cozido/10minutos' → 'ovo de galinha inteiro cozido'
+    'Chicken, breast, boneless, skinless, raw'  → 'chicken breast boneless skinless raw'
+    """
+    import re
+    # Remove descrições de tempo após '/' (ex: "cozido/10minutos" → "cozido")
+    name = re.sub(r'/\w+', '', name)
+    # Substitui vírgulas e pontos por espaço
+    name = name.replace(',', ' ').replace('.', ' ')
+    # Normaliza espaços múltiplos
+    return ' '.join(name.split()).lower()
+
+
 @profile
 def generate_food_description(food: "Food", nutrients: "FoodNutrient") -> str:
     """
-    Cria descrição rica do alimento para embedding baseada nos thresholds ANVISA.
-    Args:
-        food: O alimento
-        nutrients: Os nutrientes do alimento
-    Returns:
-        Descrição textual enriquecida para gerar embedding semântico
+    Gera texto do alimento para embedding semântico.
+    Sanitiza nomes estruturados TACO/USDA em linguagem natural.
     """
-    parts = [food.name]
-
+    parts = [_sanitize_food_name(food.name)]
     if food.category:
-        parts.append(f"Categoria: {food.category}.")
-
-    if nutrients:
-        if nutrients.protein_g_100g is not None:
-            if nutrients.protein_g_100g >= HIGH_PROTEIN:
-                parts.append("Alto teor de proteína.")
-            elif nutrients.protein_g_100g >= SOURCE_PROTEIN:
-                parts.append("Fonte de proteína.")
-                
-        #Fibras
-        if nutrients.fiber_g_100g is not None:
-            if nutrients.fiber_g_100g >= HIGH_FIBER:
-                parts.append("alto teor de fibras")
-            elif nutrients.fiber_g_100g >= SOURCE_FIBER:
-                parts.append("fonte de fibras")
-
-        # Gordura
-        if nutrients.fat_g_100g is not None:
-            if nutrients.fat_g_100g <= LOW_FAT:
-                parts.append("baixo teor de gordura")
-
-        # Gordura saturada
-        if nutrients.saturated_fat_g_100g is not None:
-            if nutrients.saturated_fat_g_100g <= LOW_SATURATED_FAT:
-                parts.append("baixo teor de gordura saturada")
-
-        # Açúcar
-        if nutrients.sugar_g_100g is not None:
-            if nutrients.sugar_g_100g <= LOW_SUGAR:
-                parts.append("baixo teor de açúcar")
-
-        # Sódio
-        if nutrients.sodium_mg_100g is not None:
-            if nutrients.sodium_mg_100g <= LOW_SODIUM:
-                parts.append("baixo teor de sódio")
-
-        # Calorias
-        if nutrients.calories_100g is not None:
-            if nutrients.calories_100g <= LOW_CALORIE:
-                parts.append("baixa caloria")
-
-    return " ".join(parts).strip().replace("  ", " ")
+        parts.append(food.category)
+    return " ".join(parts).strip()
 
 @profile
 def generate_food_embedding(food: "Food", nutrients: "FoodNutrient") -> List[float]:
@@ -162,4 +128,4 @@ def generate_food_embedding(food: "Food", nutrients: "FoodNutrient") -> List[flo
         Lista de floats representando o embedding do alimento
     """
     description = generate_food_description(food, nutrients)
-    return generate_embedding(description)
+    return generate_embedding(description, is_query=False)

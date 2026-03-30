@@ -1,41 +1,64 @@
 #!/usr/bin/env python3
 """
-Script para importar dados do TACO (Tabela Brasileira de Composição de Alimentos)
-para o banco de dados do Nutria.
+Importa dados do TACO (Tabela Brasileira de Composição de Alimentos).
 
-Requisitos:
-    pip install pandas openpyxl sqlalchemy sentence-transformers psycopg2-binary
+Estrutura real do Excel (por índice de coluna):
+  0  → Número do alimento / nome da categoria
+  1  → Descrição do alimento
+  2  → Umidade (%)
+  3  → Energia (kcal)       → calories_100g
+  4  → Energia (kJ)
+  5  → Proteína (g)         → protein_g_100g
+  6  → Lipídeos (g)         → fat_g_100g
+  7  → Colesterol (mg)
+  8  → Carboidrato (g)      → carbs_g_100g
+  9  → Fibra Alimentar (g)  → fiber_g_100g
+  10 → Cinzas (g)
+  11 → Cálcio (mg)          → calcium_mg_100g
+  12 → Magnésio (mg)
+  13 → (duplica nº alimento)
+  14 → Manganês (mg)
+  15 → Fósforo (mg)
+  16 → Ferro (mg)            → iron_mg_100g
+  17 → Sódio (mg)            → sodium_mg_100g
+  18 → Potássio (mg)
+  19 → Cobre (mg)
+  20 → Zinco (mg)
+  21 → Retinol (mcg)
+  22 → RE (mcg)
+  23 → RAE (mcg)
+  24 → Tiamina (mg)
+  25 → Riboflavina (mg)
+  26 → Piridoxina (mg)
+  27 → Niacina (mg)
+  28 → Vitamina C (mg)       → vitamin_c_mg_100g
 
 Uso:
-    python scripts/import_taco.py --file taco_data.xlsx
-    python scripts/import_taco.py --file taco_data.xlsx --dry-run  # Apenas visualiza
+    python scripts/import_taco.py
+    python scripts/import_taco.py --dry-run
 """
 
 import argparse
-import re
 import sys
+import unicodedata
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
-import numpy as np
 import pandas as pd
 
-# Adiciona o diretório raiz ao path para imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sentence_transformers import SentenceTransformer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.food import Food, FoodNutrient, FoodSource
+from app.services.embedding_service import generate_embedding, generate_food_description
 
-# Import excel table for sanitize
-df = pd.read_excel("../data/taco_data.xlsx", sheet_name="CMVCOL taco3")
+SHEET_NAME = "CMVCol taco3"
+HEADER_ROWS = 3  # linhas 0-2 são cabeçalho
 
-
-# Mapeamento de categorias TACO → categorias do banco
 CATEGORY_MAPPING = {
     "Cereais e derivados": "grains",
     "Verduras, hortaliças e derivados": "vegetables",
@@ -56,416 +79,174 @@ CATEGORY_MAPPING = {
 
 
 def normalize_name(name: str) -> str:
-    """
-    Normaliza nome do alimento para busca case-insensitive.
-    Remove acentos, converte para minúsculas.
-    """
-    import unicodedata
-
-    # Remove acentos
     nfkd = unicodedata.normalize("NFKD", name)
-    name_no_accents = "".join([c for c in nfkd if not unicodedata.combining(c)])
-    # Lowercase e remove espaços extras
-    return " ".join(name_no_accents.lower().split())
+    no_accents = "".join(c for c in nfkd if not unicodedata.combining(c))
+    return " ".join(no_accents.lower().split())
 
 
-def sanitize_decimal(value) -> Optional[Decimal]:
-    """
-    Converte valores para Decimal, tratando casos especiais.
-    Retorna None para valores inválidos.
-    """
+def to_decimal(value) -> Optional[Decimal]:
     if pd.isna(value):
         return None
-
-    try:
-        # Se for string, limpa
-        if isinstance(value, str):
-            # Remove texto como "traço", "tr", "nd" (não detectado)
-            if any(x in value.lower() for x in ["tr", "traço", "nd", "na", "-"]):
-                return None
-            # Remove caracteres não numéricos exceto . e ,
-            value = re.sub(r"[^\d.,]", "", value)
-            # Substitui vírgula por ponto
-            value = value.replace(",", ".")
-
-        decimal_value = Decimal(str(value))
-        # Valida range (sem valores negativos)
-        if decimal_value < 0:
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ("tr", "traço", "nd", "na", "-", ""):
             return None
-
-        return round(decimal_value, 2)
-    except:
+        v = v.replace(",", ".")
+        try:
+            d = Decimal(v)
+            return None if d < 0 else round(d, 2)
+        except Exception:
+            return None
+    try:
+        d = Decimal(str(value))
+        return None if d < 0 else round(d, 2)
+    except Exception:
         return None
 
 
-def load_taco_excel(file_path: Path) -> pd.DataFrame:
+def parse_taco_excel(file_path: Path):
     """
-    Carrega arquivo Excel do TACO e retorna DataFrame limpo.
-
-    Formato esperado do Excel TACO:
-    - Coluna 'Descrição' ou 'Alimento': nome do alimento
-    - Coluna 'Categoria': categoria do alimento
-    - Coluna 'Energia (kcal)': calorias
-    - Coluna 'Proteína (g)': proteína
-    - Coluna 'Carboidrato (g)': carboidratos
-    - Coluna 'Lipídeos (g)': gordura total
-    - Etc.
+    Lê o Excel do TACO e retorna lista de dicts com os dados sanitizados.
+    Detecta linhas de categoria (col0=texto, col1=NaN) e linhas de alimento (col0=número).
     """
-    print(f"📂 Carregando arquivo: {file_path}")
+    df = pd.read_excel(file_path, sheet_name=SHEET_NAME, header=None, skiprows=HEADER_ROWS)
+    print(f"   {len(df)} linhas após pular cabeçalho")
 
-    # Tenta diferentes formatos de planilha
-    try:
-        # Primeiro tenta ler todas as sheets para encontrar a correta
-        excel_file = pd.ExcelFile(file_path)
-        print(f"   Sheets disponíveis: {excel_file.sheet_names}")
+    records = []
+    current_category = "other"
 
-        # Geralmente a primeira sheet ou uma chamada "TACO"
-        sheet_name = excel_file.sheet_names[0]
-        if "TACO" in excel_file.sheet_names:
-            sheet_name = "TACO"
+    for _, row in df.iterrows():
+        col0 = row.iloc[0]
+        col1 = row.iloc[1]
 
-        df = pd.read_excel(file_path, sheet_name=sheet_name)
-        print(f"   Usando sheet: {sheet_name}")
-        print(f"   Colunas encontradas: {list(df.columns)[:10]}...")
-
-    except Exception as e:
-        print(f"❌ Erro ao ler Excel: {e}")
-        raise
-
-    return df
-
-
-def map_taco_to_food(row: pd.Series, category_mapping: Dict) -> Dict:
-    """
-    Mapeia uma linha do TACO para o modelo Food.
-
-    Ajuste os nomes das colunas conforme seu arquivo Excel.
-    """
-    # Nome do alimento (ajuste conforme sua planilha)
-    name = str
-    for col in ["Descrição", "Alimento", "Nome", "Descrição do Alimento"]:
-        if col in row.index:
-            name = str(row[col]).strip()
-            break
-
-    if not name or name == "nan":
-        non_null = pd.DataFrame.replace("*", np.nan, inplace=True)
-        return non_null.dropna(inplace=True)
-
-    # Categoria (ajuste conforme sua planilha)
-    category_raw = None
-    for col in ["Categoria", "Grupo", "Grupo de Alimentos"]:
-        if col in row.index:
-            category_raw = str(row[col])
-            break
-
-    category = category_mapping.get(category_raw, "other") if category_raw else "other"
-
-    # Calorias
-    calories = None
-    for col in ["Energia (kcal)", "Calorias", "Energia"]:
-        if col in row.index:
-            calories = sanitize_decimal(row[col])
-            break
-
-    return {
-        "name": name,
-        "name_normalized": normalize_name(name),
-        "category": category,
-        "serving_size_g": Decimal("100.00"),  # TACO usa 100g como padrão
-        "serving_unit": "g",
-        "calorie_per_100g": calories,
-        "source": FoodSource.TACO,
-        "is_verified": True,  # TACO é fonte oficial
-        "usda_id": None,
-    }
-
-
-def map_taco_to_nutrients(row: pd.Series) -> Dict:
-    """
-    Mapeia uma linha do TACO para FoodNutrient.
-    Ajuste os nomes das colunas conforme seu arquivo Excel.
-    """
-    # Macronutrientes
-    protein = None
-    for col in ["Proteína (g)", "Proteína", "Proteinas"]:
-        if col in row.index:
-            protein = sanitize_decimal(row[col])
-            break
-
-    carbs = None
-    for col in ["Carboidrato (g)", "Carboidratos", "CHO"]:
-        if col in row.index:
-            carbs = sanitize_decimal(row[col])
-            break
-
-    fat = None
-    for col in ["Lipídeos (g)", "Gorduras", "Lipídeos", "Lipideos"]:
-        if col in row.index:
-            fat = sanitize_decimal(row[col])
-            break
-
-    # Calorias (para o campo calories_100g em FoodNutrient)
-    calories = None
-    for col in ["Energia (kcal)", "Calorias", "Energia"]:
-        if col in row.index:
-            calories = sanitize_decimal(row[col])
-            break
-
-    # Detalhes de gordura
-    saturated_fat = None
-    for col in ["Gordura Saturada (g)", "Saturada", "AG saturados"]:
-        if col in row.index:
-            saturated_fat = sanitize_decimal(row[col])
-            break
-
-    # Carboidratos detalhados
-    fiber = None
-    for col in ["Fibra Alimentar (g)", "Fibra", "Fibras"]:
-        if col in row.index:
-            fiber = sanitize_decimal(row[col])
-            break
-
-    sugar = None
-    for col in ["Açúcares (g)", "Açúcar", "Açucares"]:
-        if col in row.index:
-            sugar = sanitize_decimal(row[col])
-            break
-
-    # Minerais
-    sodium = None
-    for col in ["Sódio (mg)", "Sódio", "Sodio"]:
-        if col in row.index:
-            sodium = sanitize_decimal(row[col])
-            break
-
-    calcium = None
-    for col in ["Cálcio (mg)", "Cálcio", "Calcio"]:
-        if col in row.index:
-            calcium = sanitize_decimal(row[col])
-            break
-
-    iron = None
-    for col in ["Ferro (mg)", "Ferro"]:
-        if col in row.index:
-            iron = sanitize_decimal(row[col])
-            break
-
-    # Vitaminas
-    vitamin_c = None
-    for col in ["Vitamina C (mg)", "Vitamina C", "Vit C"]:
-        if col in row.index:
-            vitamin_c = sanitize_decimal(row[col])
-            break
-
-    return {
-        "calories_100g": calories,
-        "protein_g_100g": protein,
-        "carbs_g_100g": carbs,
-        "fat_g_100g": fat,
-        "saturated_fat_g_100g": saturated_fat,
-        "fiber_g_100g": fiber,
-        "sugar_g_100g": sugar,
-        "sodium_mg_100g": sodium,
-        "calcium_mg_100g": calcium,
-        "iron_mg_100g": iron,
-        "vitamin_c_mg_100g": vitamin_c,
-    }
-
-
-def generate_embedding(text: str, model: SentenceTransformer) -> List[float]:
-    """
-    Gera embedding vetorial para busca semântica.
-    Usa o mesmo modelo que o resto do sistema (all-MiniLM-L6-v2).
-    """
-    embedding = model.encode(text, convert_to_numpy=True)
-    return embedding.tolist()
-
-
-def import_taco_data(
-    file_path: Path, db_url: str, dry_run: bool = False, batch_size: int = 50
-):
-    """
-    Importa dados do TACO para o banco de dados.
-    """
-    print("🚀 Iniciando importação de dados do TACO\n")
-
-    # 1. Carrega dados
-    df = load_taco_excel(file_path)
-    print(f"✅ Carregados {len(df)} registros do Excel\n")
-
-    # Mostra preview dos dados
-    print("📊 Preview dos dados:")
-    print(df.head())
-    print(f"\nColunas disponíveis: {list(df.columns)}\n")
-
-    # 2. Carrega modelo de embedding
-    print("🤖 Carregando modelo de embeddings (all-MiniLM-L6-v2)...")
-    embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    print("✅ Modelo carregado\n")
-
-    # 3. Conecta ao banco
-    if not dry_run:
-        db_url_str = str(db_url)
-        print(
-            f"🔌 Conectando ao banco: {db_url_str.split('@')[1] if '@' in db_url_str else db_url_str}"
-        )
-        engine = create_engine(db_url_str)
-        session = Session(engine)
-    else:
-        print("🔍 Modo DRY-RUN ativado (não salvará no banco)\n")
-        session = None
-
-    # 4. Processa dados
-    imported_count = 0
-    skipped_count = 0
-    error_count = 0
-
-    print("📥 Processando alimentos...\n")
-
-    for idx, row in df.iterrows():
-        try:
-            # Mapeia dados
-            food_data = map_taco_to_food(row, CATEGORY_MAPPING)
-
-            if not food_data:
-                skipped_count += 1
-                continue
-
-            nutrient_data = map_taco_to_nutrients(row)
-
-            # Gera embedding
-            embedding = generate_embedding(food_data["name"], embedding_model)
-            food_data["embedding"] = embedding
-
-            # Preview
-            if dry_run or (imported_count < 5):
-                print(f"{'[DRY-RUN] ' if dry_run else ''}Alimento #{idx + 1}:")
-                print(f"  Nome: {food_data['name']}")
-                print(f"  Categoria: {food_data['category']}")
-                print(
-                    f"  Calorias: {nutrient_data.get('calories_100g', 'N/A')} kcal/100g"
-                )
-                print(f"  Proteína: {nutrient_data.get('protein_g_100g', 'N/A')}g")
-                print(f"  Carbos: {nutrient_data.get('carbs_g_100g', 'N/A')}g")
-                print(f"  Gordura: {nutrient_data.get('fat_g_100g', 'N/A')}g")
-                print(f"  Embedding: {len(embedding)} dimensões")
-                print()
-
-            # Salva no banco
-            if not dry_run:
-                # Verifica se já existe (por nome normalizado)
-                existing = (
-                    session.query(Food)
-                    .filter(Food.name_normalized == food_data["name_normalized"])
-                    .first()
-                )
-
-                if existing:
-                    print(f"⚠️  Alimento já existe: {food_data['name']} (pulando)")
-                    skipped_count += 1
-                    continue
-
-                # Cria Food
-                food = Food(**food_data)
-                session.add(food)
-                session.flush()  # Para obter o food.id
-
-                # Cria FoodNutrient
-                nutrient_data["food_id"] = food.id
-                nutrient = FoodNutrient(**nutrient_data)
-                session.add(nutrient)
-
-                # Commit a cada batch
-                if (imported_count + 1) % batch_size == 0:
-                    session.commit()
-                    print(f"💾 Salvos {imported_count + 1} alimentos...")
-
-            imported_count += 1
-
-        except Exception as e:
-            print(f"❌ Erro ao processar linha {idx}: {e}")
-            error_count += 1
-            if not dry_run and session:
-                session.rollback()
+        # Linha de categoria: col0 é texto não-numérico e col1 é NaN
+        if isinstance(col0, str) and pd.isna(col1):
+            current_category = CATEGORY_MAPPING.get(col0.strip(), "other")
             continue
 
-    # Commit final
-    if not dry_run and session:
-        session.commit()
-        session.close()
+        # Linha de alimento: col0 é número
+        try:
+            int(float(col0))
+        except (ValueError, TypeError):
+            continue
 
-    # Relatório final
-    print("\n" + "=" * 60)
-    print("📊 RELATÓRIO DE IMPORTAÇÃO")
-    print("=" * 60)
-    print(f"✅ Importados: {imported_count}")
-    print(f"⚠️  Pulados: {skipped_count}")
-    print(f"❌ Erros: {error_count}")
-    print(f"📁 Total no arquivo: {len(df)}")
-    print("=" * 60)
+        name = str(col1).strip() if not pd.isna(col1) else None
+        if not name or name == "nan":
+            continue
+
+        records.append({
+            "name": name,
+            "category": current_category,
+            "calories": to_decimal(row.iloc[3]),
+            "protein": to_decimal(row.iloc[5]),
+            "fat": to_decimal(row.iloc[6]),
+            "carbs": to_decimal(row.iloc[8]),
+            "fiber": to_decimal(row.iloc[9]),
+            "calcium": to_decimal(row.iloc[11]),
+            "iron": to_decimal(row.iloc[16]),
+            "sodium": to_decimal(row.iloc[17]),
+            "vitamin_c": to_decimal(row.iloc[28]),
+        })
+
+    return records
+
+
+def import_taco(file_path: Path, db_url: str, dry_run: bool, batch_size: int):
+    print(f"\n📂 Lendo {file_path}...")
+    records = parse_taco_excel(file_path)
+    print(f"✅ {len(records)} alimentos encontrados\n")
 
     if dry_run:
-        print("\n💡 Execute novamente sem --dry-run para salvar no banco")
-    else:
-        print("\n🎉 Importação concluída com sucesso!")
+        print("🔍 DRY-RUN — primeiros 5 alimentos:")
+        for r in records[:5]:
+            print(f"  {r['name']} | cat={r['category']} | kcal={r['calories']} | prot={r['protein']}g")
+        print("\n💡 Execute sem --dry-run para importar.")
+        return
+
+    engine = create_engine(str(db_url))
+    session = Session(engine)
+
+    imported = skipped = errors = 0
+
+    for i, r in enumerate(records):
+        try:
+            name_norm = normalize_name(r["name"])
+
+            if session.query(Food).filter(Food.name_normalized == name_norm).first():
+                skipped += 1
+                continue
+
+            food = Food(
+                name=r["name"],
+                name_normalized=name_norm,
+                category=r["category"],
+                serving_size_g=Decimal("100.00"),
+                serving_unit="g",
+                calorie_per_100g=r["calories"],
+                source=FoodSource.TACO,
+                is_verified=True,
+                usda_id=None,
+            )
+            session.add(food)
+            session.flush()
+
+            nutrient = FoodNutrient(
+                food_id=food.id,
+                calories_100g=r["calories"],
+                protein_g_100g=r["protein"],
+                carbs_g_100g=r["carbs"],
+                fat_g_100g=r["fat"],
+                fiber_g_100g=r["fiber"],
+                calcium_mg_100g=r["calcium"],
+                iron_mg_100g=r["iron"],
+                sodium_mg_100g=r["sodium"],
+                vitamin_c_mg_100g=r["vitamin_c"],
+            )
+            session.add(nutrient)
+
+            # Gera embedding usando o mesmo modelo do sistema (multilingual)
+            description = generate_food_description(food, nutrient)
+            food.embedding = generate_embedding(description)
+
+            imported += 1
+
+            if imported % batch_size == 0:
+                session.commit()
+                print(f"   💾 {imported} importados...")
+
+        except Exception as e:
+            print(f"   ❌ Erro em '{r.get('name')}': {e}")
+            session.rollback()
+            errors += 1
+
+    session.commit()
+    session.close()
+
+    print(f"\n{'='*50}")
+    print(f"✅ Importados:  {imported}")
+    print(f"⚠️  Pulados:     {skipped} (já existiam)")
+    print(f"❌ Erros:       {errors}")
+    print(f"{'='*50}")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Importa dados do TACO para o banco de dados Nutria"
-    )
-    parser.add_argument(
-        "--file", type=Path, required=True, help="Caminho para o arquivo Excel do TACO"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Apenas visualiza os dados sem salvar no banco",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=50,
-        help="Tamanho do batch para commits (padrão: 50)",
-    )
-    parser.add_argument(
-        "--db-url",
-        type=str,
-        default=None,
-        help="URL do banco (padrão: usa DATABASE_URL do .env)",
-    )
-
+    parser = argparse.ArgumentParser(description="Importa TACO para o banco Nutria")
+    parser.add_argument("--file", type=Path, default=Path("data/taco_data.xlsx"))
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--batch-size", type=int, default=50)
+    parser.add_argument("--db-url", type=str, default=None)
     args = parser.parse_args()
 
-    # Valida arquivo
     if not args.file.exists():
         print(f"❌ Arquivo não encontrado: {args.file}")
         sys.exit(1)
 
-    # URL do banco
     db_url = args.db_url or settings.DATABASE_URL
     if not db_url:
-        print("❌ DATABASE_URL não configurada. Use --db-url ou configure .env")
+        print("❌ DATABASE_URL não configurada.")
         sys.exit(1)
 
-    # Executa importação
-    try:
-        import_taco_data(
-            file_path=args.file,
-            db_url=db_url,
-            dry_run=args.dry_run,
-            batch_size=args.batch_size,
-        )
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Importação cancelada pelo usuário")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n\n❌ Erro fatal: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
+    import_taco(args.file, db_url, args.dry_run, args.batch_size)
 
 
 if __name__ == "__main__":

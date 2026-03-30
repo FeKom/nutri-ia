@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FlaskConical, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { FlaskConical, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 interface EvalRun {
   id: string;
@@ -53,6 +53,7 @@ export default function EvalPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedRuns, setExpandedRuns] = useState<Record<string, EvalRun[]>>({});
   const [loading, setLoading] = useState(false);
+  const [running, setRunning] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -60,6 +61,7 @@ export default function EvalPage() {
     prompt: '',
     retrieval_source: 'json',
     dataset_filename: 'golden_dataset.json',
+    agent_mode: 'direct',
   });
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function EvalPage() {
         body: JSON.stringify(form),
       });
       if (res.ok) {
-        setForm({ name: '', description: '', prompt: '', retrieval_source: 'json', dataset_filename: 'golden_dataset.json' });
+        setForm({ name: '', description: '', prompt: '', retrieval_source: 'json', dataset_filename: 'golden_dataset.json', agent_mode: 'direct' });
         await fetchExperiments();
       }
     } finally {
@@ -112,6 +114,21 @@ export default function EvalPage() {
       const res = await fetch(`/api/eval/experiments/${id}`);
       const data = await res.json();
       setExpandedRuns(prev => ({ ...prev, [id]: data.runs || [] }));
+    }
+  }
+
+  async function runExperiment(id: string) {
+    setRunning(id);
+    try {
+      const res = await fetch(`/api/eval/experiments/${id}`, { method: 'POST' });
+      if (res.ok) {
+        const runs = await res.json();
+        setExpandedRuns(prev => ({ ...prev, [id]: runs }));
+        setExpandedId(id);
+        await fetchExperiments();
+      }
+    } finally {
+      setRunning(null);
     }
   }
 
@@ -169,7 +186,7 @@ export default function EvalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Dataset</label>
                   <select
@@ -197,6 +214,18 @@ export default function EvalPage() {
                     ))}
                   </select>
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Agent</label>
+                  <select
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    value={form.agent_mode}
+                    onChange={e => setForm(p => ({ ...p, agent_mode: e.target.value }))}
+                  >
+                    <option value="direct">direct — sem tools</option>
+                    <option value="production">production — agent atual</option>
+                    <option value="test">test — agent customizado</option>
+                  </select>
+                </div>
               </div>
 
               <Button type="submit" disabled={loading} className="gap-2">
@@ -214,11 +243,11 @@ export default function EvalPage() {
             )}
             {experiments.map(exp => (
               <Card key={exp.id} className="overflow-hidden">
-                <button
-                  onClick={() => toggleExpand(exp.id)}
-                  className="w-full px-5 py-4 flex items-center justify-between hover:bg-muted/40 transition-colors"
-                >
-                  <div className="flex items-center gap-3 text-left">
+                <div className="px-5 py-4 flex items-center justify-between hover:bg-muted/40 transition-colors">
+                  <button
+                    onClick={() => toggleExpand(exp.id)}
+                    className="flex-1 flex items-center gap-3 text-left"
+                  >
                     <div>
                       <p className="font-medium">{exp.name}</p>
                       {exp.description && (
@@ -228,17 +257,34 @@ export default function EvalPage() {
                     <div className="flex gap-2">
                       <Badge variant="secondary">{exp.params?.dataset_filename}</Badge>
                       <Badge variant="outline">{exp.params?.retrieval_source}</Badge>
+                      <Badge variant={exp.params?.agent_mode === 'production' ? 'default' : exp.params?.agent_mode === 'test' ? 'secondary' : 'outline'}>
+                        {exp.params?.agent_mode ?? 'direct'}
+                      </Badge>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  </button>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       {new Date(exp.created_at).toLocaleDateString('pt-BR')}
                     </span>
                     <span>{exp.run_count} runs</span>
-                    {expandedId === exp.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-7 px-2.5 text-xs"
+                      disabled={running === exp.id}
+                      onClick={() => runExperiment(exp.id)}
+                    >
+                      {running === exp.id
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <Play className="w-3 h-3" />}
+                      {running === exp.id ? 'Rodando...' : 'Rodar'}
+                    </Button>
+                    <button onClick={() => toggleExpand(exp.id)}>
+                      {expandedId === exp.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
                   </div>
-                </button>
+                </div>
 
                 {expandedId === exp.id && (
                   <div className="border-t">

@@ -9,17 +9,161 @@ import httpx
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.models.eval import EvalExperiment, EvalResult, EvalRun
+from app.models.eval import DocumentChunk, EvalExperiment, EvalResult, EvalRun, SourceType
 from app.schemas.eval import (
     EvalExperimentCreate,
     EvalQuestion,
     GoldenDatasetItem,
+    IngestResponse,
     OverfittingDatasetItem,
 )
 
 logger = logging.getLogger(__name__)
 
 DATASETS_DIR = Path(__file__).resolve().parents[2] / "tests" / "eval" / "datasets"
+
+
+def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
+    """Split text into overlapping chunks by character count."""
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end].strip())
+        start += chunk_size - overlap
+    return [c for c in chunks if c]
+
+
+# ─── Ingestion ────────────────────────────────────────────────────────────────
+
+def ingest_dataset(session: Session, filename: str) -> IngestResponse:
+    """
+    Chunk a dataset file and store embeddings in document_chunks.
+
+    JSON  → each Q&A pair becomes one chunk (question + answer as text)
+    PDF   → text extracted per page, split into 500-char overlapping chunks
+    MD    → split by ## headings or into 500-char overlapping chunks
+    """
+    path = DATASETS_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"Dataset not found: {path}")
+
+    suffix = path.suffix.lower()
+    raw_chunks: list[str] = []
+    source_type: SourceType
+
+    if suffix == ".json":
+        source_type = SourceType.TEXT
+        with open(path, encoding="utf-8") as f:
+            items = json.load(f)
+        for item in items:
+            question = item.get("question", "")
+            answer = item.get("expected_answer", "")
+            if answer:
+                raw_chunks.append(f"Pergunta: {question}\nResposta: {answer}")
+            else:
+                raw_chunks.append(f"Pergunta: {question}")
+
+    elif suffix == ".pdf":
+        source_type = SourceType.PDF
+        try:
+            import pdfplumber
+        except ImportError:
+            raise ImportError("Run: pip install pdfplumber")
+        with pdfplumber.open(path) as pdf:
+            full_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+        raw_chunks = _chunk_text(full_text, chunk_size=500, overlap=50)
+
+    elif suffix == ".md":
+        source_type = SourceType.MARKDOWN
+        with open(path, encoding="utf-8") as f:
+            content = f.read()
+        # split by ## headings first; fall back to fixed-size chunks
+        sections = [s.strip() for s in content.split("\n## ") if s.strip()]
+        for section in sections:
+            if len(section) <= 500:
+                raw_chunks.append(section)
+            else:
+                raw_chunks.extend(_chunk_text(section, chunk_size=500, overlap=50))
+
+    else:
+        raise ValueError(f"Unsupported file extension: {suffix}")
+
+    # check which chunk_indexes already exist for this source to avoid duplicates
+    existing_indexes = set(
+        session.exec(
+            select(DocumentChunk.chunk_index).where(DocumentChunk.source_name == filename)
+        ).all()
+    )
+
+    to_create = [
+        (idx, text)
+        for idx, text in enumerate(raw_chunks)
+        if idx not in existing_indexes
+    ]
+
+    if not to_create:
+        return IngestResponse(
+            filename=filename,
+            source_type=source_type.value,
+            chunks_created=0,
+            chunks_skipped=len(raw_chunks),
+        )
+
+    texts = [text for _, text in to_create]
+    from app.services.embedding_service import generate_embeddings_batch
+    embeddings = generate_embeddings_batch(texts)
+
+    for (idx, text), embedding in zip(to_create, embeddings):
+        chunk = DocumentChunk(
+            content=text,
+            embedding=embedding,
+            source_name=filename,
+            source_type=source_type,
+            chunk_index=idx,
+            chunk_size=len(text),
+            chunk_overlap=50 if suffix != ".json" else 0,
+            embedding_model="all-MiniLM-L6-v2",
+        )
+        session.add(chunk)
+
+    session.commit()
+    logger.info(f"Ingested {len(to_create)} chunks from {filename}")
+
+    return IngestResponse(
+        filename=filename,
+        source_type=source_type.value,
+        chunks_created=len(to_create),
+        chunks_skipped=len(existing_indexes),
+    )
+
+
+def search_chunks(session: Session, query: str, retrieval_source: str, limit: int = 5) -> list[DocumentChunk]:
+    """
+    Search document_chunks by semantic similarity filtered by retrieval_source.
+    retrieval_source: "json" → TEXT, "pdf" → PDF, "md" → MARKDOWN
+    """
+    from app.services.embedding_service import generate_embedding
+    from sqlalchemy import text as sa_text
+
+    source_map = {
+        "json": SourceType.TEXT,
+        "pdf": SourceType.PDF,
+        "md": SourceType.MARKDOWN,
+    }
+    source_type = source_map.get(retrieval_source, SourceType.TEXT)
+
+    query_embedding = generate_embedding(query)
+
+    results = session.exec(
+        select(DocumentChunk)
+        .where(DocumentChunk.source_type == source_type)
+        .where(DocumentChunk.embedding.isnot(None))
+        .order_by(DocumentChunk.embedding.cosine_distance(query_embedding))
+        .limit(limit)
+    ).all()
+
+    return list(results)
 
 
 # ─── Datasets ─────────────────────────────────────────────────────────────────
@@ -65,34 +209,53 @@ def load_dataset(filename: str) -> Any:
 
 # ─── Mastra ───────────────────────────────────────────────────────────────────
 
-def _call_mastra_eval(prompt: str, question: str, retrieval_source: str) -> dict:
+def _call_mastra_eval(prompt: str, question: str, retrieval_source: str, expected_answer: str | None = None, agent_mode: str = "direct") -> dict:
     """
     Call Mastra /eval/run with a custom prompt and question.
-    Returns { answer, context_used, latency_ms }.
+    Retries on 429/500 rate-limit errors with exponential backoff.
     """
-    start = time.monotonic()
-    try:
-        with httpx.Client(timeout=60.0) as client:
-            response = client.post(
-                f"{settings.MASTRA_URL}/eval/run",
-                json={
-                    "prompt": prompt,
-                    "question": question,
-                    "retrieval_source": retrieval_source,
-                },
-            )
+    payload = {
+        "prompt": prompt,
+        "question": question,
+        "retrieval_source": retrieval_source,
+        "agent_mode": agent_mode,
+    }
+    if expected_answer:
+        payload["expected_answer"] = expected_answer
+
+    max_retries = 4
+    wait = 20  # seconds — start high since agent uses many tokens per question
+
+    for attempt in range(max_retries):
+        start = time.monotonic()
+        try:
+            with httpx.Client(timeout=180.0) as client:
+                response = client.post(f"{settings.MASTRA_URL}/eval/run", json=payload)
+
+            if response.status_code == 429 or (
+                response.status_code == 500 and "Too Many Requests" in response.text
+            ):
+                logger.warning(f"Rate limit hit (attempt {attempt + 1}/{max_retries}), waiting {wait}s...")
+                time.sleep(wait)
+                wait *= 2  # exponential backoff: 20 → 40 → 80 → 160
+                continue
+
             response.raise_for_status()
             data = response.json()
-    except httpx.HTTPError as e:
-        logger.error(f"Mastra eval call failed: {e}")
-        return {"answer": f"[Error: {e}]", "context_used": None, "latency_ms": 0}
+            latency_ms = int((time.monotonic() - start) * 1000)
+            return {
+                "answer": data.get("answer", ""),
+                "context_used": data.get("context_used"),
+                "latency_ms": data.get("latency_ms", latency_ms),
+                "scores": data.get("scores"),
+            }
 
-    latency_ms = int((time.monotonic() - start) * 1000)
-    return {
-        "answer": data.get("answer", ""),
-        "context_used": data.get("context_used"),
-        "latency_ms": latency_ms,
-    }
+        except httpx.HTTPError as e:
+            logger.error(f"Mastra eval call failed: {e}")
+            return {"answer": f"[Error: {e}]", "context_used": None, "latency_ms": 0, "scores": None}
+
+    logger.error("Max retries exceeded for eval call")
+    return {"answer": "[Error: rate limit max retries exceeded]", "context_used": None, "latency_ms": 0, "scores": None}
 
 
 # ─── Experiments ──────────────────────────────────────────────────────────────
@@ -106,6 +269,7 @@ def create_eval_experiment(session: Session, data: EvalExperimentCreate) -> Eval
             "prompt": data.prompt,
             "retrieval_source": data.retrieval_source,
             "dataset_filename": data.dataset_filename,
+            "agent_mode": data.agent_mode,
         },
     )
     session.add(experiment)
@@ -142,14 +306,19 @@ def run_eval(session: Session, eval_question: EvalQuestion) -> list[EvalRun]:
     params = experiment.params or {}
     prompt = params.get("prompt", "")
     retrieval_source = params.get("retrieval_source", "json")
+    agent_mode = params.get("agent_mode", "direct")
 
     runs: list[EvalRun] = []
 
-    for item in eval_question.items:
+    for i, item in enumerate(eval_question.items):
+        if i > 0:
+            time.sleep(15)  # avoid GitHub Models UserByModelByMinuteTokens limit
         result = _call_mastra_eval(
             prompt=prompt,
             question=item.question,
             retrieval_source=retrieval_source,
+            expected_answer=item.expected_answer if isinstance(item, GoldenDatasetItem) else None,
+            agent_mode=agent_mode,
         )
 
         run = EvalRun(
@@ -160,8 +329,25 @@ def run_eval(session: Session, eval_question: EvalQuestion) -> list[EvalRun]:
             latency_ms=result.get("latency_ms"),
             expected_answer=item.expected_answer if isinstance(item, GoldenDatasetItem) else None,
             model_answer=result["answer"] if isinstance(item, OverfittingDatasetItem) else None,
+            weight=item.weight if item.weight is not None else 1.0,
         )
         session.add(run)
+        session.flush()  # get run.id before saving result
+
+        # Auto-save scores returned from Mastra
+        scores = result.get("scores")
+        if scores:
+            eval_result = EvalResult(
+                run_id=run.id,
+                faithfulness=scores.get("faithfulness"),
+                answer_relevancy=scores.get("answer_relevancy"),
+                context_relevancy=scores.get("context_relevancy"),
+                context_recall=scores.get("context_recall"),
+                context_precision=scores.get("context_precision"),
+                overall_score=scores.get("overall_score"),
+            )
+            session.add(eval_result)
+
         runs.append(run)
 
     session.commit()
@@ -169,6 +355,37 @@ def run_eval(session: Session, eval_question: EvalQuestion) -> list[EvalRun]:
         session.refresh(run)
 
     return runs
+
+
+def run_eval_auto(session: Session, experiment_id: UUID) -> list[EvalRun]:
+    """
+    Load dataset from experiment params and run eval automatically.
+    No need to pass items from outside — reads dataset_filename from experiment.
+    """
+    experiment = get_experiment_by_id(session, experiment_id)
+    params = experiment.params or {}
+    dataset_filename = params.get("dataset_filename", "golden_dataset.json")
+
+    raw_items = load_dataset(dataset_filename)
+
+    # Parse items depending on dataset type
+    items = []
+    for raw in raw_items:
+        if "expected_answer" in raw:
+            items.append(GoldenDatasetItem(
+                question=raw["question"],
+                expected_answer=raw["expected_answer"],
+                weight=raw.get("weight", 1.0),
+            ))
+        else:
+            items.append(OverfittingDatasetItem(
+                question=raw["question"],
+                weight=raw.get("weight", 1.0),
+            ))
+
+    from app.schemas.eval import EvalQuestion
+    eval_question = EvalQuestion(items=items, experiment_id=experiment_id)
+    return run_eval(session, eval_question)
 
 
 def get_run_by_id(session: Session, run_id: UUID) -> EvalRun:

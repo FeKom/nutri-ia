@@ -99,8 +99,20 @@ export const nutritionProgressSchema = z.object({
 export const dailySummaryResponseSchema = z.object({
   date: z.string(),
   meals: z.array(mealSummarySchema),
-  totals: z.record(z.any()),
-  targets: z.record(z.any()),
+  totals: z.object({
+    calories: z.number(),
+    protein_g: z.number(),
+    carbs_g: z.number(),
+    fat_g: z.number(),
+    fiber_g: z.number(),
+    sodium_mg: z.number(),
+  }),
+  targets: z.object({
+    calories: z.number(),
+    protein_g: z.number(),
+    carbs_g: z.number(),
+    fat_g: z.number(),
+  }),
   progress: nutritionProgressSchema,
   num_meals: z.number().int(),
 });
@@ -126,6 +138,20 @@ export const dayStatsSchema = z.object({
 export const weeklyStatsResponseSchema = z.object({
   user_id: z.string().uuid(),
   stats: z.array(dayStatsSchema),
-  averages: z.record(z.any()),
+  averages: z.object({
+    calories: z.number(),
+    protein_g: z.number(),
+    carbs_g: z.number(),
+    fat_g: z.number(),
+  }),
   adherence_rate: z.number(),
 });
+
+export type FoodLogItem = z.infer<typeof foodLogItemSchema>;
+export type LogMealRequest = z.infer<typeof mealLogRequestSchema>;
+export type MealLogResponse = z.infer<typeof mealLogResponseSchema>;
+export type MealSummary = z.infer<typeof mealSummarySchema>;
+export type NutritionProgress = z.infer<typeof nutritionProgressSchema>;
+export type DailySummaryResponse = z.infer<typeof dailySummaryResponseSchema>;
+export type DayStats = z.infer<typeof dayStatsSchema>;
+export type WeeklyStatsResponse = z.infer<typeof weeklyStatsResponseSchema>;

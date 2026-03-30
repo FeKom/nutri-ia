@@ -1,6 +1,7 @@
 import z from "zod";
 
 export const mealPlanCreateSchema = z.object({
+  user_id: z.string(),
   plan_name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   daily_calories: z.number().positive(),
@@ -42,3 +43,8 @@ export const mealPlanListResponseSchema = z.object({
   page: z.number().int(),
   page_size: z.number().int(),
 });
+
+export type CreateMealPlanRequest = z.infer<typeof mealPlanCreateSchema>;
+export type UpdateMealPlanRequest = z.infer<typeof mealPlanUpdateSchema>;
+export type MealPlan = z.infer<typeof mealPlanResponseSchema>;
+export type MealPlanListResponse = z.infer<typeof mealPlanListResponseSchema>;

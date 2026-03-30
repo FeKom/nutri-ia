@@ -70,3 +70,10 @@ export const evalListResponseSchema = z.object({
   experiments: z.array(evalExperimentSummarySchema),
   count: z.number().int(),
 });
+
+export type EvalRequest = {
+  prompt: string;
+  question: string;
+  retrieval_source: string;
+  expected_answer?: string;
+};

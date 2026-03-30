@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { BACKEND_URL } from "@/lib/config";
 
-const MASTRA_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4111";
+const MASTRA_API_URL = BACKEND_URL;
 
 function parseAISDKToMastra(params: any) {
   const messages =

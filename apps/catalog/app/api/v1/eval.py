@@ -5,6 +5,9 @@ from sqlmodel import Session
 
 from app.api.dependencies import get_db
 from app.schemas.eval import (
+    ChunkResult,
+    ChunkSearchRequest,
+    ChunkSearchResponse,
     EvalExperimentCreate,
     EvalExperimentResponse,
     EvalExperimentSummary,
@@ -12,6 +15,7 @@ from app.schemas.eval import (
     EvalQuestion,
     EvalRunResponse,
     EvalResultResponse,
+    IngestResponse,
 )
 from app.services import eval_service
 
@@ -24,6 +28,47 @@ router = APIRouter()
 def list_datasets() -> list[str]:
     """List all available dataset files in tests/eval/datasets/."""
     return eval_service.list_datasets()
+
+
+@router.post("/datasets/{filename}/ingest", response_model=IngestResponse, status_code=status.HTTP_201_CREATED)
+def ingest_dataset(
+    filename: str,
+    db: Session = Depends(get_db),
+) -> IngestResponse:
+    """
+    Chunk a dataset file and store embeddings in document_chunks.
+    Skips chunks that already exist (idempotent).
+    Supports .json, .pdf and .md files.
+    """
+    try:
+        return eval_service.ingest_dataset(db, filename)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (ValueError, ImportError) as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/embed", response_model=list[list[float]])
+def embed_texts(texts: list[str]) -> list[list[float]]:
+    """Embed a list of texts using the embedding model. Returns a list of vectors."""
+    from app.services.embedding_service import generate_embeddings_batch
+    return generate_embeddings_batch(texts)
+
+
+@router.post("/chunks/search", response_model=ChunkSearchResponse)
+def search_chunks(
+    request: ChunkSearchRequest,
+    db: Session = Depends(get_db),
+) -> ChunkSearchResponse:
+    """Search document_chunks by semantic similarity."""
+    try:
+        chunks = eval_service.search_chunks(db, request.query, request.retrieval_source, request.limit)
+        return ChunkSearchResponse(
+            chunks=[ChunkResult(content=c.content, source_name=c.source_name, chunk_index=c.chunk_index) for c in chunks],
+            count=len(chunks),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 # ─── Experiments ──────────────────────────────────────────────────────────────
@@ -133,6 +178,44 @@ def run_eval(
         )
         for run in runs
     ]
+
+
+@router.post("/experiments/{experiment_id}/run", response_model=list[EvalRunResponse], status_code=status.HTTP_201_CREATED)
+def run_eval_auto(
+    experiment_id: UUID,
+    db: Session = Depends(get_db),
+) -> list[EvalRunResponse]:
+    """
+    Auto-load dataset from experiment params and run eval.
+    No request body needed — reads dataset from experiment config.
+    """
+    try:
+        runs = eval_service.run_eval_auto(db, experiment_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+    result_list = []
+    for run in runs:
+        result = eval_service.get_result_by_run(db, run.id)
+        result_list.append(EvalRunResponse(
+            id=run.id,
+            question=run.question,
+            expected_answer=run.expected_answer,
+            model_answer=run.model_answer,
+            answer=run.answer,
+            latency_ms=run.latency_ms,
+            weight=run.weight,
+            result=EvalResultResponse(
+                faithfulness=result.faithfulness,
+                answer_relevancy=result.answer_relevancy,
+                context_recall=result.context_recall,
+                context_precision=result.context_precision,
+                overall_score=result.overall_score,
+            ) if result else None,
+        ))
+    return result_list
 
 
 @router.get("/experiments/{experiment_id}/runs", response_model=list[EvalRunResponse])

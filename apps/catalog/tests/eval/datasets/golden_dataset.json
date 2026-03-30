@@ -1,0 +1,42 @@
+[
+  {
+    "question": "Quantos gramas de proteína tem em 150g de frango grelhado sem pele?",
+    "expected_answer": "150g de frango grelhado sem pele tem aproximadamente 46,5g de proteína. O frango grelhado possui em média 31g de proteína por 100g segundo a tabela TACO, sendo uma das melhores fontes de proteína magra disponíveis."
+  },
+  {
+    "question": "Quantas calorias tem um ovo de galinha cozido de 50g?",
+    "expected_answer": "Um ovo de galinha cozido de 50g tem aproximadamente 73 calorias, com cerca de 6g de proteína, 5g de gordura e 0,4g de carboidratos. É um alimento altamente nutritivo e de fácil digestão."
+  },
+  {
+    "question": "Qual é a quantidade de carboidratos em 100g de arroz branco cozido?",
+    "expected_answer": "100g de arroz branco cozido tem aproximadamente 28g de carboidratos e 128 calorias. O arroz branco tem índice glicêmico médio-alto, fornecendo energia de forma relativamente rápida."
+  },
+  {
+    "question": "Quantas calorias tem 100g de aveia em flocos?",
+    "expected_answer": "100g de aveia em flocos tem aproximadamente 367 calorias, com 13,9g de proteína, 66,6g de carboidratos, 8,5g de gordura e 9,1g de fibras. A aveia é um carboidrato complexo de baixo índice glicêmico, excelente para saciedade."
+  },
+  {
+    "question": "Quantos gramas de gordura tem em 100g de salmão cru?",
+    "expected_answer": "100g de salmão cru tem aproximadamente 13,4g de gordura total, sendo grande parte composta por gorduras insaturadas e ômega-3 (EPA e DHA). Também possui cerca de 20g de proteína e 142 calorias por 100g."
+  },
+  {
+    "question": "Qual é uma boa refeição antes de um treino de musculação?",
+    "expected_answer": "Uma boa refeição pré-treino deve ser consumida 1 a 2 horas antes do exercício e combinar carboidratos de médio índice glicêmico com proteína moderada. Boas opções incluem: arroz branco com frango grelhado, batata-doce com ovo, aveia com banana e whey protein, ou pão integral com atum. Evite gorduras em excesso e alimentos muito fibrosos que podem causar desconforto gastrointestinal durante o treino."
+  },
+  {
+    "question": "O que comer depois do treino para ajudar na recuperação muscular?",
+    "expected_answer": "Após o treino, a janela anabólica de 30 a 60 minutos é ideal para consumir proteínas de rápida absorção e carboidratos para repor o glicogênio muscular. Boas opções incluem: whey protein com banana, frango com arroz e vegetais, omelete com batata, ou iogurte grego com frutas. A proteína acelera a síntese muscular e os carboidratos restauram a energia."
+  },
+  {
+    "question": "Quais alimentos são ricos em proteína para quem é vegetariano?",
+    "expected_answer": "Vegetarianos têm diversas fontes de proteína: ovos (6g por unidade), laticínios como iogurte grego (10g/100g) e queijo cottage, leguminosas como feijão (8g/100g cozido), lentilha (9g/100g cozida) e grão-de-bico, tofu (8g/100g), tempeh (19g/100g), quinoa (4g/100g cozida) e a combinação de arroz com feijão, que forma uma proteína completa com todos os aminoácidos essenciais."
+  },
+  {
+    "question": "Quais são os melhores alimentos para aumentar massa muscular?",
+    "expected_answer": "Para ganho de massa muscular, priorize alimentos ricos em proteína completa: frango, carne bovina magra, peixe, ovos, laticínios com baixo teor de gordura e whey protein. Combine com carboidratos complexos para energia e recuperação: arroz, batata-doce, aveia e massas integrais. Não esqueça das gorduras saudáveis do abacate, azeite e oleaginosas. O superávit calórico moderado de 300 a 500 kcal acima do gasto combinado com treino de resistência é fundamental."
+  },
+  {
+    "question": "O que é uma dieta balanceada e como montá-la?",
+    "expected_answer": "Uma dieta balanceada distribui os macronutrientes adequadamente: carboidratos (50 a 60% das calorias), proteínas (15 a 25%) e gorduras (20 a 30%), além de vitaminas, minerais, fibras e água. Para montar um prato equilibrado, use o método do prato saudável: metade com vegetais e folhas variadas, um quarto com proteína magra (frango, peixe, ovos, leguminosas) e um quarto com carboidratos complexos (arroz integral, batata-doce, mandioca). Inclua gorduras boas em pequenas quantidades e varie os alimentos para garantir todos os micronutrientes."
+  }
+]

@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional, Tuple
+from sqlalchemy import text as sa_text
 from sqlmodel import Session, select, or_, col
 from uuid import UUID
 import logging
@@ -157,7 +158,10 @@ def search_foods_by_embedding(
     logger.info(f"Generating embedding for query: '{query}'")
     query_embedding = generate_embedding(query)
 
-    # Busca por similaridade usando pgvector cosine_distance
+    # Busca candidatos por similaridade vetorial (maior janela para re-rank)
+    # Pedimos o dobro do limit para ter margem ao re-ranquear com o componente textual.
+    fetch_limit = limit * 2
+
     statement = select(
         Food,
         Food.embedding.cosine_distance(query_embedding).label("distance")
@@ -189,19 +193,41 @@ def search_foods_by_embedding(
                     )
                 )
 
-    # Ordena por similaridade (menor distance = maior similaridade)
-    statement = statement.order_by("distance").limit(limit)
+    statement = statement.order_by("distance").limit(fetch_limit)
+    candidates = session.exec(statement).all()
 
-    results = session.exec(statement).all()
+    if not candidates:
+        return []
 
-    # Converte distance (0-2) para similarity (0-1): similarity = 1 - distance
-    similar_foods = [(food, round(1 - distance, 4)) for food, distance in results]
+    # Busca léxica: similarity() do pg_trgm para cada candidato.
+    # Retorna um score 0-1 de sobreposição de trigramas entre a query e o nome.
+    food_ids = [food.id for food, _ in candidates]
+    trgm_rows = session.execute(
+        sa_text(
+            "SELECT id, similarity(name, :q) AS trgm "
+            "FROM food WHERE id = ANY(:ids)"
+        ),
+        {"q": query, "ids": food_ids},
+    ).fetchall()
+    trgm_by_id = {row.id: float(row.trgm) for row in trgm_rows}
+
+    # Score híbrido: 85% vetor + 15% texto
+    blended: List[tuple[Food, float]] = []
+    for food, distance in candidates:
+        vec_score = round(1 - distance, 4)
+        text_score = trgm_by_id.get(food.id, 0.0)
+        hybrid = round(0.85 * vec_score + 0.15 * text_score, 4)
+        blended.append((food, hybrid))
+
+    # Re-ordena pelo score híbrido e corta no limit original
+    blended.sort(key=lambda x: x[1], reverse=True)
+    similar_foods = blended[:limit]
 
     # Filtra por threshold de similaridade mínima
     if min_similarity > 0.0:
         similar_foods = [(food, score) for food, score in similar_foods if score >= min_similarity]
 
-    logger.info(f"Found {len(similar_foods)} foods similar to '{query}'")
+    logger.info(f"Found {len(similar_foods)} foods similar to '{query}' (hybrid search)")
     if similar_foods:
         logger.debug(f"Top match: {similar_foods[0][0].name} (score: {similar_foods[0][1]})")
 

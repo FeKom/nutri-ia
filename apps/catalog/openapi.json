@@ -526,6 +526,47 @@
         }
       }
     },
+    "/api/v1/eval/embeddings": {
+      "post": {
+        "tags": [
+          "eval"
+        ],
+        "summary": "Embed Openai Compat",
+        "operationId": "embed_openai_compat_api_v1_eval_embeddings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/foods/search": {
       "post": {
         "tags": [
@@ -618,7 +659,7 @@
           "foods"
         ],
         "summary": "Search Foods By Embedding",
-        "description": "Search for foods using semantic similarity (embedding-based search).\n\nThis endpoint generates an embedding for the search query and finds foods\nwith similar embeddings using cosine similarity (pgvector). More effective\nthan text-based search for complex descriptions like \"chicken in creamy sauce\".\n\n**How it works:**\n1. Generates embedding vector for your search query\n2. Compares against all food embeddings in database using cosine distance\n3. Returns top matches ordered by similarity score (0-1, higher is better)\n\n**Request Body:**\n- `query`: Search string in English (required)\n- `limit`: Maximum number of results (default: 10, max: 50)\n- `filters`: Optional filters (same as /search endpoint)\n\n**Response:**\n- `success`: Boolean indicating success\n- `reference_food`: Not used (null) - kept for API compatibility\n- `similar_foods`: Array of matching foods with similarity scores\n- `count`: Number of results found\n\n**Use Cases:**\n- Complex food descriptions: \"grilled chicken with herbs\"\n- Misspellings or variations: \"chiken\", \"pollo\"\n- Semantic matching: \"protein source\" finds chicken, beef, eggs\n- Cross-language: embeddings can match similar concepts\n\n**Example Request:**\n```json\n{\n    \"query\": \"chicken in creamy sauce\",\n    \"limit\": 5,\n    \"filters\": {\n        \"category\": \"protein\",\n        \"verified_only\": true\n    }\n}\n```\n\n**Example Response:**\n```json\n{\n    \"success\": true,\n    \"reference_food\": null,\n    \"similar_foods\": [\n        {\n            \"id\": \"uuid\",\n            \"name\": \"Chicken, creamy sauce\",\n            \"similarity_score\": 0.9234,\n            ...\n        }\n    ],\n    \"count\": 5\n}\n```",
+        "description": "Search for foods using hybrid semantic search (embedding + trigram).\n\nUses a two-stage approach:\n1. Fetches 2x candidates from pgvector cosine similarity\n2. Re-ranks using pg_trgm trigram overlap to boost exact name matches\nFinal score = 0.85 * vector_similarity + 0.15 * trigram_similarity\n\nAccepts queries in **Portuguese or English** \u2014 the database contains both\nUSDA (English) and TACO (Portuguese) data. No translation needed.\n\n**How it works:**\n1. Generates embedding vector for your search query\n2. Retrieves candidate foods by cosine distance (pgvector)\n3. Re-ranks candidates with pg_trgm to fix short-name token bias\n4. Returns top matches ordered by hybrid score (0-1, higher is better)\n\n**Request Body:**\n- `query`: Search string in Portuguese or English (required)\n- `limit`: Maximum number of results (default: 10, max: 50)\n- `filters`: Optional filters (same as /search endpoint)\n\n**Response:**\n- `success`: Boolean indicating success\n- `reference_food`: Not used (null) - kept for API compatibility\n- `similar_foods`: Array of matching foods with similarity scores\n- `count`: Number of results found\n\n**Use Cases:**\n- Portuguese queries: \"frango grelhado\", \"arroz integral\"\n- English queries: \"grilled chicken\", \"brown rice\"\n- Complex descriptions: \"frango ao molho cremoso\"\n- Semantic matching: \"fonte de prote\u00edna\" finds chicken, beef, eggs\n\n**Example Request:**\n```json\n{\n    \"query\": \"chicken in creamy sauce\",\n    \"limit\": 5,\n    \"filters\": {\n        \"category\": \"protein\",\n        \"verified_only\": true\n    }\n}\n```\n\n**Example Response:**\n```json\n{\n    \"success\": true,\n    \"reference_food\": null,\n    \"similar_foods\": [\n        {\n            \"id\": \"uuid\",\n            \"name\": \"Chicken, creamy sauce\",\n            \"similarity_score\": 0.9234,\n            ...\n        }\n    ],\n    \"count\": 5\n}\n```",
         "operationId": "search_foods_by_embedding_api_v1_foods_search_by_embedding_post",
         "requestBody": {
           "content": {
@@ -1388,7 +1429,7 @@
             "schema": {
               "type": "string",
               "format": "date",
-              "default": "2026-03-30",
+              "default": "2026-03-31",
               "title": "Target Date"
             }
           }
@@ -2043,7 +2084,7 @@
           "foods"
         ],
         "summary": "Search Foods By Embedding",
-        "description": "Search for foods using semantic similarity (embedding-based search).\n\nThis endpoint generates an embedding for the search query and finds foods\nwith similar embeddings using cosine similarity (pgvector). More effective\nthan text-based search for complex descriptions like \"chicken in creamy sauce\".\n\n**How it works:**\n1. Generates embedding vector for your search query\n2. Compares against all food embeddings in database using cosine distance\n3. Returns top matches ordered by similarity score (0-1, higher is better)\n\n**Request Body:**\n- `query`: Search string in English (required)\n- `limit`: Maximum number of results (default: 10, max: 50)\n- `filters`: Optional filters (same as /search endpoint)\n\n**Response:**\n- `success`: Boolean indicating success\n- `reference_food`: Not used (null) - kept for API compatibility\n- `similar_foods`: Array of matching foods with similarity scores\n- `count`: Number of results found\n\n**Use Cases:**\n- Complex food descriptions: \"grilled chicken with herbs\"\n- Misspellings or variations: \"chiken\", \"pollo\"\n- Semantic matching: \"protein source\" finds chicken, beef, eggs\n- Cross-language: embeddings can match similar concepts\n\n**Example Request:**\n```json\n{\n    \"query\": \"chicken in creamy sauce\",\n    \"limit\": 5,\n    \"filters\": {\n        \"category\": \"protein\",\n        \"verified_only\": true\n    }\n}\n```\n\n**Example Response:**\n```json\n{\n    \"success\": true,\n    \"reference_food\": null,\n    \"similar_foods\": [\n        {\n            \"id\": \"uuid\",\n            \"name\": \"Chicken, creamy sauce\",\n            \"similarity_score\": 0.9234,\n            ...\n        }\n    ],\n    \"count\": 5\n}\n```",
+        "description": "Search for foods using hybrid semantic search (embedding + trigram).\n\nUses a two-stage approach:\n1. Fetches 2x candidates from pgvector cosine similarity\n2. Re-ranks using pg_trgm trigram overlap to boost exact name matches\nFinal score = 0.85 * vector_similarity + 0.15 * trigram_similarity\n\nAccepts queries in **Portuguese or English** \u2014 the database contains both\nUSDA (English) and TACO (Portuguese) data. No translation needed.\n\n**How it works:**\n1. Generates embedding vector for your search query\n2. Retrieves candidate foods by cosine distance (pgvector)\n3. Re-ranks candidates with pg_trgm to fix short-name token bias\n4. Returns top matches ordered by hybrid score (0-1, higher is better)\n\n**Request Body:**\n- `query`: Search string in Portuguese or English (required)\n- `limit`: Maximum number of results (default: 10, max: 50)\n- `filters`: Optional filters (same as /search endpoint)\n\n**Response:**\n- `success`: Boolean indicating success\n- `reference_food`: Not used (null) - kept for API compatibility\n- `similar_foods`: Array of matching foods with similarity scores\n- `count`: Number of results found\n\n**Use Cases:**\n- Portuguese queries: \"frango grelhado\", \"arroz integral\"\n- English queries: \"grilled chicken\", \"brown rice\"\n- Complex descriptions: \"frango ao molho cremoso\"\n- Semantic matching: \"fonte de prote\u00edna\" finds chicken, beef, eggs\n\n**Example Request:**\n```json\n{\n    \"query\": \"chicken in creamy sauce\",\n    \"limit\": 5,\n    \"filters\": {\n        \"category\": \"protein\",\n        \"verified_only\": true\n    }\n}\n```\n\n**Example Response:**\n```json\n{\n    \"success\": true,\n    \"reference_food\": null,\n    \"similar_foods\": [\n        {\n            \"id\": \"uuid\",\n            \"name\": \"Chicken, creamy sauce\",\n            \"similarity_score\": 0.9234,\n            ...\n        }\n    ],\n    \"count\": 5\n}\n```",
         "operationId": "search_foods_by_embedding_api_foods_search_by_embedding_post",
         "requestBody": {
           "content": {
@@ -2813,7 +2854,7 @@
             "schema": {
               "type": "string",
               "format": "date",
-              "default": "2026-03-30",
+              "default": "2026-03-31",
               "title": "Target Date"
             }
           }
@@ -3599,6 +3640,54 @@
         ],
         "title": "DayStats",
         "description": "Statistics for a single day"
+      },
+      "EmbedRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "input": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Input"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "title": "EmbedRequest"
+      },
+      "EmbedResponse": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "list"
+          },
+          "data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "model"
+        ],
+        "title": "EmbedResponse"
       },
       "EvalExperimentCreate": {
         "properties": {

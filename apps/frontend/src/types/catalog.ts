@@ -215,6 +215,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/eval/embeddings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Embed Openai Compat */
+        post: operations["embed_openai_compat_api_v1_eval_embeddings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/foods/search": {
         parameters: {
             query?: never;
@@ -308,19 +325,24 @@ export interface paths {
         put?: never;
         /**
          * Search Foods By Embedding
-         * @description Search for foods using semantic similarity (embedding-based search).
+         * @description Search for foods using hybrid semantic search (embedding + trigram).
          *
-         *     This endpoint generates an embedding for the search query and finds foods
-         *     with similar embeddings using cosine similarity (pgvector). More effective
-         *     than text-based search for complex descriptions like "chicken in creamy sauce".
+         *     Uses a two-stage approach:
+         *     1. Fetches 2x candidates from pgvector cosine similarity
+         *     2. Re-ranks using pg_trgm trigram overlap to boost exact name matches
+         *     Final score = 0.85 * vector_similarity + 0.15 * trigram_similarity
+         *
+         *     Accepts queries in **Portuguese or English** — the database contains both
+         *     USDA (English) and TACO (Portuguese) data. No translation needed.
          *
          *     **How it works:**
          *     1. Generates embedding vector for your search query
-         *     2. Compares against all food embeddings in database using cosine distance
-         *     3. Returns top matches ordered by similarity score (0-1, higher is better)
+         *     2. Retrieves candidate foods by cosine distance (pgvector)
+         *     3. Re-ranks candidates with pg_trgm to fix short-name token bias
+         *     4. Returns top matches ordered by hybrid score (0-1, higher is better)
          *
          *     **Request Body:**
-         *     - `query`: Search string in English (required)
+         *     - `query`: Search string in Portuguese or English (required)
          *     - `limit`: Maximum number of results (default: 10, max: 50)
          *     - `filters`: Optional filters (same as /search endpoint)
          *
@@ -331,10 +353,10 @@ export interface paths {
          *     - `count`: Number of results found
          *
          *     **Use Cases:**
-         *     - Complex food descriptions: "grilled chicken with herbs"
-         *     - Misspellings or variations: "chiken", "pollo"
-         *     - Semantic matching: "protein source" finds chicken, beef, eggs
-         *     - Cross-language: embeddings can match similar concepts
+         *     - Portuguese queries: "frango grelhado", "arroz integral"
+         *     - English queries: "grilled chicken", "brown rice"
+         *     - Complex descriptions: "frango ao molho cremoso"
+         *     - Semantic matching: "fonte de proteína" finds chicken, beef, eggs
          *
          *     **Example Request:**
          *     ```json
@@ -1092,19 +1114,24 @@ export interface paths {
         put?: never;
         /**
          * Search Foods By Embedding
-         * @description Search for foods using semantic similarity (embedding-based search).
+         * @description Search for foods using hybrid semantic search (embedding + trigram).
          *
-         *     This endpoint generates an embedding for the search query and finds foods
-         *     with similar embeddings using cosine similarity (pgvector). More effective
-         *     than text-based search for complex descriptions like "chicken in creamy sauce".
+         *     Uses a two-stage approach:
+         *     1. Fetches 2x candidates from pgvector cosine similarity
+         *     2. Re-ranks using pg_trgm trigram overlap to boost exact name matches
+         *     Final score = 0.85 * vector_similarity + 0.15 * trigram_similarity
+         *
+         *     Accepts queries in **Portuguese or English** — the database contains both
+         *     USDA (English) and TACO (Portuguese) data. No translation needed.
          *
          *     **How it works:**
          *     1. Generates embedding vector for your search query
-         *     2. Compares against all food embeddings in database using cosine distance
-         *     3. Returns top matches ordered by similarity score (0-1, higher is better)
+         *     2. Retrieves candidate foods by cosine distance (pgvector)
+         *     3. Re-ranks candidates with pg_trgm to fix short-name token bias
+         *     4. Returns top matches ordered by hybrid score (0-1, higher is better)
          *
          *     **Request Body:**
-         *     - `query`: Search string in English (required)
+         *     - `query`: Search string in Portuguese or English (required)
          *     - `limit`: Maximum number of results (default: 10, max: 50)
          *     - `filters`: Optional filters (same as /search endpoint)
          *
@@ -1115,10 +1142,10 @@ export interface paths {
          *     - `count`: Number of results found
          *
          *     **Use Cases:**
-         *     - Complex food descriptions: "grilled chicken with herbs"
-         *     - Misspellings or variations: "chiken", "pollo"
-         *     - Semantic matching: "protein source" finds chicken, beef, eggs
-         *     - Cross-language: embeddings can match similar concepts
+         *     - Portuguese queries: "frango grelhado", "arroz integral"
+         *     - English queries: "grilled chicken", "brown rice"
+         *     - Complex descriptions: "frango ao molho cremoso"
+         *     - Semantic matching: "fonte de proteína" finds chicken, beef, eggs
          *
          *     **Example Request:**
          *     ```json
@@ -1913,6 +1940,27 @@ export interface components {
             target_calories: number | null;
             /** Target Protein G */
             target_protein_g: number | null;
+        };
+        /** EmbedRequest */
+        EmbedRequest: {
+            /** Model */
+            model: string;
+            /** Input */
+            input: string[];
+        };
+        /** EmbedResponse */
+        EmbedResponse: {
+            /**
+             * Object
+             * @default list
+             */
+            object: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            }[];
+            /** Model */
+            model: string;
         };
         /** EvalExperimentCreate */
         EvalExperimentCreate: {
@@ -3701,6 +3749,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvalResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    embed_openai_compat_api_v1_eval_embeddings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbedRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbedResponse"];
                 };
             };
             /** @description Validation Error */

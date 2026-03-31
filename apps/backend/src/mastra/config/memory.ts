@@ -50,7 +50,7 @@ export function createNutritionMemory() {
     embedder: embedderModel,
     options: {
       // 1️⃣ MESSAGE HISTORY: Últimas conversas (reduzido para evitar ultrapassar limite de tokens)
-      lastMessages: 5,
+      lastMessages: 10,
       semanticRecall: {
         topK: 5,
         messageRange: 3,
@@ -60,8 +60,12 @@ export function createNutritionMemory() {
         },
       },
 
-      // 3️⃣ WORKING MEMORY: Desabilitado - causava loops de updateWorkingMemory
-      // O perfil do usuário já é injetado via user-profile-loader como contexto fixo
+      // 3️⃣ WORKING MEMORY
+      // Was disabled because the agent looped calling updateWorkingMemory with no
+      // structure — it kept rewriting the same empty state every turn. Root cause:
+      // no template meant the agent had nothing concrete to fill in, so it kept
+      // trying. Fix: the structured markdown template below gives the agent clear
+      // sections to fill, which stops aimless updates. Re-enabled with template.
       workingMemory: {
         enabled: true,
         // Markdown chosen over JSON: the LLM updates this field in natural

@@ -142,19 +142,24 @@ async def search_foods_by_embedding(
     request: FoodSearchRequest, db: Session = Depends(get_db)
 ) -> SimilarFoodsResponse:
     """
-    Search for foods using semantic similarity (embedding-based search).
+    Search for foods using hybrid semantic search (embedding + trigram).
 
-    This endpoint generates an embedding for the search query and finds foods
-    with similar embeddings using cosine similarity (pgvector). More effective
-    than text-based search for complex descriptions like "chicken in creamy sauce".
+    Uses a two-stage approach:
+    1. Fetches 2x candidates from pgvector cosine similarity
+    2. Re-ranks using pg_trgm trigram overlap to boost exact name matches
+    Final score = 0.85 * vector_similarity + 0.15 * trigram_similarity
+
+    Accepts queries in **Portuguese or English** — the database contains both
+    USDA (English) and TACO (Portuguese) data. No translation needed.
 
     **How it works:**
     1. Generates embedding vector for your search query
-    2. Compares against all food embeddings in database using cosine distance
-    3. Returns top matches ordered by similarity score (0-1, higher is better)
+    2. Retrieves candidate foods by cosine distance (pgvector)
+    3. Re-ranks candidates with pg_trgm to fix short-name token bias
+    4. Returns top matches ordered by hybrid score (0-1, higher is better)
 
     **Request Body:**
-    - `query`: Search string in English (required)
+    - `query`: Search string in Portuguese or English (required)
     - `limit`: Maximum number of results (default: 10, max: 50)
     - `filters`: Optional filters (same as /search endpoint)
 
@@ -165,10 +170,10 @@ async def search_foods_by_embedding(
     - `count`: Number of results found
 
     **Use Cases:**
-    - Complex food descriptions: "grilled chicken with herbs"
-    - Misspellings or variations: "chiken", "pollo"
-    - Semantic matching: "protein source" finds chicken, beef, eggs
-    - Cross-language: embeddings can match similar concepts
+    - Portuguese queries: "frango grelhado", "arroz integral"
+    - English queries: "grilled chicken", "brown rice"
+    - Complex descriptions: "frango ao molho cremoso"
+    - Semantic matching: "fonte de proteína" finds chicken, beef, eggs
 
     **Example Request:**
     ```json

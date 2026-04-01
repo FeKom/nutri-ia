@@ -17,10 +17,11 @@
 
 import { Memory } from "@mastra/memory";
 import { LibSQLStore } from "@mastra/libsql";
-import { sharedStorage } from './storage';
+import { sharedStorage } from "./storage";
 // import { LibSQLVector } from "@mastra/libsql";
-// import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
-
+import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
+import { PgVector, PostgresStore } from "@mastra/pg";
+import { embedderModel } from "./embedder";
 /**
  * Cria instância de Memory otimizada para aplicação nutricional
  *
@@ -32,37 +33,74 @@ import { sharedStorage } from './storage';
  * atualizar @mastra/core para versão 1.x (atualmente em 0.24.9)
  */
 export function createNutritionMemory() {
-  // URLs do LibSQL (file-based)
-  const storageUrl = process.env.MASTRA_STORAGE_URL || "file:./nutrition-memory.db";
-  // const vectorUrl = process.env.MASTRA_VECTOR_URL || "file:./nutrition-vector.db";
-
   return new Memory({
     // 📦 Storage: LibSQL para message storage
-    storage: sharedStorage,
-
-    // 🔍 Vector store: LibSQL Vector para semantic search (comentado por enquanto)
-    // vector: new LibSQLVector({
-    //   connectionUrl: vectorUrl,
-    // }),
-
-    // 🧮 Embedding: Comentado por enquanto - adicione quando tiver OPENAI_API_KEY
-    // embedder: new ModelRouterEmbeddingModel("openai/text-embedding-3-small"),
-
+    storage: new PostgresStore({
+      id: "nutria-agent-storage",
+      database: process.env.POSTGRES_DB,
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSRGRESS_PASSWORD,
+    }),
+    vector: new PgVector({
+      id: "nutria-agent-vector",
+      database: process.env.POSTGRES_DB,
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSRGRESS_PASSWORD,
+    }),
+    embedder: embedderModel,
     options: {
       // 1️⃣ MESSAGE HISTORY: Últimas conversas (reduzido para evitar ultrapassar limite de tokens)
-      lastMessages: 5,
+      lastMessages: 10,
+      semanticRecall: {
+        topK: 5,
+        messageRange: 3,
+        scope: "resource",
+        indexConfig: {
+          type: "hnsw",
+        },
+      },
 
-      // 2️⃣ SEMANTIC RECALL: Desabilitado (requer embedder)
-      // semanticRecall: {
-      //   topK: 5,
-      //   messageRange: 2,
-      //   scope: "resource",
-      // },
-
-      // 3️⃣ WORKING MEMORY: Desabilitado - causava loops de updateWorkingMemory
-      // O perfil do usuário já é injetado via user-profile-loader como contexto fixo
+      // 3️⃣ WORKING MEMORY
+      // Was disabled because the agent looped calling updateWorkingMemory with no
+      // structure — it kept rewriting the same empty state every turn. Root cause:
+      // no template meant the agent had nothing concrete to fill in, so it kept
+      // trying. Fix: the structured markdown template below gives the agent clear
+      // sections to fill, which stops aimless updates. Re-enabled with template.
       workingMemory: {
-        enabled: false,
+        enabled: true,
+        // Markdown chosen over JSON: the LLM updates this field in natural
+        // language — markdown is forgiving on partial writes whereas a missing
+        // JSON comma silently corrupts the whole object.
+        //
+        // Rule: never duplicate what is already in the injected DB profile
+        // (name, weight, allergies, goals). Only capture what the agent
+        // LEARNS during conversation that isn't persisted anywhere else.
+        template: `# Session Context
+<!-- What the user is currently working on or discussing -->
+- Current focus:
+- Last meal plan discussed:
+- Pending action (if any):
+
+# Discovered Preferences
+<!-- Foods or meals the user mentioned liking or disliking beyond the DB profile -->
+- Likes:
+- Dislikes:
+- Preferred cuisines:
+- Preferred meal times:
+
+# Temporary Adjustments
+<!-- Short-term context that changes week to week (travel, illness, events) -->
+- Active adjustment:
+- Valid until:
+
+# Corrections & Clarifications
+<!-- If the user corrected the agent or clarified something about their profile -->
+- Note:
+
+# Nutrition Insights
+<!-- Patterns or observations the agent noticed across multiple messages -->
+- Observation:
+`,
       },
     },
 
@@ -100,17 +138,20 @@ export interface UserProfile {
  * Isso injeta os dados oficiais do banco como contexto fixo
  */
 export function userProfileToContext(profile: UserProfile) {
-  const allergiesText = profile.allergies.length > 0
-    ? profile.allergies.join(", ")
-    : "Nenhuma alergia registrada";
+  const allergiesText =
+    profile.allergies.length > 0
+      ? profile.allergies.join(", ")
+      : "Nenhuma alergia registrada";
 
-  const restrictionsText = profile.restrictions.length > 0
-    ? profile.restrictions.join(", ")
-    : "Nenhuma restrição alimentar";
+  const restrictionsText =
+    profile.restrictions.length > 0
+      ? profile.restrictions.join(", ")
+      : "Nenhuma restrição alimentar";
 
-  const dislikesText = profile.dislikes.length > 0
-    ? profile.dislikes.join(", ")
-    : "Nenhum alimento especificado";
+  const dislikesText =
+    profile.dislikes.length > 0
+      ? profile.dislikes.join(", ")
+      : "Nenhum alimento especificado";
 
   const goalText = {
     weight_loss: "Perda de peso",

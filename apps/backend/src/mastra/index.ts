@@ -14,6 +14,7 @@ import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
 import { asyncContext } from "../lib/async-context";
 import { getUserProfileFromDB } from "./utils/user-profile-loader";
 import { userProfileToContext } from "../mastra/config/memory";
+import { getDailySummary } from "./clients/catalog-client";
 import { sharedStorage } from "./config/storage";
 import { getObservabilityConfig } from "./config/observabilityOptions";
 import { validateEnv, env } from "./config/env";
@@ -90,6 +91,30 @@ export const mastra = new Mastra({
             if (userProfile) {
               contextMessages.push(userProfileToContext(userProfile));
               logger.info({ userId }, "[Chat] user profile loaded");
+
+              // Injeta progresso do dia para que o agente dê conselhos contextualizados
+              try {
+                const today = new Date().toISOString().split("T")[0];
+                const daily = await getDailySummary(userId, today, undefined, token);
+                const { totals, targets, num_meals } = daily;
+                const calPct = targets.calories > 0
+                  ? Math.round((totals.calories / targets.calories) * 100)
+                  : 0;
+                contextMessages.push({
+                  role: "system" as const,
+                  content:
+                    `PROGRESSO DE HOJE (${today}): ` +
+                    `${Math.round(totals.calories)}/${Math.round(targets.calories)} kcal (${calPct}%) · ` +
+                    `Proteína ${Math.round(totals.protein_g)}g/${Math.round(targets.protein_g)}g · ` +
+                    `Carbos ${Math.round(totals.carbs_g)}g/${Math.round(targets.carbs_g)}g · ` +
+                    `Gordura ${Math.round(totals.fat_g)}g/${Math.round(targets.fat_g)}g · ` +
+                    `${num_meals} refeição(ões) registrada(s).`,
+                });
+                logger.info({ userId, num_meals, calPct }, "[Chat] daily progress injected");
+              } catch {
+                // Catalog pode estar indisponível ou usuário sem registros — não bloqueia o chat
+                logger.warn({ userId }, "[Chat] could not fetch daily progress, skipping");
+              }
             } else {
               logger.warn({ userId }, "[Chat] user has no profile — continuing without personalisation");
               contextMessages.push({

@@ -75,6 +75,10 @@ export default function OnboardingPage() {
     s.split(',').map((x) => x.trim()).filter(Boolean);
 
   const handleSubmit = async () => {
+    if (!age) {
+      setError('Por favor, informe sua idade.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -82,8 +86,9 @@ export default function OnboardingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          user_id: session?.user?.id,
           name: name || session?.user?.name,
-          age: age ? parseInt(age) : undefined,
+          age: parseInt(age),
           weight_kg: weight ? parseFloat(weight) : undefined,
           height_cm: height ? parseFloat(height) : undefined,
           gender,
@@ -240,12 +245,12 @@ export default function OnboardingPage() {
                 <Label>Alimentos que nao gosta</Label>
                 <Input value={dislikes} onChange={(e) => setDislikes(e.target.value)} placeholder="brocolis, figado..." className="mt-1.5" />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
           )}
 
           {/* Navigation */}
-          <div className="flex gap-3 mt-8">
+          {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
+          <div className="flex gap-3 mt-4">
             {step > 0 && (
               <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1 rounded-xl">
                 <ArrowLeft className="w-4 h-4 mr-2" />

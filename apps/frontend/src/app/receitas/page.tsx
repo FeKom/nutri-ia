@@ -9,6 +9,7 @@ import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   UtensilsCrossed,
   Clock,
@@ -20,6 +21,7 @@ import {
   Droplets,
   X,
   Sparkles,
+  Plus,
 } from 'lucide-react';
 
 interface Recipe {
@@ -67,6 +69,21 @@ export default function ReceitasPage() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loadingRecipes, setLoadingRecipes] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Create form state
+  const [newName, setNewName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState<Recipe['category']>('almoco');
+  const [newDifficulty, setNewDifficulty] = useState<Recipe['difficulty']>('facil');
+  const [newPrepTime, setNewPrepTime] = useState('');
+  const [newCalories, setNewCalories] = useState('');
+  const [newProtein, setNewProtein] = useState('');
+  const [newCarbs, setNewCarbs] = useState('');
+  const [newFat, setNewFat] = useState('');
+  const [newIngredients, setNewIngredients] = useState('');
+  const [newInstructions, setNewInstructions] = useState('');
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -87,6 +104,40 @@ export default function ReceitasPage() {
       .catch(() => setRecipes([]))
       .finally(() => setLoadingRecipes(false));
   }, [session]);
+
+  const handleCreateRecipe = async () => {
+    if (!newName || !newPrepTime || !newCalories) return;
+    setSaving(true);
+    try {
+      const res = await authFetch('/api/recipes/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName,
+          description: newDescription,
+          category: newCategory,
+          difficulty: newDifficulty,
+          prep_time_minutes: parseInt(newPrepTime),
+          calories: parseInt(newCalories),
+          protein_g: parseFloat(newProtein) || 0,
+          carbs_g: parseFloat(newCarbs) || 0,
+          fat_g: parseFloat(newFat) || 0,
+          ingredients: newIngredients.split('\n').map((s) => s.trim()).filter(Boolean),
+          instructions: newInstructions || undefined,
+        }),
+      });
+      if (res.ok) {
+        const created: Recipe = await res.json();
+        setRecipes((prev) => [created, ...prev]);
+        setShowCreateForm(false);
+        setNewName(''); setNewDescription(''); setNewPrepTime('');
+        setNewCalories(''); setNewProtein(''); setNewCarbs('');
+        setNewFat(''); setNewIngredients(''); setNewInstructions('');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const filtered = recipes.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
@@ -118,7 +169,19 @@ export default function ReceitasPage() {
 
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-6xl mx-auto">
-            {/* Search + filters */}
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-6 animate-slide-up">
+              <div />
+              <Button
+                onClick={() => setShowCreateForm(true)}
+                className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Receita
+              </Button>
+            </div>
+
+          {/* Search + filters */}
             <div className="mb-8 animate-slide-up">
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-nutria-bordo/30" />
@@ -321,6 +384,100 @@ export default function ReceitasPage() {
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Pedir receita detalhada com IA
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Create recipe modal */}
+      {showCreateForm && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fade-in"
+          onClick={() => setShowCreateForm(false)}
+        >
+          <Card
+            className="max-w-lg w-full p-0 overflow-hidden shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-nutria-creme-dark">
+              <h2 className="heading-serif text-xl text-nutria-bordo">Nova Receita</h2>
+              <button onClick={() => setShowCreateForm(false)} className="p-2 rounded-xl hover:bg-nutria-creme-dark">
+                <X className="w-5 h-5 text-nutria-bordo/40" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <Label>Nome *</Label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ex: Frango grelhado com batata doce" className="mt-1" />
+              </div>
+              <div>
+                <Label>Descricao</Label>
+                <Input value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Descricao breve..." className="mt-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Categoria</Label>
+                  <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as Recipe['category'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo">
+                    <option value="cafe-da-manha">Cafe da Manha</option>
+                    <option value="almoco">Almoco</option>
+                    <option value="jantar">Jantar</option>
+                    <option value="lanche">Lanche</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Dificuldade</Label>
+                  <select value={newDifficulty} onChange={(e) => setNewDifficulty(e.target.value as Recipe['difficulty'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo">
+                    <option value="facil">Facil</option>
+                    <option value="medio">Medio</option>
+                    <option value="dificil">Dificil</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tempo de preparo (min) *</Label>
+                  <Input type="number" value={newPrepTime} onChange={(e) => setNewPrepTime(e.target.value)} placeholder="30" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Calorias *</Label>
+                  <Input type="number" value={newCalories} onChange={(e) => setNewCalories(e.target.value)} placeholder="450" className="mt-1" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Proteina (g)</Label>
+                  <Input type="number" value={newProtein} onChange={(e) => setNewProtein(e.target.value)} placeholder="35" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Carbos (g)</Label>
+                  <Input type="number" value={newCarbs} onChange={(e) => setNewCarbs(e.target.value)} placeholder="40" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Gordura (g)</Label>
+                  <Input type="number" value={newFat} onChange={(e) => setNewFat(e.target.value)} placeholder="12" className="mt-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Ingredientes (um por linha)</Label>
+                <textarea
+                  value={newIngredients}
+                  onChange={(e) => setNewIngredients(e.target.value)}
+                  placeholder={"200g peito de frango\n150g batata doce\nAzeite a gosto"}
+                  rows={4}
+                  className="mt-1 w-full px-3 py-2 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo resize-none focus:outline-none focus:border-nutria-verde"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 pt-0">
+              <Button
+                onClick={handleCreateRecipe}
+                disabled={saving || !newName || !newPrepTime || !newCalories}
+                className="w-full bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+              >
+                {saving ? 'Salvando...' : 'Salvar Receita'}
               </Button>
             </div>
           </Card>

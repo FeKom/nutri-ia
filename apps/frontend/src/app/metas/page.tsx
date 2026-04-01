@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
@@ -69,6 +70,7 @@ function getProgressColor(pct: number): string {
 export default function MetasPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const authFetch = useAuthFetch();
   const [metas, setMetas] = useState<Meta[]>(initialMetas);
   const [showForm, setShowForm] = useState(false);
 
@@ -87,11 +89,18 @@ export default function MetasPage() {
     }
   }, [session, isPending, router]);
 
-  const handleAdd = () => {
+  useEffect(() => {
+    if (!session) return;
+    authFetch('/api/goals')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: Meta[]) => setMetas(data))
+      .catch(() => {});
+  }, [session]);
+
+  const handleAdd = async () => {
     if (!formTitle || !formTarget || !formCurrent || !formUnit) return;
 
-    const newMeta: Meta = {
-      id: crypto.randomUUID(),
+    const body = {
       title: formTitle,
       description: formDescription || undefined,
       target_value: parseFloat(formTarget),
@@ -99,10 +108,18 @@ export default function MetasPage() {
       unit: formUnit,
       category: formCategory,
       deadline: formDeadline || undefined,
-      created_at: new Date().toISOString().slice(0, 10),
     };
 
-    setMetas((prev) => [newMeta, ...prev]);
+    const res = await authFetch('/api/goals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      const newMeta: Meta = await res.json();
+      setMetas((prev) => [newMeta, ...prev]);
+    }
     resetForm();
   };
 
@@ -117,8 +134,11 @@ export default function MetasPage() {
     setFormDeadline('');
   };
 
-  const handleDelete = (id: string) => {
-    setMetas((prev) => prev.filter((m) => m.id !== id));
+  const handleDelete = async (id: string) => {
+    const res = await authFetch(`/api/goals/${id}`, { method: 'DELETE' });
+    if (res.ok || res.status === 204) {
+      setMetas((prev) => prev.filter((m) => m.id !== id));
+    }
   };
 
   // Stats

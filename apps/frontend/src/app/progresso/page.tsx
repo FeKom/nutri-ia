@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
@@ -13,10 +14,7 @@ import {
   Beef,
   Activity,
   ArrowDown,
-  ArrowUp,
   Utensils,
-  Footprints,
-  Dumbbell,
   Clock,
   Wheat,
   Droplets,
@@ -34,33 +32,50 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
   );
 }
 
-const weightData = [
-  { day: 'Seg', weight: 73.1 },
-  { day: 'Ter', weight: 72.8 },
-  { day: 'Qua', weight: 72.9 },
-  { day: 'Qui', weight: 72.5 },
-  { day: 'Sex', weight: 72.3 },
-  { day: 'Sab', weight: 72.6 },
-  { day: 'Dom', weight: 72.5 },
-];
+interface DayStats {
+  date: string;
+  total_calories: number;
+  total_protein_g: number;
+  total_carbs_g: number;
+  total_fat_g: number;
+  num_meals: number;
+  target_calories?: number;
+  target_protein_g?: number;
+}
 
-const recentEntries = [
-  { icon: Utensils, label: 'Almoco registrado', detail: '650 kcal', time: '2h atras', color: 'text-nutria-laranja', bg: 'bg-nutria-laranja/10' },
-  { icon: Footprints, label: 'Caminhada', detail: '30min - 180 kcal', time: '5h atras', color: 'text-nutria-verde', bg: 'bg-nutria-verde/10' },
-  { icon: Utensils, label: 'Cafe da manha', detail: '420 kcal', time: '8h atras', color: 'text-nutria-laranja', bg: 'bg-nutria-laranja/10' },
-  { icon: Dumbbell, label: 'Musculacao', detail: '45min - 320 kcal', time: 'Ontem', color: 'text-nutria-bordo', bg: 'bg-nutria-bordo/10' },
-  { icon: Utensils, label: 'Jantar registrado', detail: '580 kcal', time: 'Ontem', color: 'text-nutria-laranja', bg: 'bg-nutria-laranja/10' },
-];
+interface DailySummary {
+  totals: { calories: number; protein_g: number; carbs_g: number; fat_g: number };
+  targets: { calories: number; protein_g: number; carbs_g: number; fat_g: number };
+  num_meals: number;
+  meals: Array<{ meal_name: string; meal_time: string; total_calories: number }>;
+}
+
+const DAY_LABELS: Record<number, string> = { 0: 'Dom', 1: 'Seg', 2: 'Ter', 3: 'Qua', 4: 'Qui', 5: 'Sex', 6: 'Sab' };
 
 export default function ProgressoPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const authFetch = useAuthFetch();
+  const [daily, setDaily] = useState<DailySummary | null>(null);
+  const [weeklyStats, setWeeklyStats] = useState<DayStats[]>([]);
 
   useEffect(() => {
     if (!isPending && !session) {
       router.push('/login');
     }
   }, [session, isPending, router]);
+
+  useEffect(() => {
+    if (!session) return;
+    authFetch('/api/tracking/daily')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setDaily(data); })
+      .catch(() => {});
+    authFetch('/api/tracking/weekly')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.stats) setWeeklyStats(data.stats); })
+      .catch(() => {});
+  }, [session]);
 
   if (isPending) {
     return (
@@ -77,9 +92,23 @@ export default function ProgressoPage() {
 
   if (!session) return null;
 
-  const minWeight = Math.min(...weightData.map((d) => d.weight));
-  const maxWeight = Math.max(...weightData.map((d) => d.weight));
-  const weightRange = maxWeight - minWeight || 1;
+  const calories = Math.round(daily?.totals.calories ?? 0);
+  const calTarget = Math.round(daily?.targets.calories ?? 2000);
+  const protein = Math.round(daily?.totals.protein_g ?? 0);
+  const proteinTarget = Math.round(daily?.targets.protein_g ?? 100);
+  const carbs = Math.round(daily?.totals.carbs_g ?? 0);
+  const carbsTarget = Math.round(daily?.targets.carbs_g ?? 250);
+  const fat = Math.round(daily?.totals.fat_g ?? 0);
+  const fatTarget = Math.round(daily?.targets.fat_g ?? 70);
+
+  const chartData = weeklyStats.map((d) => ({
+    day: DAY_LABELS[new Date(d.date + 'T12:00:00').getDay()] ?? d.date.slice(5),
+    calories: Math.round(d.total_calories),
+    target: d.target_calories ? Math.round(d.target_calories) : calTarget,
+  }));
+  const minCal = chartData.length ? Math.min(...chartData.map((d) => d.calories)) : 0;
+  const maxCal = chartData.length ? Math.max(...chartData.map((d) => d.calories)) : 1;
+  const calRange = maxCal - minCal || 1;
 
   return (
     <div className="flex h-screen bg-nutria-creme">
@@ -92,19 +121,16 @@ export default function ProgressoPage() {
           <div className="max-w-6xl mx-auto space-y-6">
             {/* Overview stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up">
-              {/* Peso */}
+              {/* Refeicoes hoje */}
               <Card className="p-5 bg-gradient-to-br from-nutria-verde/10 to-nutria-verde/5 border-transparent">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-xl bg-nutria-verde/20 flex items-center justify-center">
-                    <Scale className="w-4 h-4 text-nutria-verde" />
+                    <Utensils className="w-4 h-4 text-nutria-verde" />
                   </div>
-                  <span className="flex items-center gap-1 text-xs font-medium text-nutria-verde">
-                    <ArrowDown className="w-3 h-3" />
-                    -1.2 kg
-                  </span>
+                  <span className="text-xs text-nutria-bordo/40">hoje</span>
                 </div>
-                <p className="text-2xl font-bold text-nutria-bordo">72.5 kg</p>
-                <p className="text-xs text-nutria-bordo/50 mt-0.5">Peso atual</p>
+                <p className="text-2xl font-bold text-nutria-bordo">{daily?.num_meals ?? 0}</p>
+                <p className="text-xs text-nutria-bordo/50 mt-0.5">Refeicoes registradas</p>
               </Card>
 
               {/* Calorias */}
@@ -113,12 +139,12 @@ export default function ProgressoPage() {
                   <div className="w-9 h-9 rounded-xl bg-nutria-laranja/20 flex items-center justify-center">
                     <Flame className="w-4 h-4 text-nutria-laranja" />
                   </div>
-                  <span className="text-xs text-nutria-bordo/40">/ 2.200</span>
+                  <span className="text-xs text-nutria-bordo/40">/ {calTarget}</span>
                 </div>
-                <p className="text-2xl font-bold text-nutria-bordo">1.850</p>
+                <p className="text-2xl font-bold text-nutria-bordo">{calories}</p>
                 <p className="text-xs text-nutria-bordo/50 mt-0.5">kcal hoje</p>
                 <div className="mt-3">
-                  <ProgressBar value={1850} max={2200} color="bg-nutria-laranja" />
+                  <ProgressBar value={calories} max={calTarget} color="bg-nutria-laranja" />
                 </div>
               </Card>
 
@@ -128,56 +154,64 @@ export default function ProgressoPage() {
                   <div className="w-9 h-9 rounded-xl bg-nutria-vermelho/20 flex items-center justify-center">
                     <Beef className="w-4 h-4 text-nutria-vermelho" />
                   </div>
-                  <span className="text-xs text-nutria-bordo/40">/ 120g</span>
+                  <span className="text-xs text-nutria-bordo/40">/ {proteinTarget}g</span>
                 </div>
-                <p className="text-2xl font-bold text-nutria-bordo">95g</p>
+                <p className="text-2xl font-bold text-nutria-bordo">{protein}g</p>
                 <p className="text-xs text-nutria-bordo/50 mt-0.5">Proteina hoje</p>
                 <div className="mt-3">
-                  <ProgressBar value={95} max={120} color="bg-nutria-vermelho" />
+                  <ProgressBar value={protein} max={proteinTarget} color="bg-nutria-vermelho" />
                 </div>
               </Card>
 
-              {/* Atividades */}
+              {/* Atividades semana */}
               <Card className="p-5 bg-gradient-to-br from-nutria-bordo/10 to-nutria-bordo/5 border-transparent">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-9 h-9 rounded-xl bg-nutria-bordo/20 flex items-center justify-center">
                     <Activity className="w-4 h-4 text-nutria-bordo" />
                   </div>
-                  <span className="text-xs text-nutria-bordo/40">/ 5</span>
+                  <span className="text-xs text-nutria-bordo/40">7 dias</span>
                 </div>
-                <p className="text-2xl font-bold text-nutria-bordo">4</p>
-                <p className="text-xs text-nutria-bordo/50 mt-0.5">Atividades semana</p>
+                <p className="text-2xl font-bold text-nutria-bordo">
+                  {weeklyStats.filter((d) => d.num_meals > 0).length}
+                </p>
+                <p className="text-xs text-nutria-bordo/50 mt-0.5">Dias com registro</p>
                 <div className="mt-3">
-                  <ProgressBar value={4} max={5} color="bg-nutria-bordo" />
+                  <ProgressBar value={weeklyStats.filter((d) => d.num_meals > 0).length} max={7} color="bg-nutria-bordo" />
                 </div>
               </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Weight chart */}
+              {/* Calorie chart */}
               <Card className="p-6 animate-slide-up stagger-2 opacity-0">
-                <h3 className="heading-serif text-lg text-nutria-bordo mb-6">Peso Semanal</h3>
+                <h3 className="heading-serif text-lg text-nutria-bordo mb-6">Calorias Semanal</h3>
 
-                <div className="flex items-end justify-between gap-3 h-48">
-                  {weightData.map((d, i) => {
-                    const heightPct = ((d.weight - minWeight) / weightRange) * 60 + 40;
-                    const isLowest = d.weight === minWeight;
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                        <span className={`text-xs font-medium ${isLowest ? 'text-nutria-verde' : 'text-nutria-bordo/50'}`}>
-                          {d.weight}
-                        </span>
-                        <div
-                          className={`w-full rounded-t-lg transition-all duration-500 ${
-                            isLowest ? 'bg-nutria-verde' : 'bg-nutria-verde/30'
-                          }`}
-                          style={{ height: `${heightPct}%` }}
-                        />
-                        <span className="text-[11px] text-nutria-bordo/40">{d.day}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                {chartData.length === 0 ? (
+                  <div className="flex items-center justify-center h-48 text-sm text-nutria-bordo/40">
+                    Nenhum dado registrado esta semana
+                  </div>
+                ) : (
+                  <div className="flex items-end justify-between gap-3 h-48">
+                    {chartData.map((d, i) => {
+                      const heightPct = ((d.calories - minCal) / calRange) * 60 + 40;
+                      const isHighest = d.calories === maxCal;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                          <span className={`text-xs font-medium ${isHighest ? 'text-nutria-laranja' : 'text-nutria-bordo/50'}`}>
+                            {d.calories}
+                          </span>
+                          <div
+                            className={`w-full rounded-t-lg transition-all duration-500 ${
+                              isHighest ? 'bg-nutria-laranja' : 'bg-nutria-laranja/30'
+                            }`}
+                            style={{ height: `${heightPct}%` }}
+                          />
+                          <span className="text-[11px] text-nutria-bordo/40">{d.day}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Card>
 
               {/* Macros today */}
@@ -191,9 +225,9 @@ export default function ProgressoPage() {
                         <Beef className="w-4 h-4 text-nutria-vermelho" />
                         <span className="text-sm font-medium text-nutria-bordo">Proteina</span>
                       </div>
-                      <span className="text-sm text-nutria-bordo/60">95 / 120g</span>
+                      <span className="text-sm text-nutria-bordo/60">{protein} / {proteinTarget}g</span>
                     </div>
-                    <ProgressBar value={95} max={120} color="bg-nutria-vermelho" />
+                    <ProgressBar value={protein} max={proteinTarget} color="bg-nutria-vermelho" />
                   </div>
 
                   <div>
@@ -202,9 +236,9 @@ export default function ProgressoPage() {
                         <Wheat className="w-4 h-4 text-nutria-laranja" />
                         <span className="text-sm font-medium text-nutria-bordo">Carboidratos</span>
                       </div>
-                      <span className="text-sm text-nutria-bordo/60">210 / 250g</span>
+                      <span className="text-sm text-nutria-bordo/60">{carbs} / {carbsTarget}g</span>
                     </div>
-                    <ProgressBar value={210} max={250} color="bg-nutria-laranja" />
+                    <ProgressBar value={carbs} max={carbsTarget} color="bg-nutria-laranja" />
                   </div>
 
                   <div>
@@ -213,9 +247,9 @@ export default function ProgressoPage() {
                         <Droplets className="w-4 h-4 text-nutria-verde" />
                         <span className="text-sm font-medium text-nutria-bordo">Gordura</span>
                       </div>
-                      <span className="text-sm text-nutria-bordo/60">55 / 70g</span>
+                      <span className="text-sm text-nutria-bordo/60">{fat} / {fatTarget}g</span>
                     </div>
-                    <ProgressBar value={55} max={70} color="bg-nutria-verde" />
+                    <ProgressBar value={fat} max={fatTarget} color="bg-nutria-verde" />
                   </div>
                 </div>
               </Card>
@@ -223,28 +257,29 @@ export default function ProgressoPage() {
 
             {/* Recent history */}
             <Card className="p-6 animate-slide-up stagger-4 opacity-0">
-              <h3 className="heading-serif text-lg text-nutria-bordo mb-5">Historico Recente</h3>
+              <h3 className="heading-serif text-lg text-nutria-bordo mb-5">Refeicoes de Hoje</h3>
 
-              <div className="space-y-0 divide-y divide-nutria-creme-dark">
-                {recentEntries.map((entry, i) => {
-                  const Icon = entry.icon;
-                  return (
+              {!daily || daily.meals.length === 0 ? (
+                <p className="text-sm text-nutria-bordo/40 py-4 text-center">Nenhuma refeicao registrada hoje</p>
+              ) : (
+                <div className="space-y-0 divide-y divide-nutria-creme-dark">
+                  {daily.meals.map((meal, i) => (
                     <div key={i} className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0">
-                      <div className={`w-9 h-9 rounded-xl ${entry.bg} flex items-center justify-center shrink-0`}>
-                        <Icon className={`w-4 h-4 ${entry.color}`} />
+                      <div className="w-9 h-9 rounded-xl bg-nutria-laranja/10 flex items-center justify-center shrink-0">
+                        <Utensils className="w-4 h-4 text-nutria-laranja" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-nutria-bordo">{entry.label}</p>
-                        <p className="text-xs text-nutria-bordo/50">{entry.detail}</p>
+                        <p className="text-sm font-medium text-nutria-bordo">{meal.meal_name}</p>
+                        <p className="text-xs text-nutria-bordo/50">{Math.round(meal.total_calories)} kcal</p>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-nutria-bordo/40 shrink-0">
                         <Clock className="w-3 h-3" />
-                        {entry.time}
+                        {meal.meal_time}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
         </div>

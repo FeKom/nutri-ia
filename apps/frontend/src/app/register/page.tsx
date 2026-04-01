@@ -62,7 +62,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex bg-nutria-creme grain">
       {/* Lado esquerdo -- Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-nutria-bordo to-nutria-vermelho relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-nutria-verde to-nutria-verde-light relative overflow-hidden">
         {/* Elementos decorativos */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-32 right-20 w-72 h-72 rounded-full border-2 border-white" />

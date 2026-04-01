@@ -26,7 +26,7 @@ dev:
 		echo "⚠️  IMPORTANTE: Configure as variáveis em .env antes de continuar!"; \
 		exit 1; \
 	fi
-	docker-compose up -d
+	docker compose up -d
 	@echo ""
 	@echo "✅ Serviços disponíveis:"
 	@echo "   Frontend:  http://localhost:3000"
@@ -38,38 +38,38 @@ dev:
 
 build:
 	@echo "🔨 Rebuilding imagens..."
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 stop:
 	@echo "🛑 Parando serviços..."
-	docker-compose down
+	docker compose down
 
 restart: stop dev
 
 logs:
-	docker-compose logs --tail=100
+	docker compose logs --tail=100
 
 logs-f:
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-frontend:
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 logs-backend:
-	docker-compose logs -f backend
+	docker compose logs -f backend
 
 logs-catalog:
-	docker-compose logs -f catalog
+	docker compose logs -f catalog
 
 logs-postgres:
-	docker-compose logs -f postgres
+	docker compose logs -f postgres
 
 clean:
 	@echo "🧹 Limpando containers, volumes e imagens..."
 	@read -p "⚠️  Isso vai deletar todos os dados do banco. Continuar? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose down -v --rmi local; \
+		docker compose down -v --rmi local; \
 		rm -rf apps/frontend/node_modules apps/backend/node_modules; \
 		rm -rf apps/frontend/.next apps/backend/dist apps/backend/.mastra; \
 		echo "✅ Limpeza completa!"; \
@@ -78,4 +78,4 @@ clean:
 	fi
 
 ps:
-	@docker-compose ps
+	@docker compose ps

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
@@ -26,7 +27,7 @@ interface Recipe {
   name: string;
   description: string;
   category: 'cafe-da-manha' | 'almoco' | 'jantar' | 'lanche';
-  prepTime: number;
+  prep_time_minutes: number;
   difficulty: 'facil' | 'medio' | 'dificil';
   calories: number;
   protein_g: number;
@@ -48,86 +49,6 @@ const difficultyLabels: Record<string, string> = {
   dificil: 'Dificil',
 };
 
-const mockRecipes: Recipe[] = [
-  {
-    id: '1',
-    name: 'Bowl de Acai Proteico',
-    description: 'Bowl de acai com whey protein, banana, granola e frutas vermelhas. Rico em antioxidantes e proteina.',
-    category: 'cafe-da-manha',
-    prepTime: 10,
-    difficulty: 'facil',
-    calories: 420,
-    protein_g: 28,
-    carbs_g: 52,
-    fat_g: 12,
-    ingredients: ['200g polpa de acai', '1 scoop whey protein', '1 banana', '30g granola', '50g frutas vermelhas', 'Mel a gosto'],
-  },
-  {
-    id: '2',
-    name: 'Frango Grelhado com Batata Doce',
-    description: 'Peito de frango grelhado com batata doce assada e salada verde. Classico do ganho de massa.',
-    category: 'almoco',
-    prepTime: 35,
-    difficulty: 'facil',
-    calories: 520,
-    protein_g: 42,
-    carbs_g: 48,
-    fat_g: 14,
-    ingredients: ['200g peito de frango', '150g batata doce', 'Azeite de oliva', 'Sal e pimenta', 'Mix de folhas verdes', 'Tomate cereja'],
-  },
-  {
-    id: '3',
-    name: 'Salmao com Legumes Assados',
-    description: 'File de salmao assado com abobrinha, berinjela e pimentao. Rico em omega 3.',
-    category: 'jantar',
-    prepTime: 40,
-    difficulty: 'medio',
-    calories: 480,
-    protein_g: 38,
-    carbs_g: 22,
-    fat_g: 28,
-    ingredients: ['180g file de salmao', '1 abobrinha', '1/2 berinjela', '1 pimentao', 'Azeite', 'Ervas finas', 'Limao'],
-  },
-  {
-    id: '4',
-    name: 'Wrap Integral de Atum',
-    description: 'Wrap integral recheado com atum, cream cheese light, rucula e tomate. Rapido e pratico.',
-    category: 'lanche',
-    prepTime: 10,
-    difficulty: 'facil',
-    calories: 320,
-    protein_g: 24,
-    carbs_g: 30,
-    fat_g: 12,
-    ingredients: ['1 tortilha integral', '1 lata de atum', '2 col cream cheese light', 'Rucula', 'Tomate', 'Sal e pimenta'],
-  },
-  {
-    id: '5',
-    name: 'Omelete de Espinafre e Queijo',
-    description: 'Omelete leve com espinafre refogado e queijo cottage. Perfeito para um cafe da manha proteico.',
-    category: 'cafe-da-manha',
-    prepTime: 15,
-    difficulty: 'facil',
-    calories: 280,
-    protein_g: 22,
-    carbs_g: 4,
-    fat_g: 20,
-    ingredients: ['3 ovos', '1 xicara espinafre', '50g queijo cottage', 'Sal e pimenta', 'Azeite'],
-  },
-  {
-    id: '6',
-    name: 'Risoto de Cogumelos e Frango',
-    description: 'Risoto cremoso com cogumelos frescos e frango desfiado. Comfort food nutritivo.',
-    category: 'jantar',
-    prepTime: 50,
-    difficulty: 'dificil',
-    calories: 580,
-    protein_g: 35,
-    carbs_g: 62,
-    fat_g: 18,
-    ingredients: ['200g arroz arborio', '150g cogumelos frescos', '150g frango desfiado', 'Caldo de legumes', 'Cebola', 'Alho', 'Parmesao ralado', 'Manteiga'],
-  },
-];
 
 const filterTabs = [
   { key: 'todas', label: 'Todas' },
@@ -140,9 +61,12 @@ const filterTabs = [
 export default function ReceitasPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const authFetch = useAuthFetch();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('todas');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loadingRecipes, setLoadingRecipes] = useState(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -150,7 +74,21 @@ export default function ReceitasPage() {
     }
   }, [session, isPending, router]);
 
-  const filtered = mockRecipes.filter((r) => {
+  useEffect(() => {
+    if (!session) return;
+    setLoadingRecipes(true);
+    authFetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 50 }),
+    })
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data) => setRecipes(data.recipes ?? []))
+      .catch(() => setRecipes([]))
+      .finally(() => setLoadingRecipes(false));
+  }, [session]);
+
+  const filtered = recipes.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeFilter === 'todas' || r.category === activeFilter;
     return matchesSearch && matchesCategory;
@@ -210,7 +148,14 @@ export default function ReceitasPage() {
             </div>
 
             {/* Recipe grid */}
-            {filtered.length === 0 ? (
+            {loadingRecipes ? (
+              <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+                <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
+                  <UtensilsCrossed className="w-10 h-10 text-nutria-verde/40 animate-pulse" />
+                </div>
+                <p className="text-sm text-nutria-bordo/50">Carregando receitas...</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
                 <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
                   <Search className="w-10 h-10 text-nutria-verde/40" />
@@ -249,7 +194,7 @@ export default function ReceitasPage() {
                       <div className="flex items-center gap-4 text-xs text-nutria-bordo/50">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
-                          {recipe.prepTime} min
+                          {recipe.prep_time_minutes} min
                         </span>
                         <span className="flex items-center gap-1">
                           <ChefHat className="w-3.5 h-3.5" />
@@ -321,7 +266,7 @@ export default function ReceitasPage() {
             <div className="flex gap-3 px-6 pb-4">
               <span className="flex items-center gap-1.5 px-3 py-1.5 bg-nutria-creme-dark rounded-lg text-xs text-nutria-bordo/70">
                 <Clock className="w-3.5 h-3.5" />
-                {selectedRecipe.prepTime} min
+                {selectedRecipe.prep_time_minutes} min
               </span>
               <span className="flex items-center gap-1.5 px-3 py-1.5 bg-nutria-creme-dark rounded-lg text-xs text-nutria-bordo/70">
                 <ChefHat className="w-3.5 h-3.5" />

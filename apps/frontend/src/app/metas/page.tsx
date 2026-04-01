@@ -41,49 +41,7 @@ const categoryConfig: Record<string, { label: string; icon: any; color: string; 
   atividade: { label: 'Atividade', icon: Activity, color: 'text-nutria-bordo', bg: 'bg-nutria-bordo/10' },
 };
 
-const initialMetas: Meta[] = [
-  {
-    id: '1',
-    title: 'Chegar a 68kg',
-    description: 'Perder peso gradualmente com dieta equilibrada e exercicios',
-    target_value: 68,
-    current_value: 72.5,
-    unit: 'kg',
-    category: 'peso',
-    deadline: '2025-06-01',
-    created_at: '2025-01-15',
-  },
-  {
-    id: '2',
-    title: 'Comer 120g de proteina por dia',
-    description: 'Aumentar consumo de proteina para ganho de massa magra',
-    target_value: 120,
-    current_value: 95,
-    unit: 'g',
-    category: 'nutricao',
-    created_at: '2025-02-01',
-  },
-  {
-    id: '3',
-    title: 'Treinar 5x por semana',
-    description: 'Manter consistencia nos treinos semanais',
-    target_value: 5,
-    current_value: 4,
-    unit: 'treinos',
-    category: 'atividade',
-    created_at: '2025-02-10',
-  },
-  {
-    id: '4',
-    title: 'Consumir no maximo 2200 kcal/dia',
-    description: 'Manter deficit calorico moderado para perda de gordura',
-    target_value: 2200,
-    current_value: 1850,
-    unit: 'kcal',
-    category: 'nutricao',
-    created_at: '2025-02-15',
-  },
-];
+const initialMetas: Meta[] = [];
 
 function getProgress(meta: Meta): number {
   // Para metas de peso onde o objetivo e diminuir

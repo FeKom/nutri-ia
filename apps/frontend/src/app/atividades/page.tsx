@@ -58,13 +58,7 @@ const activityLabels: Record<string, string> = {
 const today = new Date();
 const daysAgo = (n: number) => new Date(today.getTime() - n * 86400000).toISOString().slice(0, 10);
 
-const initialActivities: ActivityEntry[] = [
-  { id: '1', type: 'caminhada', duration_minutes: 45, calories_burned: 220, date: daysAgo(0), notes: 'Caminhada no parque' },
-  { id: '2', type: 'musculacao', duration_minutes: 60, calories_burned: 350, date: daysAgo(1) },
-  { id: '3', type: 'corrida', duration_minutes: 30, calories_burned: 310, date: daysAgo(2), notes: 'Corrida leve' },
-  { id: '4', type: 'yoga', duration_minutes: 40, calories_burned: 150, date: daysAgo(4) },
-  { id: '5', type: 'ciclismo', duration_minutes: 50, calories_burned: 400, date: daysAgo(5) },
-];
+const initialActivities: ActivityEntry[] = [];
 
 function formatDuration(minutes: number) {
   const h = Math.floor(minutes / 60);

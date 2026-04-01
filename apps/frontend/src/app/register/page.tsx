@@ -48,7 +48,7 @@ export default function RegisterPage() {
         return;
       }
 
-      window.location.href = '/chat';
+      window.location.href = '/onboarding';
     } catch (err: any) {
       if (err.message?.includes('already exists') || err.message?.includes('exist')) {
         setError('Este email ja esta cadastrado. Tente fazer login.');

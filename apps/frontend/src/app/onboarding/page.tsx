@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
 import { useAuthFetch } from '@/lib/use-auth-fetch';
@@ -49,6 +49,27 @@ export default function OnboardingPage() {
   const [restrictions, setRestrictions] = useState('');
   const [allergies, setAllergies] = useState('');
   const [dislikes, setDislikes] = useState('');
+
+  // Load existing profile data
+  useEffect(() => {
+    if (!session) return;
+    authFetch('/api/profile')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        if (data.name) setName(data.name);
+        if (data.age) setAge(String(data.age));
+        if (data.weight_kg) setWeight(String(data.weight_kg));
+        if (data.height_cm) setHeight(String(data.height_cm));
+        if (data.gender) setGender(data.gender);
+        if (data.diet_goal) setGoal(data.diet_goal);
+        if (data.activity_level) setActivity(data.activity_level);
+        if (data.dietary_restrictions?.length) setRestrictions(data.dietary_restrictions.join(', '));
+        if (data.allergies?.length) setAllergies(data.allergies.join(', '));
+        if (data.disliked_foods?.length) setDislikes(data.disliked_foods.join(', '));
+      })
+      .catch(() => {});
+  }, [session]);
 
   const toList = (s: string) =>
     s.split(',').map((x) => x.trim()).filter(Boolean);

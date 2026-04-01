@@ -13,11 +13,13 @@ import {
   ClipboardList,
   FlaskConical,
   Leaf,
+  UserCircle,
 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
 
 const menuItems = [
   { label: 'Chat', icon: MessageSquare, href: '/chat' },
+  { label: 'Perfil', icon: UserCircle, href: '/onboarding' },
   { label: 'Dietas', icon: ClipboardList, href: '/dietas' },
   { label: 'Receitas', icon: BookOpen, href: '/receitas' },
   { label: 'Metas', icon: Target, href: '/metas' },

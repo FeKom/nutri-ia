@@ -5,9 +5,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DefaultChatTransport, ToolUIPart, FileUIPart } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { Paperclip, Camera, ArrowUp, Leaf, Sparkles, BookOpen, Target } from 'lucide-react';
+import { Paperclip, Camera, ArrowUp, Leaf, Sparkles, BookOpen, Target, AlertCircle } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
 import { useJwt } from '@/lib/jwt-context';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 
 import {
   PromptInput,
@@ -34,6 +35,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import Link from 'next/link';
 
 const suggestionCards = [
   {
@@ -67,6 +69,8 @@ function Chat() {
   const [attachments, setAttachments] = useState<FileUIPart[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [redirectAttempts, setRedirectAttempts] = useState(0);
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const authFetch = useAuthFetch();
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -89,6 +93,16 @@ function Chat() {
       }, 100);
     }
   }, [session, isPending, router, redirectAttempts]);
+
+  useEffect(() => {
+    if (!session || !token) return;
+    authFetch('/api/profile')
+      .then((r) => {
+        if (r.status === 404) setHasProfile(false);
+        else if (r.ok) setHasProfile(true);
+      })
+      .catch(() => {});
+  }, [session, token, authFetch]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -172,6 +186,21 @@ function Chat() {
       <div className="flex-1 flex flex-col">
         <Header onNewConversation={handleNewConversation} />
 
+        {hasProfile === false && (
+          <div className="mx-4 mt-3 p-3 rounded-xl bg-nutria-laranja/10 border border-nutria-laranja/20 flex items-center gap-3">
+            <AlertCircle className="w-4 h-4 text-nutria-laranja shrink-0" />
+            <p className="text-sm text-nutria-bordo/80 flex-1">
+              Voce ainda nao criou seu perfil nutricional. O assistente funcionara melhor com suas informacoes.
+            </p>
+            <Link
+              href="/onboarding"
+              className="text-xs font-medium text-nutria-verde hover:text-nutria-verde-light whitespace-nowrap"
+            >
+              Criar perfil →
+            </Link>
+          </div>
+        )}
+
         <div className="flex-1 flex flex-col overflow-hidden">
           {!hasMessages ? (
             /* Tela de boas-vindas */
@@ -196,7 +225,7 @@ function Chat() {
                     <button
                       key={index}
                       onClick={() => handleSuggestionClick(card.description)}
-                      className={`p-5 rounded-2xl bg-gradient-to-br ${card.color} border border-white/60 text-left transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-slide-up opacity-0 stagger-${index + 1}`}
+                      className={`p-5 rounded-2xl bg-gradient-to-br ${card.color} border border-white/60 text-left transition-[transform,box-shadow] duration-200 active:scale-[0.98] [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 animate-slide-up opacity-0 stagger-${index + 1}`}
                     >
                       <Icon className={`w-5 h-5 ${card.iconColor} mb-3`} />
                       <h3 className="font-semibold text-nutria-bordo text-sm mb-1.5">
@@ -278,7 +307,7 @@ function Chat() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={status === 'streaming'}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-white/60 transition-all duration-200 disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
                 >
                   <Paperclip className="w-3.5 h-3.5" />
                   Arquivo
@@ -287,7 +316,7 @@ function Chat() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={status === 'streaming'}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-white/60 transition-all duration-200 disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   Foto
@@ -331,7 +360,7 @@ function Chat() {
                       type="submit"
                       disabled={status === 'streaming' || (!input.trim() && attachments.length === 0)}
                       size="icon"
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-lg transition-all duration-200 shadow-sm disabled:opacity-30"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-lg transition-[background-color,opacity] duration-150 shadow-sm disabled:opacity-30"
                     >
                       <ArrowUp className="w-3.5 h-3.5" />
                     </Button>

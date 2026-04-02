@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
@@ -58,13 +59,7 @@ const activityLabels: Record<string, string> = {
 const today = new Date();
 const daysAgo = (n: number) => new Date(today.getTime() - n * 86400000).toISOString().slice(0, 10);
 
-const initialActivities: ActivityEntry[] = [
-  { id: '1', type: 'caminhada', duration_minutes: 45, calories_burned: 220, date: daysAgo(0), notes: 'Caminhada no parque' },
-  { id: '2', type: 'musculacao', duration_minutes: 60, calories_burned: 350, date: daysAgo(1) },
-  { id: '3', type: 'corrida', duration_minutes: 30, calories_burned: 310, date: daysAgo(2), notes: 'Corrida leve' },
-  { id: '4', type: 'yoga', duration_minutes: 40, calories_burned: 150, date: daysAgo(4) },
-  { id: '5', type: 'ciclismo', duration_minutes: 50, calories_burned: 400, date: daysAgo(5) },
-];
+const initialActivities: ActivityEntry[] = [];
 
 function formatDuration(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -76,6 +71,7 @@ function formatDuration(minutes: number) {
 export default function AtividadesPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const authFetch = useAuthFetch();
   const [activities, setActivities] = useState<ActivityEntry[]>(initialActivities);
   const [showForm, setShowForm] = useState(false);
 
@@ -92,11 +88,18 @@ export default function AtividadesPage() {
     }
   }, [session, isPending, router]);
 
-  const handleAdd = () => {
+  useEffect(() => {
+    if (!session) return;
+    authFetch('/api/activities')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: ActivityEntry[]) => setActivities(data))
+      .catch(() => {});
+  }, [session]);
+
+  const handleAdd = async () => {
     if (!formDuration || !formCalories) return;
 
-    const newActivity: ActivityEntry = {
-      id: crypto.randomUUID(),
+    const body = {
       type: formType,
       duration_minutes: parseInt(formDuration),
       calories_burned: parseInt(formCalories),
@@ -104,7 +107,16 @@ export default function AtividadesPage() {
       notes: formNotes || undefined,
     };
 
-    setActivities((prev) => [newActivity, ...prev]);
+    const res = await authFetch('/api/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      const newActivity: ActivityEntry = await res.json();
+      setActivities((prev) => [newActivity, ...prev]);
+    }
     setShowForm(false);
     setFormType('caminhada');
     setFormDuration('');
@@ -113,8 +125,11 @@ export default function AtividadesPage() {
     setFormNotes('');
   };
 
-  const handleDelete = (id: string) => {
-    setActivities((prev) => prev.filter((a) => a.id !== id));
+  const handleDelete = async (id: string) => {
+    const res = await authFetch(`/api/activities/${id}`, { method: 'DELETE' });
+    if (res.ok || res.status === 204) {
+      setActivities((prev) => prev.filter((a) => a.id !== id));
+    }
   };
 
   // Stats

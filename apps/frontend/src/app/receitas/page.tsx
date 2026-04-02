@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   UtensilsCrossed,
   Clock,
@@ -19,6 +21,7 @@ import {
   Droplets,
   X,
   Sparkles,
+  Plus,
 } from 'lucide-react';
 
 interface Recipe {
@@ -26,7 +29,7 @@ interface Recipe {
   name: string;
   description: string;
   category: 'cafe-da-manha' | 'almoco' | 'jantar' | 'lanche';
-  prepTime: number;
+  prep_time_minutes: number;
   difficulty: 'facil' | 'medio' | 'dificil';
   calories: number;
   protein_g: number;
@@ -48,86 +51,6 @@ const difficultyLabels: Record<string, string> = {
   dificil: 'Dificil',
 };
 
-const mockRecipes: Recipe[] = [
-  {
-    id: '1',
-    name: 'Bowl de Acai Proteico',
-    description: 'Bowl de acai com whey protein, banana, granola e frutas vermelhas. Rico em antioxidantes e proteina.',
-    category: 'cafe-da-manha',
-    prepTime: 10,
-    difficulty: 'facil',
-    calories: 420,
-    protein_g: 28,
-    carbs_g: 52,
-    fat_g: 12,
-    ingredients: ['200g polpa de acai', '1 scoop whey protein', '1 banana', '30g granola', '50g frutas vermelhas', 'Mel a gosto'],
-  },
-  {
-    id: '2',
-    name: 'Frango Grelhado com Batata Doce',
-    description: 'Peito de frango grelhado com batata doce assada e salada verde. Classico do ganho de massa.',
-    category: 'almoco',
-    prepTime: 35,
-    difficulty: 'facil',
-    calories: 520,
-    protein_g: 42,
-    carbs_g: 48,
-    fat_g: 14,
-    ingredients: ['200g peito de frango', '150g batata doce', 'Azeite de oliva', 'Sal e pimenta', 'Mix de folhas verdes', 'Tomate cereja'],
-  },
-  {
-    id: '3',
-    name: 'Salmao com Legumes Assados',
-    description: 'File de salmao assado com abobrinha, berinjela e pimentao. Rico em omega 3.',
-    category: 'jantar',
-    prepTime: 40,
-    difficulty: 'medio',
-    calories: 480,
-    protein_g: 38,
-    carbs_g: 22,
-    fat_g: 28,
-    ingredients: ['180g file de salmao', '1 abobrinha', '1/2 berinjela', '1 pimentao', 'Azeite', 'Ervas finas', 'Limao'],
-  },
-  {
-    id: '4',
-    name: 'Wrap Integral de Atum',
-    description: 'Wrap integral recheado com atum, cream cheese light, rucula e tomate. Rapido e pratico.',
-    category: 'lanche',
-    prepTime: 10,
-    difficulty: 'facil',
-    calories: 320,
-    protein_g: 24,
-    carbs_g: 30,
-    fat_g: 12,
-    ingredients: ['1 tortilha integral', '1 lata de atum', '2 col cream cheese light', 'Rucula', 'Tomate', 'Sal e pimenta'],
-  },
-  {
-    id: '5',
-    name: 'Omelete de Espinafre e Queijo',
-    description: 'Omelete leve com espinafre refogado e queijo cottage. Perfeito para um cafe da manha proteico.',
-    category: 'cafe-da-manha',
-    prepTime: 15,
-    difficulty: 'facil',
-    calories: 280,
-    protein_g: 22,
-    carbs_g: 4,
-    fat_g: 20,
-    ingredients: ['3 ovos', '1 xicara espinafre', '50g queijo cottage', 'Sal e pimenta', 'Azeite'],
-  },
-  {
-    id: '6',
-    name: 'Risoto de Cogumelos e Frango',
-    description: 'Risoto cremoso com cogumelos frescos e frango desfiado. Comfort food nutritivo.',
-    category: 'jantar',
-    prepTime: 50,
-    difficulty: 'dificil',
-    calories: 580,
-    protein_g: 35,
-    carbs_g: 62,
-    fat_g: 18,
-    ingredients: ['200g arroz arborio', '150g cogumelos frescos', '150g frango desfiado', 'Caldo de legumes', 'Cebola', 'Alho', 'Parmesao ralado', 'Manteiga'],
-  },
-];
 
 const filterTabs = [
   { key: 'todas', label: 'Todas' },
@@ -140,9 +63,27 @@ const filterTabs = [
 export default function ReceitasPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const authFetch = useAuthFetch();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('todas');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loadingRecipes, setLoadingRecipes] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Create form state
+  const [newName, setNewName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState<Recipe['category']>('almoco');
+  const [newDifficulty, setNewDifficulty] = useState<Recipe['difficulty']>('facil');
+  const [newPrepTime, setNewPrepTime] = useState('');
+  const [newCalories, setNewCalories] = useState('');
+  const [newProtein, setNewProtein] = useState('');
+  const [newCarbs, setNewCarbs] = useState('');
+  const [newFat, setNewFat] = useState('');
+  const [newIngredients, setNewIngredients] = useState('');
+  const [newInstructions, setNewInstructions] = useState('');
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -150,7 +91,55 @@ export default function ReceitasPage() {
     }
   }, [session, isPending, router]);
 
-  const filtered = mockRecipes.filter((r) => {
+  useEffect(() => {
+    if (!session) return;
+    setLoadingRecipes(true);
+    authFetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 50 }),
+    })
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data) => setRecipes(data.recipes ?? []))
+      .catch(() => setRecipes([]))
+      .finally(() => setLoadingRecipes(false));
+  }, [session]);
+
+  const handleCreateRecipe = async () => {
+    if (!newName || !newPrepTime || !newCalories) return;
+    setSaving(true);
+    try {
+      const res = await authFetch('/api/recipes/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName,
+          description: newDescription,
+          category: newCategory,
+          difficulty: newDifficulty,
+          prep_time_minutes: parseInt(newPrepTime),
+          calories: parseInt(newCalories),
+          protein_g: parseFloat(newProtein) || 0,
+          carbs_g: parseFloat(newCarbs) || 0,
+          fat_g: parseFloat(newFat) || 0,
+          ingredients: newIngredients.split('\n').map((s) => s.trim()).filter(Boolean),
+          instructions: newInstructions || undefined,
+        }),
+      });
+      if (res.ok) {
+        const created: Recipe = await res.json();
+        setRecipes((prev) => [created, ...prev]);
+        setShowCreateForm(false);
+        setNewName(''); setNewDescription(''); setNewPrepTime('');
+        setNewCalories(''); setNewProtein(''); setNewCarbs('');
+        setNewFat(''); setNewIngredients(''); setNewInstructions('');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filtered = recipes.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeFilter === 'todas' || r.category === activeFilter;
     return matchesSearch && matchesCategory;
@@ -180,7 +169,19 @@ export default function ReceitasPage() {
 
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-6xl mx-auto">
-            {/* Search + filters */}
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-6 animate-slide-up">
+              <div />
+              <Button
+                onClick={() => setShowCreateForm(true)}
+                className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Receita
+              </Button>
+            </div>
+
+          {/* Search + filters */}
             <div className="mb-8 animate-slide-up">
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-nutria-bordo/30" />
@@ -210,7 +211,14 @@ export default function ReceitasPage() {
             </div>
 
             {/* Recipe grid */}
-            {filtered.length === 0 ? (
+            {loadingRecipes ? (
+              <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+                <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
+                  <UtensilsCrossed className="w-10 h-10 text-nutria-verde/40 animate-pulse" />
+                </div>
+                <p className="text-sm text-nutria-bordo/50">Carregando receitas...</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
                 <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
                   <Search className="w-10 h-10 text-nutria-verde/40" />
@@ -249,7 +257,7 @@ export default function ReceitasPage() {
                       <div className="flex items-center gap-4 text-xs text-nutria-bordo/50">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
-                          {recipe.prepTime} min
+                          {recipe.prep_time_minutes} min
                         </span>
                         <span className="flex items-center gap-1">
                           <ChefHat className="w-3.5 h-3.5" />
@@ -321,7 +329,7 @@ export default function ReceitasPage() {
             <div className="flex gap-3 px-6 pb-4">
               <span className="flex items-center gap-1.5 px-3 py-1.5 bg-nutria-creme-dark rounded-lg text-xs text-nutria-bordo/70">
                 <Clock className="w-3.5 h-3.5" />
-                {selectedRecipe.prepTime} min
+                {selectedRecipe.prep_time_minutes} min
               </span>
               <span className="flex items-center gap-1.5 px-3 py-1.5 bg-nutria-creme-dark rounded-lg text-xs text-nutria-bordo/70">
                 <ChefHat className="w-3.5 h-3.5" />
@@ -376,6 +384,100 @@ export default function ReceitasPage() {
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Pedir receita detalhada com IA
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Create recipe modal */}
+      {showCreateForm && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fade-in"
+          onClick={() => setShowCreateForm(false)}
+        >
+          <Card
+            className="max-w-lg w-full p-0 overflow-hidden shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-nutria-creme-dark">
+              <h2 className="heading-serif text-xl text-nutria-bordo">Nova Receita</h2>
+              <button onClick={() => setShowCreateForm(false)} className="p-2 rounded-xl hover:bg-nutria-creme-dark">
+                <X className="w-5 h-5 text-nutria-bordo/40" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <Label>Nome *</Label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ex: Frango grelhado com batata doce" className="mt-1" />
+              </div>
+              <div>
+                <Label>Descricao</Label>
+                <Input value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Descricao breve..." className="mt-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Categoria</Label>
+                  <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as Recipe['category'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo">
+                    <option value="cafe-da-manha">Cafe da Manha</option>
+                    <option value="almoco">Almoco</option>
+                    <option value="jantar">Jantar</option>
+                    <option value="lanche">Lanche</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Dificuldade</Label>
+                  <select value={newDifficulty} onChange={(e) => setNewDifficulty(e.target.value as Recipe['difficulty'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo">
+                    <option value="facil">Facil</option>
+                    <option value="medio">Medio</option>
+                    <option value="dificil">Dificil</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tempo de preparo (min) *</Label>
+                  <Input type="number" value={newPrepTime} onChange={(e) => setNewPrepTime(e.target.value)} placeholder="30" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Calorias *</Label>
+                  <Input type="number" value={newCalories} onChange={(e) => setNewCalories(e.target.value)} placeholder="450" className="mt-1" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Proteina (g)</Label>
+                  <Input type="number" value={newProtein} onChange={(e) => setNewProtein(e.target.value)} placeholder="35" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Carbos (g)</Label>
+                  <Input type="number" value={newCarbs} onChange={(e) => setNewCarbs(e.target.value)} placeholder="40" className="mt-1" />
+                </div>
+                <div>
+                  <Label>Gordura (g)</Label>
+                  <Input type="number" value={newFat} onChange={(e) => setNewFat(e.target.value)} placeholder="12" className="mt-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Ingredientes (um por linha)</Label>
+                <textarea
+                  value={newIngredients}
+                  onChange={(e) => setNewIngredients(e.target.value)}
+                  placeholder={"200g peito de frango\n150g batata doce\nAzeite a gosto"}
+                  rows={4}
+                  className="mt-1 w-full px-3 py-2 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo resize-none focus:outline-none focus:border-nutria-verde"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 pt-0">
+              <Button
+                onClick={handleCreateRecipe}
+                disabled={saving || !newName || !newPrepTime || !newCalories}
+                className="w-full bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+              >
+                {saving ? 'Salvando...' : 'Salvar Receita'}
               </Button>
             </div>
           </Card>

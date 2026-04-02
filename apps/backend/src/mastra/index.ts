@@ -120,7 +120,7 @@ export const mastra = new Mastra({
               contextMessages.push({
                 role: "system" as const,
                 content:
-                  "SISTEMA: O usuário está autenticado (logado) mas ainda não tem um perfil nutricional cadastrado. Sugira criar um perfil usando a tool create_user_profile. NÃO diga que o usuário não está autenticado — ele ESTÁ logado.",
+                  "SISTEMA: O usuário está autenticado (logado) mas ainda não tem um perfil nutricional cadastrado. Oriente o usuário a criar seu perfil acessando a página /onboarding no menu de navegação. NÃO diga que o usuário não está autenticado — ele ESTÁ logado.",
               });
             }
 

@@ -30,7 +30,6 @@ export const toolSearch = new ToolSearchProcessor({
     logMealTool,
     getDailySummaryTool,
     getWeeklyStatsTool,
-    createMealPlanTool,
     listMealPlansTool,
     getMealPlanTool,
     updateMealPlanTool,
@@ -45,8 +44,7 @@ export const toolSearch = new ToolSearchProcessor({
     getRecipeTool,
   },
   search: {
-    topK: 5,
-    minScore: 0.1,
+    topK: 4,
+    minScore: 0.35,
   },
 });
-

@@ -16,36 +16,19 @@
  */
 
 import { Memory } from "@mastra/memory";
-import { LibSQLStore } from "@mastra/libsql";
-import { sharedStorage } from "./storage";
-// import { LibSQLVector } from "@mastra/libsql";
-import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
 import { PgVector, PostgresStore } from "@mastra/pg";
 import { embedderModel } from "./embedder";
-/**
- * Cria instância de Memory otimizada para aplicação nutricional
- *
- * Tecnologias utilizadas:
- * - LibSQL para storage e vector database
- * - GitHub Models text-embedding-3-small para embeddings
- *
- * Nota: Para usar PostgreSQL + PgVector no futuro, será necessário
- * atualizar @mastra/core para versão 1.x (atualmente em 0.24.9)
- */
+
+
 export function createNutritionMemory() {
   return new Memory({
-    // 📦 Storage: LibSQL para message storage
     storage: new PostgresStore({
       id: "nutria-agent-storage",
-      database: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSRGRESS_PASSWORD,
+      connectionString: process.env.DATABASE_URl || "postgresql://nutriauser:Ck1VMVI7gxKeO9sYxZRciw73BlHk4sgO32gXHTHEZW8@localhost:5432/nutriadb",
     }),
     vector: new PgVector({
       id: "nutria-agent-vector",
-      database: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSRGRESS_PASSWORD,
+      connectionString: process.env.DATABASE_URL,
     }),
     embedder: embedderModel,
     options: {

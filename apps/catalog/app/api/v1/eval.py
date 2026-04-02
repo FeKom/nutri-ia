@@ -1,22 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.api.dependencies import get_db
-from app.schemas.eval import (
-    ChunkResult,
-    ChunkSearchRequest,
-    ChunkSearchResponse,
-    EvalExperimentCreate,
-    EvalExperimentResponse,
-    EvalExperimentSummary,
-    EvalListResponse,
-    EvalQuestion,
-    EvalRunResponse,
-    EvalResultResponse,
-    IngestResponse,
-)
+from app.schemas.eval import (ChunkResult, ChunkSearchRequest,
+                              ChunkSearchResponse, EvalExperimentCreate,
+                              EvalExperimentResponse, EvalExperimentSummary,
+                              EvalListResponse, EvalQuestion,
+                              EvalResultResponse, EvalRunResponse,
+                              IngestResponse)
 from app.services import eval_service
 
 router = APIRouter()
@@ -24,13 +18,18 @@ router = APIRouter()
 
 # ─── Datasets ─────────────────────────────────────────────────────────────────
 
+
 @router.get("/datasets", response_model=list[str])
 def list_datasets() -> list[str]:
     """List all available dataset files in tests/eval/datasets/."""
     return eval_service.list_datasets()
 
 
-@router.post("/datasets/{filename}/ingest", response_model=IngestResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/datasets/{filename}/ingest",
+    response_model=IngestResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def ingest_dataset(
     filename: str,
     db: Session = Depends(get_db),
@@ -52,7 +51,33 @@ def ingest_dataset(
 def embed_texts(texts: list[str]) -> list[list[float]]:
     """Embed a list of texts using the embedding model. Returns a list of vectors."""
     from app.services.embedding_service import generate_embeddings_batch
+
     return generate_embeddings_batch(texts)
+
+
+class EmbeddingRequest(BaseModel):
+    input: list[str]
+    model: str = "intfloat/multilingual-e5-small"
+
+
+@router.post("/embeddings")
+def openai_embeddings(request: EmbeddingRequest) -> dict:
+    """
+    OpenAI-compatible embeddings endpoint for Mastra ModelRouterEmbeddingModel.
+    Accepts {input: string[], model: string} and returns OpenAI embedding format.
+    """
+    from app.services.embedding_service import generate_embeddings_batch
+
+    vectors = generate_embeddings_batch(request.input)
+    return {
+        "object": "list",
+        "data": [
+            {"object": "embedding", "index": i, "embedding": vec}
+            for i, vec in enumerate(vectors)
+        ],
+        "model": request.model,
+        "usage": {"prompt_tokens": 0, "total_tokens": 0},
+    }
 
 
 @router.post("/chunks/search", response_model=ChunkSearchResponse)
@@ -62,18 +87,34 @@ def search_chunks(
 ) -> ChunkSearchResponse:
     """Search document_chunks by semantic similarity."""
     try:
-        chunks = eval_service.search_chunks(db, request.query, request.retrieval_source, request.limit)
+        chunks = eval_service.search_chunks(
+            db, request.query, request.retrieval_source, request.limit
+        )
         return ChunkSearchResponse(
-            chunks=[ChunkResult(content=c.content, source_name=c.source_name, chunk_index=c.chunk_index) for c in chunks],
+            chunks=[
+                ChunkResult(
+                    content=c.content,
+                    source_name=c.source_name,
+                    chunk_index=c.chunk_index,
+                )
+                for c in chunks
+            ],
             count=len(chunks),
         )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 # ─── Experiments ──────────────────────────────────────────────────────────────
 
-@router.post("/experiments", response_model=EvalExperimentSummary, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/experiments",
+    response_model=EvalExperimentSummary,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_experiment(
     data: EvalExperimentCreate,
     db: Session = Depends(get_db),
@@ -98,15 +139,17 @@ def list_experiments(db: Session = Depends(get_db)) -> EvalListResponse:
     summaries = []
     for exp in experiments:
         runs = eval_service.list_runs_by_experiment(db, exp.id)
-        summaries.append(EvalExperimentSummary(
-            id=exp.id,
-            name=exp.name,
-            description=exp.description,
-            params=exp.params,
-            created_at=exp.created_at.isoformat(),
-            run_count=len(runs),
-            avg_scores=None,
-        ))
+        summaries.append(
+            EvalExperimentSummary(
+                id=exp.id,
+                name=exp.name,
+                description=exp.description,
+                params=exp.params,
+                created_at=exp.created_at.isoformat(),
+                run_count=len(runs),
+                avg_scores=None,
+            )
+        )
     return EvalListResponse(experiments=summaries, count=len(summaries))
 
 
@@ -125,21 +168,27 @@ def get_experiment(
     run_responses = []
     for run in runs:
         result = eval_service.get_result_by_run(db, run.id)
-        run_responses.append(EvalRunResponse(
-            id=run.id,
-            question=run.question,
-            expected_answer=run.expected_answer,
-            model_answer=run.model_answer,
-            answer=run.answer,
-            latency_ms=run.latency_ms,
-            result=EvalResultResponse(
-                faithfulness=result.faithfulness,
-                answer_relevancy=result.answer_relevancy,
-                context_recall=result.context_recall,
-                context_precision=result.context_precision,
-                overall_score=result.overall_score,
-            ) if result else None,
-        ))
+        run_responses.append(
+            EvalRunResponse(
+                id=run.id,
+                question=run.question,
+                expected_answer=run.expected_answer,
+                model_answer=run.model_answer,
+                answer=run.answer,
+                latency_ms=run.latency_ms,
+                result=(
+                    EvalResultResponse(
+                        faithfulness=result.faithfulness,
+                        answer_relevancy=result.answer_relevancy,
+                        context_recall=result.context_recall,
+                        context_precision=result.context_precision,
+                        overall_score=result.overall_score,
+                    )
+                    if result
+                    else None
+                ),
+            )
+        )
 
     return EvalExperimentResponse(
         id=experiment.id,
@@ -153,6 +202,7 @@ def get_experiment(
 
 
 # ─── Runs ─────────────────────────────────────────────────────────────────────
+
 
 @router.post("/experiments/{experiment_id}/runs", response_model=list[EvalRunResponse])
 def run_eval(
@@ -180,7 +230,11 @@ def run_eval(
     ]
 
 
-@router.post("/experiments/{experiment_id}/run", response_model=list[EvalRunResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/experiments/{experiment_id}/run",
+    response_model=list[EvalRunResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 def run_eval_auto(
     experiment_id: UUID,
     db: Session = Depends(get_db),
@@ -194,27 +248,35 @@ def run_eval_auto(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
     result_list = []
     for run in runs:
         result = eval_service.get_result_by_run(db, run.id)
-        result_list.append(EvalRunResponse(
-            id=run.id,
-            question=run.question,
-            expected_answer=run.expected_answer,
-            model_answer=run.model_answer,
-            answer=run.answer,
-            latency_ms=run.latency_ms,
-            weight=run.weight,
-            result=EvalResultResponse(
-                faithfulness=result.faithfulness,
-                answer_relevancy=result.answer_relevancy,
-                context_recall=result.context_recall,
-                context_precision=result.context_precision,
-                overall_score=result.overall_score,
-            ) if result else None,
-        ))
+        result_list.append(
+            EvalRunResponse(
+                id=run.id,
+                question=run.question,
+                expected_answer=run.expected_answer,
+                model_answer=run.model_answer,
+                answer=run.answer,
+                latency_ms=run.latency_ms,
+                weight=run.weight,
+                result=(
+                    EvalResultResponse(
+                        faithfulness=result.faithfulness,
+                        answer_relevancy=result.answer_relevancy,
+                        context_recall=result.context_recall,
+                        context_precision=result.context_precision,
+                        overall_score=result.overall_score,
+                    )
+                    if result
+                    else None
+                ),
+            )
+        )
     return result_list
 
 
@@ -258,19 +320,28 @@ def get_run(
         model_answer=run.model_answer,
         answer=run.answer,
         latency_ms=run.latency_ms,
-        result=EvalResultResponse(
-            faithfulness=result.faithfulness,
-            answer_relevancy=result.answer_relevancy,
-            context_recall=result.context_recall,
-            context_precision=result.context_precision,
-            overall_score=result.overall_score,
-        ) if result else None,
+        result=(
+            EvalResultResponse(
+                faithfulness=result.faithfulness,
+                answer_relevancy=result.answer_relevancy,
+                context_recall=result.context_recall,
+                context_precision=result.context_precision,
+                overall_score=result.overall_score,
+            )
+            if result
+            else None
+        ),
     )
 
 
 # ─── Results ──────────────────────────────────────────────────────────────────
 
-@router.post("/runs/{run_id}/results", response_model=EvalResultResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/runs/{run_id}/results",
+    response_model=EvalResultResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def save_result(
     run_id: UUID,
     result: EvalResultResponse,
@@ -297,4 +368,32 @@ def save_result(
         context_recall=saved.context_recall,
         context_precision=saved.context_precision,
         overall_score=saved.overall_score,
+    )
+
+
+# ---- Embedding ------------------------------------------------------------
+
+
+class EmbedRequest(BaseModel):
+    model: str
+    input: list[str]
+
+
+class EmbedResponse(BaseModel):
+    object: str = "list"
+    data: list[dict]
+    model: str
+
+
+@router.post("/embeddings", response_model=EmbedResponse)
+def embed_openai_compat(body: EmbedRequest) -> EmbedResponse:
+    from app.services.embedding_service import generate_embeddings_batch
+
+    vectors = generate_embeddings_batch(body.input)
+    return EmbedResponse(
+        model=body.model,
+        data=[
+            {"object": "embedding", "embedding": vec, "index": i}
+            for i, vec in enumerate(vectors)
+        ],
     )

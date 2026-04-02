@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: PostgresDsn
 
-    # JWT Configuration - validação via JWKS do frontend
-    JWKS_URL: str = "http://localhost:3000/api/auth/jwks"
-    JWT_ISSUER: str = "http://localhost:3000"
+    # JWT Configuration - validação via JWKS do backend (Better Auth roda no Mastra, porta 4111)
+    JWKS_URL: str = "http://localhost:4111/auth/jwks"
+    JWT_ISSUER: str = "http://localhost:4111"
     JWT_AUDIENCE: str = "nutria"
     JWT_ALGORITHM: str = "EdDSA"
 

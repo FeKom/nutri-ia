@@ -16,6 +16,9 @@ pydantic-settings>=2.1.0
 # JWT Authentication
 PyJWT[crypto]>=2.8.0
 
+# Password hashing
+passlib[bcrypt]>=1.7.4
+
 # Additional utilities
 python-multipart>=0.0.6
 

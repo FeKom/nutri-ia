@@ -13,8 +13,7 @@ import sys
 
 # Ensure app/ is importable without DATABASE_URL being valid
 os.environ.setdefault("DATABASE_URL", "postgresql://dummy:dummy@localhost/dummy")
-os.environ.setdefault("JWKS_URL", "http://localhost:3000/api/auth/jwks")
-os.environ.setdefault("JWT_ISSUER", "http://localhost:3000")
+os.environ.setdefault("JWT_SECRET_KEY", "dummy-secret-for-schema-export")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

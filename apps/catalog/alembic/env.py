@@ -13,6 +13,7 @@ from app.database.database import engine
 from sqlmodel import SQLModel
 
 # Import all models here to ensure they are registered with SQLModel
+from app.models.auth import User
 from app.models.food import Food, FoodNutrient
 from app.models.recipe import Recipe
 from app.models.tracking import DailyStats, MealLog

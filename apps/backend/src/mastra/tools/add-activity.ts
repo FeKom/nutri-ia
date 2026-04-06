@@ -1,10 +1,10 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
-import { extractAuthContext } from "../utils/auth-context";
+import { addActivity } from "../api/activities";
+import { unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
-import { defaultConfig } from "../clients/catalog-client";
 
-export const addActivityTool = createTool({
+export const addActivityTool = withAuth({
   id: "add_activity",
   description:
     "Registra uma atividade física realizada pelo usuário. " +
@@ -25,8 +25,7 @@ export const addActivityTool = createTool({
     activity_id: z.string().optional(),
     message: z.string(),
   }),
-  execute: async (input, executionContext) => {
-    const { userId, authToken } = extractAuthContext(executionContext);
+  execute: async (input, { userId, authToken }) => {
     if (!userId || userId === "anonymous") {
       return { success: false, message: "Usuário não autenticado." };
     }
@@ -34,21 +33,7 @@ export const addActivityTool = createTool({
     logger.info(`🏃 [Tool:addActivity] Registrando ${input.type} para ${userId}`);
 
     try {
-      const res = await fetch(`${defaultConfig.baseURL}/api/v1/activities`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(input),
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`API ${res.status}: ${err}`);
-      }
-
-      const activity = await res.json();
+      const activity = unwrap(await addActivity(input, undefined, authToken));
       logger.info(`✅ [Tool:addActivity] Atividade criada: ${activity.id}`);
       return {
         success: true,

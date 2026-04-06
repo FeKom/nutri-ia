@@ -1,10 +1,10 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
-import { extractAuthContext } from "../utils/auth-context";
+import { addGoal } from "../api/goals";
+import { unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
-import { defaultConfig } from "../clients/catalog-client";
 
-export const addGoalTool = createTool({
+export const addGoalTool = withAuth({
   id: "add_goal",
   description:
     "Salva uma meta pessoal do usuário no banco de dados. " +
@@ -25,8 +25,7 @@ export const addGoalTool = createTool({
     goal_id: z.string().optional(),
     message: z.string(),
   }),
-  execute: async (input, executionContext) => {
-    const { userId, authToken } = extractAuthContext(executionContext);
+  execute: async (input, { userId, authToken }) => {
     if (!userId || userId === "anonymous") {
       return { success: false, message: "Usuário não autenticado." };
     }
@@ -34,21 +33,7 @@ export const addGoalTool = createTool({
     logger.info(`🎯 [Tool:addGoal] Salvando meta para ${userId}: ${input.title}`);
 
     try {
-      const res = await fetch(`${defaultConfig.baseURL}/api/v1/goals`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(input),
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`API ${res.status}: ${err}`);
-      }
-
-      const goal = await res.json();
+      const goal = unwrap(await addGoal(input, undefined, authToken));
       logger.info(`✅ [Tool:addGoal] Meta criada: ${goal.id}`);
       return { success: true, goal_id: goal.id, message: `Meta "${input.title}" salva com sucesso!` };
     } catch (error) {

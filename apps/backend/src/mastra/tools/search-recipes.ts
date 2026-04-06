@@ -1,8 +1,7 @@
-import { createTool } from '@mastra/core/tools';
+import { withAuth } from '../utils/with-auth';
 import { z } from 'zod';
 import { searchRecipes, type Recipe } from '../clients/catalog-client';
 import { searchRecipesOutputSchema } from '../schemas/output';
-import { extractAuthContext } from '../utils/auth-context';
 import { logger } from '../../utils/logger';
 
 /**
@@ -25,7 +24,7 @@ const formatRecipe = (recipe: Recipe) => ({
  * Tool para buscar receitas com filtros
  * Conecta com a Food Catalog API (FastAPI)
  */
-export const searchRecipesTool = createTool({
+export const searchRecipesTool = withAuth({
   id: 'search-recipes',
   description:
     'Busca receitas no catálogo por categoria, dificuldade, tempo de preparo e macronutrientes. Retorna receitas com informações nutricionais.',
@@ -61,8 +60,7 @@ export const searchRecipesTool = createTool({
       .describe('Número máximo de resultados (padrão: 10)'),
   }),
   outputSchema: searchRecipesOutputSchema,
-  execute: async (inputData, executionContext) => {
-    const { authToken } = extractAuthContext(executionContext);
+  execute: async (inputData, { authToken }) => {
 
     logger.info(
       `🔍 [Tool] Buscando receitas com filtros: ${JSON.stringify(inputData)}`

@@ -1,7 +1,6 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { listMealPlans } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const listMealPlansToolInput = z.object({
@@ -29,7 +28,7 @@ const listMealPlansToolOutput = z.object({
   message: z.string().describe("Mensagem descritiva"),
 });
 
-export const listMealPlansTool = createTool({
+export const listMealPlansTool = withAuth({
   id: "list_meal_plans",
   description:
     "Lista todos os planos alimentares (dietas) do usuário. " +
@@ -37,10 +36,8 @@ export const listMealPlansTool = createTool({
     "Exemplos: 'Quais são minhas dietas?', 'Mostre meus planos', 'Tenho alguma dieta cadastrada?'",
   inputSchema: listMealPlansToolInput,
   outputSchema: listMealPlansToolOutput,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     const { page = 1, page_size = 10 } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     if (userId === "anonymous") {
       throw new Error(

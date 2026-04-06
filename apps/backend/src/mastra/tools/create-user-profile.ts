@@ -2,13 +2,9 @@
  * Tool para criar perfil de usuário
  */
 
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
-import {
-  getUserProfileFromDB,
-  invalidateUserProfileCache,
-} from "../utils/user-profile-loader";
-import { extractAuthContext } from "../utils/auth-context";
+import { invalidateUserProfileCache } from "../utils/user-profile-loader";
 import { createUserProfile, defaultConfig } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
 
@@ -52,7 +48,7 @@ const createUserProfileToolInput = z.object({
     ),
 });
 
-export const createUserProfileTool = createTool({
+export const createUserProfileTool = withAuth({
   id: "create_user_profile",
   description:
     "Cria um novo perfil nutricional para o usuário com suas informações pessoais, preferências e restrições. " +
@@ -80,7 +76,7 @@ export const createUserProfileTool = createTool({
       .optional()
       .describe("Dados do perfil criado"),
   }),
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken, userProfile }) => {
     const {
       name,
       age,
@@ -95,8 +91,6 @@ export const createUserProfileTool = createTool({
       preferred_cuisines = [],
     } = inputData;
 
-    // Get user_id and JWT from execution context
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     if (!userId || userId === "anonymous") {
       return {
@@ -109,7 +103,7 @@ export const createUserProfileTool = createTool({
     logger.info(`👤 [Tool:createUserProfile] Criando perfil para usuário: ${userId}`);
 
     // Verifica se já existe perfil para este usuário
-    const existingProfile = await getUserProfileFromDB(userId);
+    const existingProfile = userProfile;
     if (existingProfile) {
       logger.info(
         `⚠️ [Tool:createUserProfile] Perfil já existe para ${userId}`,

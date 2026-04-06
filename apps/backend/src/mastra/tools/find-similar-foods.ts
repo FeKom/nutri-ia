@@ -1,8 +1,7 @@
-import { createTool } from '@mastra/core/tools';
+import { withAuth } from '../utils/with-auth';
 import { z } from 'zod';
 import { findSimilarFoods, searchFoodsByEmbedding, type SimilarFoodItem } from '../clients/catalog-client';
 import { findSimilarOutputSchema } from '../schemas/output';
-import { extractAuthContext } from '../utils/auth-context';
 import { logger } from '../../utils/logger';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -32,7 +31,7 @@ const formatSimilarFood = (food: SimilarFoodItem) => ({
  * Tool para encontrar alimentos similares no catálogo nutricional
  * Útil para sugerir substituições em dietas mantendo perfil nutricional
  */
-export const findSimilarFoodsTool = createTool({
+export const findSimilarFoodsTool = withAuth({
   id: 'find-similar-foods',
   description:
     'Encontra alimentos com perfil nutricional similar a um alimento de referência. ' +
@@ -59,9 +58,8 @@ export const findSimilarFoodsTool = createTool({
       .describe('Tolerância de diferença nutricional (0.3 = 30% de diferença permitida)'),
   }),
   outputSchema: findSimilarOutputSchema,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { authToken }) => {
     const { foodId, limit = 5, sameCategory = false, tolerance = 0.3 } = inputData;
-    const { authToken } = extractAuthContext(executionContext);
 
     logger.info(`🔄 [Tool] Buscando alimentos similares a: "${foodId}"`);
 

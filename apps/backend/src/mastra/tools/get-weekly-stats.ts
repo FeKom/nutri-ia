@@ -2,10 +2,9 @@
  * Tool para obter estatísticas semanais
  */
 
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { getWeeklyStats } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const getWeeklyStatsToolInput = z.object({
@@ -20,7 +19,7 @@ const getWeeklyStatsToolInput = z.object({
     .describe("Número de dias para incluir (1-30, padrão: 7)"),
 });
 
-export const getWeeklyStatsTool = createTool({
+export const getWeeklyStatsTool = withAuth({
   id: "get_weekly_stats",
   description:
     "Obtém estatísticas nutricionais agregadas de um período (padrão: últimos 7 dias), incluindo: " +
@@ -54,11 +53,9 @@ export const getWeeklyStatsTool = createTool({
       }),
     ),
   }),
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     // Desestrutura parâmetros do inputData
     const { days = 7 } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     logger.info(`📊 [Tool:getWeeklyStats] Obtendo estatísticas para usuário: ${userId} (dias: ${days})`);
 

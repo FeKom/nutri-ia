@@ -1,7 +1,6 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { getMealPlan } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const exportMealPlanPdfToolInput = z.object({
@@ -15,7 +14,7 @@ const exportMealPlanPdfToolOutput = z.object({
   message: z.string(),
 });
 
-export const exportMealPlanPdfTool = createTool({
+export const exportMealPlanPdfTool = withAuth({
   id: "export_meal_plan_pdf",
   description:
     "Exporta um plano alimentar como PDF para download. " +
@@ -23,10 +22,8 @@ export const exportMealPlanPdfTool = createTool({
     "Exemplos: 'gera um PDF da minha dieta', 'exporta meu plano alimentar', 'quero baixar minha dieta em PDF'",
   inputSchema: exportMealPlanPdfToolInput,
   outputSchema: exportMealPlanPdfToolOutput,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     const { plan_id } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     if (userId === "anonymous") {
       throw new Error(

@@ -1,15 +1,14 @@
-import { createTool } from '@mastra/core/tools';
+import { withAuth } from '../utils/with-auth';
 import { z } from 'zod';
 import { getRecipe } from '../clients/catalog-client';
 import { getRecipeOutputSchema } from '../schemas/output';
-import { extractAuthContext } from '../utils/auth-context';
 import { logger } from '../../utils/logger';
 
 /**
  * Tool para obter detalhes completos de uma receita
  * Inclui lista de ingredientes e instruções de preparo
  */
-export const getRecipeTool = createTool({
+export const getRecipeTool = withAuth({
   id: 'get-recipe',
   description:
     'Obtém os detalhes completos de uma receita específica, incluindo lista de ingredientes e instruções de preparo passo a passo.',
@@ -17,9 +16,8 @@ export const getRecipeTool = createTool({
     recipe_id: z.string().describe('ID da receita (UUID)'),
   }),
   outputSchema: getRecipeOutputSchema,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { authToken }) => {
     const { recipe_id } = inputData;
-    const { authToken } = extractAuthContext(executionContext);
 
     logger.info(`📖 [Tool] Obtendo receita: ${recipe_id}`);
 

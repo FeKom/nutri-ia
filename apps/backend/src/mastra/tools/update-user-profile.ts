@@ -2,12 +2,11 @@
  * Tool para atualizar perfil de usuário
  */
 
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import {
   invalidateUserProfileCache,
 } from "../utils/user-profile-loader";
-import { extractAuthContext } from "../utils/auth-context";
 import { updateUserProfile, defaultConfig } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
 
@@ -38,7 +37,7 @@ const updateUserProfileToolInput = z.object({
     .describe("Alimentos que não gosta"),
 });
 
-export const updateUserProfileTool = createTool({
+export const updateUserProfileTool = withAuth({
   id: "update_user_profile",
   description:
     "Atualiza o perfil do usuário com novos dados. Use quando o usuário quiser alterar informações como peso, altura, objetivo ou restrições. " +
@@ -58,8 +57,7 @@ export const updateUserProfileTool = createTool({
       })
       .optional(),
   }),
-  execute: async (inputData, executionContext) => {
-    const { userId, authToken } = extractAuthContext(executionContext);
+  execute: async (inputData, { userId, authToken }) => {
 
     if (!userId || userId === "anonymous") {
       return {

@@ -18,7 +18,6 @@ import { getDailySummary } from "./clients/catalog-client";
 import { sharedStorage } from "./config/storage";
 import { getObservabilityConfig } from "./config/observabilityOptions";
 import { validateEnv, env } from "./config/env";
-import { auth } from "../lib/auth";
 import { scoreAll } from "./eval/scorers";
 
 validateEnv();
@@ -45,10 +44,6 @@ export const mastra = new Mastra({
       allowHeaders: ["Content-Type", "Authorization", "x-mastra-client-type"],
     },
     apiRoutes: [
-      registerApiRoute("/auth/*", {
-        method: "ALL",
-        handler: async (c) => auth.handler(c.req.raw),
-      }),
       registerApiRoute("/chat", {
         method: "POST",
         handler: async (c) => {
@@ -73,7 +68,7 @@ export const mastra = new Mastra({
             }
 
             const userId = jwtPayload.sub;
-            const userEmail = jwtPayload.email;
+            const userUsername = jwtPayload.username;
 
             const { messages } = await c.req.json();
 
@@ -124,7 +119,7 @@ export const mastra = new Mastra({
               });
             }
 
-            logger.info({ userId, userEmail, messageCount: messages.length }, "chat request received");
+            logger.info({ userId, userUsername, messageCount: messages.length }, "chat request received");
 
             // Configura contexto do request para que tools possam acessar userId e JWT
             const requestContext = c.get("requestContext");
@@ -137,7 +132,7 @@ export const mastra = new Mastra({
             // Both are set so that utils/auth-context.ts#extractAuthContext can
             // read from whichever is available. Do not remove either until the
             // framework bug is resolved upstream.
-            return asyncContext.run({ userId, jwtToken: token }, async () => {
+            return asyncContext.run({ userId, jwtToken: token, userProfile }, async () => {
               const mastra = c.get("mastra");
               const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
 

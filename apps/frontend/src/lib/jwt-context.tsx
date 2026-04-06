@@ -5,67 +5,110 @@ import {
   useContext,
   useEffect,
   useState,
-  useCallback,
   type ReactNode,
 } from "react";
-import { useSession } from "./auth-client";
 
-interface JwtContextValue {
-  token: string | null;
-  isLoading: boolean;
+const STORAGE_KEY = "nutria_token";
+
+export interface SessionUser {
+  id: string;
+  username: string;
+  name: string;
+  planType: string;
+  avatarUrl: string | null;
 }
 
-const JwtContext = createContext<JwtContextValue>({
+interface AuthContextValue {
+  token: string | null;
+  isLoading: boolean;
+  session: { user: SessionUser } | null;
+  updateToken: (token: string | null) => void;
+}
+
+const AuthContext = createContext<AuthContextValue>({
   token: null,
   isLoading: true,
+  session: null,
+  updateToken: () => {},
 });
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4111";
-const REFRESH_INTERVAL = 12 * 60 * 1000; // 12 min (JWT expires in 15m)
+function decodeToken(token: string): SessionUser | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (!payload.sub) return null;
+    const expMs = payload.exp * 1000;
+    if (expMs < Date.now()) return null;
+    return {
+      id: payload.sub,
+      username: payload.username || "",
+      name: payload.name || "",
+      planType: "free",
+      avatarUrl: null,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function JwtProvider({ children }: { children: ReactNode }) {
-  const { data: session } = useSession();
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchToken = useCallback(async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/auth/token`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        setToken(null);
-        return;
-      }
-      const data = await response.json();
-      setToken(data.token || null);
-    } catch {
-      setToken(null);
-    } finally {
-      setIsLoading(false);
+  const updateToken = (newToken: string | null) => {
+    if (newToken) {
+      localStorage.setItem(STORAGE_KEY, newToken);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
-  }, []);
+    setToken(newToken);
+  };
 
   useEffect(() => {
-    if (!session?.user) {
-      setToken(null);
-      setIsLoading(false);
-      return;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && decodeToken(stored)) {
+      setToken(stored);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
+    setIsLoading(false);
 
-    fetchToken();
-    const interval = setInterval(fetchToken, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
-  }, [session, fetchToken]);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        setToken(e.newValue);
+      }
+    };
+    const onSetToken = (e: Event) => {
+      const newToken = (e as CustomEvent<string | null>).detail;
+      if (newToken) {
+        localStorage.setItem(STORAGE_KEY, newToken);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      setToken(newToken);
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("nutria-set-token", onSetToken);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("nutria-set-token", onSetToken);
+    };
+  }, []);
+
+  const user = token ? decodeToken(token) : null;
+  const session = user ? { user } : null;
 
   return (
-    <JwtContext.Provider value={{ token, isLoading }}>
+    <AuthContext.Provider value={{ token, isLoading, session, updateToken }}>
       {children}
-    </JwtContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
+export function useAuthContext() {
+  return useContext(AuthContext);
+}
+
 export function useJwt() {
-  return useContext(JwtContext);
+  const { token, isLoading } = useContext(AuthContext);
+  return { token, isLoading };
 }

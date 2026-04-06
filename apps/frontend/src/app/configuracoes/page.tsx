@@ -29,7 +29,7 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || '');
-      setEmail(session.user.email || '');
+      setEmail(session.user.username || '');
     }
   }, [session]);
 

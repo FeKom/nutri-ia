@@ -12,7 +12,7 @@ import { Leaf, ArrowRight } from 'lucide-react';
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,12 +35,12 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const result = await signUp.email({ email, password, name });
+      const result = await signUp.email({ username, name, password });
 
       if (result.error) {
         const errorMsg = result.error.message || '';
         if (errorMsg.includes('already exists') || errorMsg.includes('exist')) {
-          setError('Este email ja esta cadastrado. Tente fazer login.');
+          setError('Este usuario ja esta cadastrado. Tente fazer login.');
         } else {
           setError(errorMsg || 'Erro ao criar conta. Tente novamente.');
         }
@@ -51,7 +51,7 @@ export default function RegisterPage() {
       window.location.href = '/onboarding';
     } catch (err: any) {
       if (err.message?.includes('already exists') || err.message?.includes('exist')) {
-        setError('Este email ja esta cadastrado. Tente fazer login.');
+        setError('Este usuario ja esta cadastrado. Tente fazer login.');
       } else {
         setError(err.message || 'Erro ao criar conta. Tente novamente.');
       }
@@ -134,15 +134,15 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-nutria-bordo/70 text-sm font-medium">
-                Email
+              <Label htmlFor="username" className="text-nutria-bordo/70 text-sm font-medium">
+                Usuario
               </Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="escolha um usuario"
                 required
                 disabled={loading}
                 className="h-12 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl transition-all duration-200"

@@ -1,22 +1,21 @@
-import { jwtVerify, createRemoteJWKSet, type JWTPayload } from 'jose';
+import { jwtVerify, type JWTPayload } from 'jose';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4111';
-const JWKS_URL = `${BACKEND_URL}/auth/jwks`;
-
-const JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET_KEY || 'change-me-in-production'
+);
 
 export interface NutriaJwtPayload extends JWTPayload {
   sub: string;
-  email: string;
+  username: string;
   name?: string;
 }
 
 /**
- * Verifica e decodifica um JWT usando as chaves públicas do JWKS do backend.
+ * Verifies and decodes a JWT using the shared HS256 secret.
  */
 export async function verifyJwt(token: string): Promise<NutriaJwtPayload> {
-  const { payload } = await jwtVerify(token, JWKS, {
-    issuer: BACKEND_URL,
+  const { payload } = await jwtVerify(token, JWT_SECRET, {
+    issuer: 'nutria-catalog',
     audience: 'nutria',
   });
 
@@ -28,8 +27,8 @@ export async function verifyJwt(token: string): Promise<NutriaJwtPayload> {
 }
 
 /**
- * Extrai o Bearer token do header Authorization.
- * Retorna null se o header não existir ou não for Bearer.
+ * Extracts the Bearer token from an Authorization header.
+ * Returns null if missing or not a Bearer token.
  */
 export function extractBearerToken(authHeader: string | undefined): string | null {
   if (!authHeader?.startsWith('Bearer ')) return null;

@@ -2,39 +2,25 @@ from typing import Generator
 
 import jwt as pyjwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import PyJWKClient
+from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session
 
 from app.core.config import settings
 from app.database.database import engine
 
-# JWKS client — busca e cacheia as chaves públicas do frontend
-_jwks_client = PyJWKClient(settings.JWKS_URL)
-
-# HTTPBearer extrai o token do header Authorization: Bearer <token>
-_security = HTTPBearer()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Dependency para obter sessão do banco de dados."""
     with Session(engine) as session:
         yield session
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(_security),
-) -> dict:
-    """
-    Valida JWT e retorna payload do usuário.
-    O token é verificado usando as chaves públicas do JWKS do frontend.
-    """
-    token = credentials.credentials
+def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     try:
-        signing_key = _jwks_client.get_signing_key_from_jwt(token)
         payload = pyjwt.decode(
             token,
-            signing_key.key,
+            settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
             audience=settings.JWT_AUDIENCE,
             issuer=settings.JWT_ISSUER,
@@ -43,27 +29,29 @@ def get_current_user(
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token inválido: campo 'sub' ausente",
+                detail="Invalid token: missing sub",
+                headers={"WWW-Authenticate": "Bearer"},
             )
         return {
             "user_id": user_id,
-            "email": payload.get("email"),
+            "username": payload.get("username"),
             "name": payload.get("name"),
         }
     except pyjwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expirado",
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except pyjwt.InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token inválido: {str(e)}",
+            detail=f"Invalid token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
 def get_current_user_id(
     current_user: dict = Depends(get_current_user),
 ) -> str:
-    """Dependency de conveniência que retorna apenas o user_id."""
     return current_user["user_id"]

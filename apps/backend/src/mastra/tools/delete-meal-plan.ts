@@ -1,7 +1,6 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { deleteMealPlan } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const deleteMealPlanToolInput = z.object({
@@ -13,7 +12,7 @@ const deleteMealPlanToolOutput = z.object({
   message: z.string(),
 });
 
-export const deleteMealPlanTool = createTool({
+export const deleteMealPlanTool = withAuth({
   id: "delete_meal_plan",
   description:
     "Deleta um plano alimentar. " +
@@ -21,10 +20,8 @@ export const deleteMealPlanTool = createTool({
     "Exemplos: 'Delete minha dieta antiga', 'Remove o plano X', 'Apaga essa dieta'",
   inputSchema: deleteMealPlanToolInput,
   outputSchema: deleteMealPlanToolOutput,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     const { plan_id } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     if (userId === "anonymous") {
       throw new Error(

@@ -2,10 +2,9 @@
  * Tool para obter resumo nutricional do dia
  */
 
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { getDailySummary } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const getDailySummaryToolInput = z.object({
@@ -16,7 +15,7 @@ const getDailySummaryToolInput = z.object({
     .describe("Data no formato YYYY-MM-DD (opcional, padrão: hoje)"),
 });
 
-export const getDailySummaryTool = createTool({
+export const getDailySummaryTool = withAuth({
   id: "get_daily_summary",
   description:
     "Obtém o resumo nutricional completo do dia para um usuário, incluindo: " +
@@ -60,11 +59,9 @@ export const getDailySummaryTool = createTool({
       }),
     ),
   }),
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     // Desestrutura parâmetros do inputData
     const { date } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     logger.info(`📈 [Tool:getDailySummary] Obtendo resumo para usuário: ${userId} (data: ${date || "hoje"})`);
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import activities, eval, foods, goals, meal_plans, nutrition, recipes, recommendations, tracking, users
+from app.api.v1 import activities, auth, eval, foods, goals, meal_plans, nutrition, recipes, recommendations, tracking, users
 from app.core.config import settings
 
 app = FastAPI(
@@ -45,6 +45,7 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 # Include routers with /api/v1 prefix
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(eval.router, prefix=f"{settings.API_V1_STR}/eval", tags=["eval"])
 app.include_router(foods.router, prefix=f"{settings.API_V1_STR}/foods", tags=["foods"])
 app.include_router(recipes.router, prefix=f"{settings.API_V1_STR}/recipes", tags=["recipes"])

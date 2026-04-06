@@ -14,7 +14,6 @@ import { deleteMealPlanTool } from "../tools/delete-meal-plan";
 // DETIC tool mantida no código mas removida do MVP (requer GPU)
 // import { analyzeFoodImageDeticTool } from "../tools/analyze-food-image-detic";
 import { confirmAndLogImageMealTool } from "../tools/confirm-and-log-image-meal";
-import { createUserProfileTool } from "../tools/create-user-profile";
 import { updateUserProfileTool } from "../tools/update-user-profile";
 import { calculateMacrosTool } from "../tools/calculate-macros";
 import { exportMealPlanPdfTool } from "../tools/export-meal-plan-pdf";
@@ -36,7 +35,6 @@ export const toolSearch = new ToolSearchProcessor({
     deleteMealPlanTool,
     // analyzeFoodImageDeticTool, // MVP: agente usa visão nativa do LLM
     confirmAndLogImageMealTool,
-    createUserProfileTool,
     updateUserProfileTool,
     calculateMacrosTool,
     exportMealPlanPdfTool,

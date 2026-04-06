@@ -28,11 +28,12 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: PostgresDsn
 
-    # JWT Configuration - validação via JWKS do backend (Better Auth roda no Mastra, porta 4111)
-    JWKS_URL: str = "http://localhost:4111/auth/jwks"
-    JWT_ISSUER: str = "http://localhost:4111"
+    # JWT Configuration - HS256 with shared secret
+    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    JWT_ISSUER: str = "nutria-catalog"
     JWT_AUDIENCE: str = "nutria"
-    JWT_ALGORITHM: str = "EdDSA"
 
     # Mastra backend URL
     MASTRA_URL: str = "http://localhost:4111"

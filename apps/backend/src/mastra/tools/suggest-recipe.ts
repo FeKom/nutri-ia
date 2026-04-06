@@ -1,7 +1,8 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
+import { saveRecipe } from "../api/recipes";
+import { unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
-import { defaultConfig } from "../clients/catalog-client";
 
 export const suggestRecipeTool = createTool({
   id: "save_recipe",
@@ -33,18 +34,7 @@ export const suggestRecipeTool = createTool({
     logger.info(`🍽️ [Tool:saveRecipe] Salvando receita: ${input.name}`);
 
     try {
-      const res = await fetch(`${defaultConfig.baseURL}/api/v1/recipes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`API ${res.status}: ${err}`);
-      }
-
-      const recipe = await res.json();
+      const recipe = unwrap(await saveRecipe(input));
       logger.info(`✅ [Tool:saveRecipe] Receita salva: ${recipe.id}`);
       return { success: true, recipe_id: recipe.id, message: `Receita "${input.name}" salva com sucesso!` };
     } catch (error) {

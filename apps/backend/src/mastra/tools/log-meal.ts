@@ -2,10 +2,9 @@
  * Tool para registrar refeições consumidas
  */
 
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { logMeal } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const logMealToolInput = z.object({
@@ -26,7 +25,7 @@ const logMealToolInput = z.object({
   notes: z.string().optional().describe("Notas sobre a refeição (opcional)"),
 });
 
-export const logMealTool = createTool({
+export const logMealTool = withAuth({
   id: "log_meal",
   description:
     "Registra uma refeição consumida pelo usuário com todos os alimentos e quantidades. " +
@@ -43,11 +42,9 @@ export const logMealTool = createTool({
     meal_type: z.string().describe("Tipo de refeição"),
     num_foods: z.number().describe("Número de alimentos na refeição"),
   }),
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     // Desestrutura parâmetros do inputData
     const { meal_type, foods, notes } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     logger.info(`🍽️ [Tool:logMeal] Registrando refeição para usuário: ${userId}`);
     logger.info(`   Tipo: ${meal_type}, Alimentos: ${foods.length}`);

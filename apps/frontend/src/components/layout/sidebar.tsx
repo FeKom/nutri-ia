@@ -69,7 +69,7 @@ export function Sidebar() {
                 {session.user.name || 'Usuario'}
               </p>
               <p className="text-xs text-nutria-bordo/50 capitalize">
-                Plano {session.user.planType || 'free'}
+                Plano free
               </p>
             </div>
           </div>

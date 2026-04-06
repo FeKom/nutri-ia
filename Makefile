@@ -26,7 +26,7 @@ dev:
 		echo "⚠️  IMPORTANTE: Configure as variáveis em .env antes de continuar!"; \
 		exit 1; \
 	fi
-	docker compose up -d
+	docker-compose up -d
 	@echo ""
 	@echo "✅ Serviços disponíveis:"
 	@echo "   Frontend:  http://localhost:3000"

@@ -1,11 +1,10 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import {
   calculateNutrition,
   type NutritionDetail,
 } from "../clients/catalog-client";
 import { calculateNutritionOutputSchema } from "../schemas/output";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 /**
@@ -25,7 +24,7 @@ const formatNutritionDetail = (detail: NutritionDetail) => ({
  * Tool para calcular valores nutricionais totais
  * Conecta com a Food Catalog API (FastAPI)
  */
-export const calculateNutritionTool = createTool({
+export const calculateNutritionTool = withAuth({
   id: "calculate-nutrition",
   description:
     "Utilize essa tool exclusivamente para calculo de alimentos" +
@@ -42,9 +41,8 @@ export const calculateNutritionTool = createTool({
       .describe("Lista de alimentos com quantidades"),
   }),
   outputSchema: calculateNutritionOutputSchema,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { authToken }) => {
     const { foods } = inputData;
-    const { authToken } = extractAuthContext(executionContext);
 
     logger.info(`🧮 [Tool] Calculando nutrição para ${foods.length} alimentos`);
 

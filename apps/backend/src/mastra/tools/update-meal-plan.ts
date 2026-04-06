@@ -1,7 +1,6 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { updateMealPlan } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const updateMealPlanToolInput = z.object({
@@ -43,7 +42,7 @@ const updateMealPlanToolOutput = z.object({
   message: z.string(),
 });
 
-export const updateMealPlanTool = createTool({
+export const updateMealPlanTool = withAuth({
   id: "update_meal_plan",
   description:
     "Atualiza um plano alimentar existente. " +
@@ -51,10 +50,8 @@ export const updateMealPlanTool = createTool({
     "Exemplos: 'Ajusta a dieta para 1800 calorias', 'Muda o nome do plano', 'Adiciona mais proteína'",
   inputSchema: updateMealPlanToolInput,
   outputSchema: updateMealPlanToolOutput,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     const { plan_id, ...updates } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     if (userId === "anonymous") {
       throw new Error(

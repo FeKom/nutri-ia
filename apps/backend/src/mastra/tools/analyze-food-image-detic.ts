@@ -6,10 +6,9 @@
  * de alimentos em imagens.
  */
 
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { analyzeImageWithDetic } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 
 const analyzeFoodImageDeticToolInput = z.object({
@@ -78,7 +77,7 @@ const analyzeFoodImageDeticToolOutput = z.object({
     .describe("Mensagem opcional (ex: quando nenhum alimento detectado)"),
 });
 
-export const analyzeFoodImageDeticTool = createTool({
+export const analyzeFoodImageDeticTool = withAuth({
   id: "analyze_food_image_detic",
   description:
     "Analisa imagem de alimento usando DETIC (modelo de visão computacional). " +
@@ -87,15 +86,13 @@ export const analyzeFoodImageDeticTool = createTool({
     "IMPORTANTE: Este tool REQUER a imagem como parâmetro image_base64.",
   inputSchema: analyzeFoodImageDeticToolInput,
   outputSchema: analyzeFoodImageDeticToolOutput,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     const {
       image_base64,
       top_k_per_food = 3,
       confidence_threshold = 0.5,
       additional_context,
     } = inputData;
-
-    const { userId, authToken } = extractAuthContext(executionContext);
 
     logger.info("📸 [Tool:analyzeFoodImageDetic] Analisando imagem com DETIC...");
     logger.info(`   Top-k per food: ${top_k_per_food}`);

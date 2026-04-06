@@ -1,8 +1,7 @@
-import { createTool } from '@mastra/core/tools';
+import { withAuth } from '../utils/with-auth';
 import { z } from 'zod';
 import { searchFoodsByEmbedding, type SimilarFoodItem } from '../clients/catalog-client';
 import { searchFoodOutputSchema } from '../schemas/output';
-import { extractAuthContext } from '../utils/auth-context';
 import { logger } from '../../utils/logger';
 
 /**
@@ -28,7 +27,7 @@ const formatFoodItem = (food: SimilarFoodItem) => ({
  * Tool para buscar alimentos no catálogo nutricional
  * Conecta com a Food Catalog API (FastAPI)
  */
-export const searchFoodCatalogTool = createTool({
+export const searchFoodCatalogTool = withAuth({
   id: 'search-food-catalog',
   description:
     'Busca alimentos no catálogo nutricional por nome ou categoria. Retorna informações nutricionais básicas.',
@@ -43,9 +42,8 @@ export const searchFoodCatalogTool = createTool({
       .describe('Número máximo de resultados (padrão: 5)'),
   }),
   outputSchema: searchFoodOutputSchema,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { authToken }) => {
     const { query, limit = 5 } = inputData;
-    const { authToken } = extractAuthContext(executionContext);
 
     logger.info(`🔍 [Tool] Buscando alimentos (semântica): "${query}" (limite: ${limit})`);
 

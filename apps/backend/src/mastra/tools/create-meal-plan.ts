@@ -1,7 +1,6 @@
-import { createTool } from "@mastra/core/tools";
+import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
 import { createMealPlan } from "../clients/catalog-client";
-import { extractAuthContext } from "../utils/auth-context";
 import { logger } from "../../utils/logger";
 const createMealPlanToolInput = z.object({
   plan_name: z.string().min(1).max(100).describe("Nome do plano alimentar"),
@@ -37,7 +36,7 @@ const createMealPlanToolOutput = z.object({
   message: z.string().describe("Mensagem de sucesso"),
 });
 
-export const createMealPlanTool = createTool({
+export const createMealPlanTool = withAuth({
   id: "create_meal_plan",
   description:
     "Cria um novo plano alimentar (dieta) personalizado para o usuário. " +
@@ -45,7 +44,7 @@ export const createMealPlanTool = createTool({
     "Exemplos: 'Crie uma dieta para perder peso', 'Monta um plano de 2000 calorias', 'Quero um plano low carb'",
   inputSchema: createMealPlanToolInput,
   outputSchema: createMealPlanToolOutput,
-  execute: async (inputData, executionContext) => {
+  execute: async (inputData, { userId, authToken }) => {
     const {
       plan_name,
       description,
@@ -56,8 +55,6 @@ export const createMealPlanTool = createTool({
       meals = [],
     } = inputData;
 
-    // Resolve user ID and JWT from execution context
-    const { userId, authToken } = extractAuthContext(executionContext);
     if (!userId) {
       throw new Error(
         "Usuário não autenticado. Por favor, faça login para criar planos alimentares.",

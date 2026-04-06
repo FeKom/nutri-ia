@@ -5,6 +5,9 @@ from app.api.dependencies import get_db
 from app.schemas.food import (
     NutritionCalculationRequest,
     NutritionCalculationResponse,
+    MacrosRequest,
+    MacrosResponse,
+    MacrosProfileUsed,
 )
 from app.services import nutrition_service
 
@@ -100,3 +103,99 @@ async def calculate_nutrition(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error calculating nutrition: {str(e)}",
         )
+
+
+_ACTIVITY_FACTORS = {
+    "sedentary": 1.2,
+    "light": 1.375,
+    "moderate": 1.55,
+    "active": 1.725,
+    "very_active": 1.9,
+}
+
+_CALORIE_ADJUSTMENTS = {
+    "weight_loss": -500,
+    "weight_gain": 500,
+    "maintain": 0,
+}
+
+_GOAL_NAMES = {
+    "weight_loss": "perda de peso",
+    "weight_gain": "ganho de peso",
+    "maintain": "manutenção",
+}
+
+_ACTIVITY_NAMES = {
+    "sedentary": "sedentário",
+    "light": "levemente ativo",
+    "moderate": "moderadamente ativo",
+    "active": "muito ativo",
+    "very_active": "extremamente ativo",
+}
+
+
+@router.post("/macros", response_model=MacrosResponse)
+def calculate_macros(request: MacrosRequest) -> MacrosResponse:
+    """
+    Calculate daily macro targets using the Mifflin-St Jeor formula.
+
+    Returns BMR, TDEE, and optimal macro distribution based on the user's
+    physical profile and dietary goal.
+    """
+    w, h, a, g = request.weight_kg, request.height_cm, request.age, request.gender.value
+
+    # Mifflin-St Jeor BMR
+    base = 10 * w + 6.25 * h - 5 * a
+    gender_adj = 5 if g == "male" else (-161 if g == "female" else -78)
+    tmb = round(base + gender_adj, 1)
+
+    # TDEE
+    tdee = round(tmb * _ACTIVITY_FACTORS[request.activity_level.value], 1)
+
+    # Calorie target
+    adjustment = _CALORIE_ADJUSTMENTS[request.diet_goal.value]
+    daily_calories = round(tdee + adjustment, 1)
+
+    # Protein: higher during weight loss/gain to preserve/build muscle
+    protein_per_kg = {"weight_loss": 2.0, "weight_gain": 2.2, "maintain": 1.6}[request.diet_goal.value]
+    protein_g = round(w * protein_per_kg, 1)
+
+    fat_g = round((daily_calories * 0.28) / 9, 1)
+    carbs_g = round((daily_calories - protein_g * 4 - fat_g * 9) / 4, 1)
+
+    goal_name = _GOAL_NAMES[request.diet_goal.value]
+    activity_name = _ACTIVITY_NAMES[request.activity_level.value]
+    gender_pt = "masculino" if g == "male" else ("não binário" if g == "non_binary" else "feminino")
+
+    explanation = (
+        f"Baseado no seu perfil ({w}kg, {h}cm, {a} anos, {gender_pt}):\n\n"
+        f"📊 **Cálculos Nutricionais**\n"
+        f"• TMB (metabolismo basal): {tmb} kcal/dia\n"
+        f"• TDEE (gasto total com atividade {activity_name}): {tdee} kcal/dia\n"
+        f"• Meta ajustada para {goal_name}: {daily_calories} kcal/dia\n\n"
+        f"🍽️ **Distribuição de Macros**\n"
+        f"• Proteína: {protein_g}g/dia ({protein_g / w:.1f}g/kg)\n"
+        f"• Carboidratos: {carbs_g}g/dia\n"
+        f"• Gordura: {fat_g}g/dia\n\n"
+        f"💡 **Nota**: Estes valores são estimativas. Ajuste conforme necessário baseado nos resultados."
+    )
+
+    return MacrosResponse(
+        tmb=tmb,
+        tdee=tdee,
+        daily_calories=daily_calories,
+        daily_protein_g=protein_g,
+        daily_carbs_g=carbs_g,
+        daily_fat_g=fat_g,
+        calorie_adjustment=adjustment,
+        diet_goal=request.diet_goal.value,
+        profile_used=MacrosProfileUsed(
+            weight_kg=w,
+            height_cm=h,
+            age=a,
+            gender=g,
+            activity_level=request.activity_level.value,
+            diet_goal=request.diet_goal.value,
+        ),
+        explanation=explanation,
+    )

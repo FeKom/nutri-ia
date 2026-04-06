@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import List, Optional
 from uuid import UUID
 
@@ -368,6 +369,63 @@ class DetectedFoodMatch(BaseModel):
     matches: List[CatalogMatch] = Field(
         ..., description="Catalog foods matching this detection"
     )
+
+
+# ========== Macros Calculation Schemas ==========
+
+
+class GenderEnum(str, Enum):
+    male = "male"
+    female = "female"
+    non_binary = "non_binary"
+
+
+class ActivityLevelEnum(str, Enum):
+    sedentary = "sedentary"
+    light = "light"
+    moderate = "moderate"
+    active = "active"
+    very_active = "very_active"
+
+
+class DietGoalEnum(str, Enum):
+    weight_loss = "weight_loss"
+    weight_gain = "weight_gain"
+    maintain = "maintain"
+
+
+class MacrosRequest(BaseModel):
+    weight_kg: float = Field(..., gt=0, description="Weight in kilograms")
+    height_cm: float = Field(..., gt=0, description="Height in centimeters")
+    age: int = Field(..., gt=0, le=120, description="Age in years")
+    gender: GenderEnum = Field(..., description="Gender for BMR calculation")
+    activity_level: ActivityLevelEnum = Field(..., description="Physical activity level")
+    diet_goal: DietGoalEnum = Field(..., description="Nutritional goal")
+
+
+class MacrosProfileUsed(BaseModel):
+    weight_kg: float
+    height_cm: float
+    age: int
+    gender: str
+    activity_level: str
+    diet_goal: str
+
+
+class MacrosResponse(BaseModel):
+    tmb: float = Field(..., description="Basal Metabolic Rate (kcal/day)")
+    tdee: float = Field(..., description="Total Daily Energy Expenditure (kcal/day)")
+    daily_calories: float = Field(..., description="Recommended daily calories")
+    daily_protein_g: float = Field(..., description="Daily protein in grams")
+    daily_carbs_g: float = Field(..., description="Daily carbohydrates in grams")
+    daily_fat_g: float = Field(..., description="Daily fat in grams")
+    calorie_adjustment: float = Field(..., description="Caloric adjustment applied (deficit/surplus)")
+    diet_goal: str = Field(..., description="Goal of the plan")
+    profile_used: MacrosProfileUsed
+    explanation: str = Field(..., description="Calculation explanation in Portuguese")
+
+
+# ========== Image Analysis Schemas ==========
 
 
 class ImageAnalysisResponse(BaseModel):

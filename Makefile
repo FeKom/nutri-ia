@@ -1,6 +1,7 @@
 .PHONY: help start stop install \
         frontend-start backend-start catalog-start \
         frontend-install backend-install catalog-install \
+        seed-taco seed-taco-dry \
         dev build restart logs logs-f ps clean \
         logs-frontend logs-backend logs-catalog logs-postgres
 
@@ -23,6 +24,10 @@ help:
 	@echo "  make frontend-start     - Run frontend only  (pnpm dev, :3000)"
 	@echo "  make backend-start      - Run backend only   (bun dev,  :4111)"
 	@echo "  make catalog-start      - Run catalog only   (uvicorn,  :8000)"
+	@echo ""
+	@echo "$(GREEN)Database:$(RESET)"
+	@echo "  make seed-taco          - Import ~600 TACO Brazilian foods into the DB"
+	@echo "  make seed-taco-dry      - Dry-run: validate without writing to DB"
 	@echo ""
 	@echo "$(GREEN)Dependencies:$(RESET)"
 	@echo "  make install            - Install deps for all apps"
@@ -68,6 +73,12 @@ catalog-start:
 # ── Install ─────────────────────────────────────────────────────────────────
 
 install: frontend-install backend-install catalog-install
+
+seed-taco:
+	cd apps/catalog && .venv/bin/python scripts/import_taco.py
+
+seed-taco-dry:
+	cd apps/catalog && .venv/bin/python scripts/import_taco.py --dry-run
 
 frontend-install:
 	@$(NVM_INIT) && cd apps/frontend && pnpm install

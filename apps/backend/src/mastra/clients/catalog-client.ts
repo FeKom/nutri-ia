@@ -262,7 +262,7 @@ const isRetryableError = (error: unknown): boolean => {
 /**
  * Cria erro de API padronizado
  */
-const createApiError = ( message: string, statusCode?: number, isRetryable?: false) => ({ message, statusCode, isRetryable});
+const createApiError = (message: string, statusCode?: number, isRetryable?: boolean, rawError?: unknown) => ({ message, statusCode, isRetryable, rawError });
 
 type ApiError =  ReturnType<typeof createApiError>;
 
@@ -297,28 +297,29 @@ export const NutriaRequest = async <T>(
   timeout?: number | 3000,
   fn?:(() => unknown),
 ): Promise<NutriaResponse<T>> => {
-  const abort = AbortController();
-  const id = setTimeout( ()=> abort.abort(), timeout);
+  const abort = new AbortController();
+  const id = setTimeout(() => abort.abort(), timeout);
   try {
-    const response = await fetch(url,{
+    const response = await fetch(url, {
       ...options,
       signal: abort.signal,
       headers: {
         "Content-Type": "application/json",
-        ...options
-      }
+        ...options.headers,
+      },
     });
 
-    clearTmeout(id)
+    clearTimeout(id);
     if (!response.ok) {
-      const rawError = await response.json().catch(() => ({}))
-      if(fn) fn();
+      const rawError = await response.json().catch(() => ({}));
+      if (fn) fn();
       return {
         success: false,
         error: createApiError(
-          options.message ??`Api Error: ${response.text}`,
-          option.code ?? response.status,
-          {apiRawError: rawError},
+          options.message ?? `Api Error: ${response.statusText}`,
+          options.code ?? response.status,
+          false,
+          rawError,
         ),
       };
     }
@@ -326,14 +327,14 @@ export const NutriaRequest = async <T>(
     const data = (await response.json()) as T;
     return { success: true, data };
   } catch (error) {
-    clearTmeout(id)
-    const isTimeout = error.name === "AbortError";
+    clearTimeout(id);
+    const isTimeout = (error as Error).name === "AbortError";
     return {
       success: false,
       error: createApiError(
-        isTimeout ? "Request Timeout" :(options.message ?? "Failed to connect Server"),
-        isTimeout ? 408 :(options.code ?? 500),
-        true
+        isTimeout ? "Request Timeout" : (options.message ?? "Failed to connect Server"),
+        isTimeout ? 408 : (options.code ?? 500),
+        true,
       ),
     };
   }

@@ -11,6 +11,7 @@ import { PinoLogger } from "@mastra/loggers";
 import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
 import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
+import { acquireChatLock, releaseChatLock } from "../lib/user-chat-queue";
 import { asyncContext } from "../lib/async-context";
 import { getUserProfileFromDB } from "./utils/user-profile-loader";
 import { userProfileToContext } from "../mastra/config/memory";
@@ -18,7 +19,6 @@ import { getDailySummary } from "./clients/catalog-client";
 import { sharedStorage } from "./config/storage";
 import { getObservabilityConfig } from "./config/observabilityOptions";
 import { validateEnv, env } from "./config/env";
-import { scoreAll } from "./eval/scorers";
 
 validateEnv();
 
@@ -47,6 +47,7 @@ export const mastra = new Mastra({
       registerApiRoute("/chat", {
         method: "POST",
         handler: async (c) => {
+          let chatLockUserId: string | undefined;
           try {
             // Valida JWT do header Authorization
             const token = extractBearerToken(c.req.header("Authorization"));
@@ -121,6 +122,15 @@ export const mastra = new Mastra({
 
             logger.info({ userId, userUsername, messageCount: messages.length }, "chat request received");
 
+            // Serialise concurrent requests per user to prevent thread memory corruption
+            if (!acquireChatLock(userId)) {
+              return c.json(
+                { error: "Another message is already being processed. Please wait for the current response to finish." },
+                429,
+              );
+            }
+            chatLockUserId = userId;
+
             // Configura contexto do request para que tools possam acessar userId e JWT
             const requestContext = c.get("requestContext");
             requestContext.set(MASTRA_RESOURCE_ID_KEY, userId);
@@ -137,6 +147,7 @@ export const mastra = new Mastra({
               const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
 
               if (!nutritionAgent) {
+                releaseChatLock(userId);
                 return c.json({ error: "Agent não encontrado" }, 500);
               }
 
@@ -148,10 +159,14 @@ export const mastra = new Mastra({
               const uiMessageStream = createUIMessageStream({
                 originalMessages: messages,
                 execute: async ({ writer }) => {
-                  for await (const part of toAISdkStream(result, {
-                    from: "agent",
-                  })) {
-                    await writer.write(part);
+                  try {
+                    for await (const part of toAISdkStream(result, {
+                      from: "agent",
+                    })) {
+                      await writer.write(part);
+                    }
+                  } finally {
+                    releaseChatLock(userId);
                   }
                 },
               });
@@ -161,6 +176,7 @@ export const mastra = new Mastra({
               });
             });
           } catch (error) {
+            if (chatLockUserId) releaseChatLock(chatLockUserId);
             logger.error({ error }, "error in /chat endpoint");
             return c.json(
               {
@@ -204,15 +220,14 @@ export const mastra = new Mastra({
 
               // Extract context from tool call results so metrics are meaningful
               const toolTexts: string[] = [];
-              for (const step of result.steps ?? []) {
-                for (const toolResult of step.toolResults ?? []) {
-                  const content = toolResult.result;
-                  if (content && typeof content === "object") {
-                    const text = JSON.stringify(content);
-                    if (text.length > 10) toolTexts.push(text);
-                  } else if (typeof content === "string" && content.length > 10) {
-                    toolTexts.push(content);
-                  }
+              const allToolResults = (result as any).toolResults ?? result.steps?.flatMap((s: any) => s.toolResults ?? []) ?? [];
+              for (const toolResult of allToolResults) {
+                const content = toolResult.result;
+                if (content && typeof content === "object") {
+                  const text = JSON.stringify(content);
+                  if (text.length > 10) toolTexts.push(text);
+                } else if (typeof content === "string" && content.length > 10) {
+                  toolTexts.push(content);
                 }
               }
               contextTexts = toolTexts;
@@ -254,14 +269,18 @@ export const mastra = new Mastra({
 
             const latency_ms = Date.now() - start;
 
-            // Score via embedding similarity
-            const scores = await scoreAll(
-              question,
-              answer,
-              contextTexts,
-              env.CATALOG_API_URL,
-              expected_answer ?? undefined,
-            );
+            // Score via catalog
+            const scoreRes = await fetch(`${env.CATALOG_API_URL}/api/v1/eval/score`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                question,
+                answer,
+                context_chunks: contextTexts,
+                expected_answer: expected_answer ?? null,
+              }),
+            });
+            const scores = scoreRes.ok ? await scoreRes.json() : null;
 
             return c.json({
               answer,

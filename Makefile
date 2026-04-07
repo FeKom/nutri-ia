@@ -9,6 +9,11 @@ CYAN  := \033[0;36m
 GREEN := \033[0;32m
 RESET := \033[0m
 
+# ── nvm ─────────────────────────────────────────────────────────────────────
+# Source nvm so Make subshells use the version pinned in .nvmrc (node 22).
+# Homebrew node (25.x) breaks due to a simdjson dylib version mismatch.
+NVM_INIT := export NVM_DIR="$$HOME/.nvm"; [ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; nvm use --silent
+
 help:
 	@echo ""
 	@echo "$(CYAN)Nutri-IA Monorepo$(RESET)"
@@ -46,16 +51,16 @@ start:
 	@echo "Press Ctrl+C to stop all services."
 	@echo ""
 	@trap 'kill 0' INT; \
-	(cd apps/frontend && pnpm dev 2>&1 | sed 's/^/\033[0;36m[frontend]\033[0m /') & \
-	(cd apps/backend  && bun  run dev 2>&1 | sed 's/^/\033[0;33m[backend ]\033[0m /') & \
+	($(NVM_INIT) && cd apps/frontend && pnpm dev 2>&1 | sed 's/^/\033[0;36m[frontend]\033[0m /') & \
+	($(NVM_INIT) && cd apps/backend  && bun  run dev 2>&1 | sed 's/^/\033[0;33m[backend ]\033[0m /') & \
 	(cd apps/catalog  && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 2>&1 | sed 's/^/\033[0;32m[catalog ]\033[0m /') & \
 	wait
 
 frontend-start:
-	cd apps/frontend && pnpm dev
+	@$(NVM_INIT) && cd apps/frontend && pnpm dev
 
 backend-start:
-	cd apps/backend && bun run dev
+	@$(NVM_INIT) && cd apps/backend && bun run dev
 
 catalog-start:
 	cd apps/catalog && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -65,10 +70,10 @@ catalog-start:
 install: frontend-install backend-install catalog-install
 
 frontend-install:
-	cd apps/frontend && pnpm install
+	@$(NVM_INIT) && cd apps/frontend && pnpm install
 
 backend-install:
-	cd apps/backend && bun install
+	@$(NVM_INIT) && cd apps/backend && bun install
 
 catalog-install:
 	cd apps/catalog && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt

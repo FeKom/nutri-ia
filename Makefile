@@ -1,4 +1,4 @@
-.PHONY: help start stop install \
+.PHONY: help start stop install migrate \
         frontend-start backend-start catalog-start \
         frontend-install backend-install catalog-install \
         seed-taco seed-taco-dry \
@@ -26,6 +26,7 @@ help:
 	@echo "  make catalog-start      - Run catalog only   (uvicorn,  :8000)"
 	@echo ""
 	@echo "$(GREEN)Database:$(RESET)"
+	@echo "  make migrate            - Run Alembic migrations (create/update tables)"
 	@echo "  make seed-taco          - Import ~600 TACO Brazilian foods into the DB"
 	@echo "  make seed-taco-dry      - Dry-run: validate without writing to DB"
 	@echo ""
@@ -48,7 +49,7 @@ help:
 
 # ── Local development ───────────────────────────────────────────────────────
 
-start:
+start: migrate
 	@echo "$(CYAN)Starting frontend, backend and catalog...$(RESET)"
 	@echo "$(GREEN)  frontend$(RESET) → http://localhost:3000"
 	@echo "$(GREEN)  backend $(RESET) → http://localhost:4111"
@@ -67,12 +68,17 @@ frontend-start:
 backend-start:
 	@$(NVM_INIT) && cd apps/backend && bun run dev
 
-catalog-start:
+catalog-start: migrate
 	cd apps/catalog && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # ── Install ─────────────────────────────────────────────────────────────────
 
 install: frontend-install backend-install catalog-install
+
+migrate:
+	@echo "Running Alembic migrations..."
+	cd apps/catalog && .venv/bin/alembic upgrade head
+	@echo "Migrations done."
 
 seed-taco:
 	cd apps/catalog && .venv/bin/python scripts/import_taco.py

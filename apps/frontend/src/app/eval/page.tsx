@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FlaskConical, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { FlaskConical, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
 
 interface EvalRun {
   id: string;
@@ -47,6 +48,7 @@ const RETRIEVAL_SOURCES = ['json', 'pdf', 'md'];
 export default function EvalPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const authFetch = useAuthFetch();
 
   const [datasets, setDatasets] = useState<string[]>([]);
   const [experiments, setExperiments] = useState<EvalExperiment[]>([]);
@@ -54,6 +56,8 @@ export default function EvalPage() {
   const [expandedRuns, setExpandedRuns] = useState<Record<string, EvalRun[]>>({});
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
+  const [ingesting, setIngesting] = useState<string | null>(null);
+  const [ingestResults, setIngestResults] = useState<Record<string, { chunks_created: number; chunks_skipped: number }>>({});
 
   const [form, setForm] = useState({
     name: '',
@@ -85,12 +89,23 @@ export default function EvalPage() {
     setExperiments(data.experiments || []);
   }
 
+  async function ingestDataset(filename: string) {
+    setIngesting(filename);
+    try {
+      const res = await fetch(`/api/eval/datasets/${filename}/ingest`, { method: 'POST' });
+      const data = await res.json();
+      setIngestResults(prev => ({ ...prev, [filename]: data }));
+    } finally {
+      setIngesting(null);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.prompt) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/eval/experiments', {
+      const res = await authFetch('/api/eval/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -120,7 +135,7 @@ export default function EvalPage() {
   async function runExperiment(id: string) {
     setRunning(id);
     try {
-      const res = await fetch(`/api/eval/experiments/${id}`, { method: 'POST' });
+      const res = await authFetch(`/api/eval/experiments/${id}`, { method: 'POST' });
       if (res.ok) {
         const runs = await res.json();
         setExpandedRuns(prev => ({ ...prev, [id]: runs }));
@@ -147,6 +162,45 @@ export default function EvalPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Eval Lab" />
         <main className="flex-1 overflow-y-auto p-6 space-y-6">
+
+          {/* Datasets */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Database className="w-5 h-5 text-nutria-verde" />
+              <h2 className="font-semibold text-lg">Datasets</h2>
+              <span className="text-xs text-muted-foreground ml-1">— ingira antes de rodar experimentos</span>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {datasets.map(d => {
+                const result = ingestResults[d];
+                return (
+                  <div key={d} className="flex items-center gap-2 border rounded-lg px-3 py-2 text-sm bg-muted/30">
+                    <span className="font-mono text-xs">{d}</span>
+                    {result && (
+                      <span className="text-xs text-muted-foreground">
+                        {result.chunks_created > 0
+                          ? `+${result.chunks_created} chunks`
+                          : `${result.chunks_skipped} já ingeridos`}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-xs gap-1"
+                      disabled={ingesting === d}
+                      onClick={() => ingestDataset(d)}
+                    >
+                      {ingesting === d ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      {ingesting === d ? 'Ingerindo...' : 'Ingerir'}
+                    </Button>
+                  </div>
+                );
+              })}
+              {datasets.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum dataset encontrado.</p>
+              )}
+            </div>
+          </Card>
 
           {/* Form */}
           <Card className="p-6">

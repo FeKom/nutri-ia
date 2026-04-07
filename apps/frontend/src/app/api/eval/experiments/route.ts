@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { CATALOG_URL as CATALOG_API_URL } from "@/lib/config";
 
@@ -20,7 +21,11 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const token = request.headers.get("Authorization");
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const raw = await request.json();
     const parsed = EvalExperimentCreateSchema.safeParse(raw);
@@ -33,7 +38,7 @@ export async function POST(request: Request) {
     const body = parsed.data;
     const response = await fetch(`${CATALOG_API_URL}/api/v1/eval/experiments`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: token },
       body: JSON.stringify(body),
     });
     const data = await response.json();

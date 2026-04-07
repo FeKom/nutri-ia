@@ -26,7 +26,6 @@ import { listMealPlansTool } from "../tools/list-meal-plans";
 import { getMealPlanTool } from "../tools/get-meal-plan";
 import { updateMealPlanTool } from "../tools/update-meal-plan";
 import { deleteMealPlanTool } from "../tools/delete-meal-plan";
-import { analyzeFoodImageTool } from "../tools/analyze-food-image";
 import { analyzeFoodImageDeticTool } from "../tools/analyze-food-image-detic";
 import { confirmAndLogImageMealTool } from "../tools/confirm-and-log-image-meal";
 import { calculateMacrosTool } from "../tools/calculate-macros";
@@ -85,7 +84,6 @@ export function createNutritionAnalystAgent() {
       getMealPlan: convertMastraToolToAISDK(getMealPlanTool),
       updateMealPlan: convertMastraToolToAISDK(updateMealPlanTool),
       deleteMealPlan: convertMastraToolToAISDK(deleteMealPlanTool),
-      analyzeFoodImage: convertMastraToolToAISDK(analyzeFoodImageTool),
       analyzeFoodImageDetic: convertMastraToolToAISDK(analyzeFoodImageDeticTool),
       confirmAndLogImageMeal: convertMastraToolToAISDK(
         confirmAndLogImageMealTool,

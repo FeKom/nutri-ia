@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session
 
-from app.api.dependencies import get_db
+from app.api.dependencies import get_current_user, get_db
 from app.schemas.eval import (ChunkResult, ChunkSearchRequest,
                               ChunkSearchResponse, EvalExperimentCreate,
                               EvalExperimentResponse, EvalExperimentSummary,
                               EvalListResponse, EvalQuestion,
                               EvalResultResponse, EvalRunResponse,
-                              IngestResponse)
+                              IngestResponse, ScoreRequest)
 from app.services import eval_service
 
 router = APIRouter()
@@ -107,6 +107,24 @@ def search_chunks(
         )
 
 
+# ─── Scoring ──────────────────────────────────────────────────────────────────
+
+
+@router.post("/score", response_model=EvalResultResponse)
+def score(request: ScoreRequest) -> EvalResultResponse:
+    """
+    Compute embedding-similarity scores for a question/answer/context triple.
+    Called by Mastra after each eval run — no DB writes, pure calculation.
+    """
+    scores = eval_service.score_eval(
+        question=request.question,
+        answer=request.answer,
+        context_chunks=request.context_chunks,
+        expected_answer=request.expected_answer,
+    )
+    return EvalResultResponse(**scores)
+
+
 # ─── Experiments ──────────────────────────────────────────────────────────────
 
 
@@ -118,6 +136,7 @@ def search_chunks(
 def create_experiment(
     data: EvalExperimentCreate,
     db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
 ) -> EvalExperimentSummary:
     """Create a new evaluation experiment."""
     experiment = eval_service.create_eval_experiment(db, data)
@@ -180,6 +199,7 @@ def get_experiment(
                     EvalResultResponse(
                         faithfulness=result.faithfulness,
                         answer_relevancy=result.answer_relevancy,
+                        context_relevancy=result.context_relevancy,
                         context_recall=result.context_recall,
                         context_precision=result.context_precision,
                         overall_score=result.overall_score,
@@ -238,6 +258,7 @@ def run_eval(
 def run_eval_auto(
     experiment_id: UUID,
     db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
 ) -> list[EvalRunResponse]:
     """
     Auto-load dataset from experiment params and run eval.
@@ -268,6 +289,7 @@ def run_eval_auto(
                     EvalResultResponse(
                         faithfulness=result.faithfulness,
                         answer_relevancy=result.answer_relevancy,
+                        context_relevancy=result.context_relevancy,
                         context_recall=result.context_recall,
                         context_precision=result.context_precision,
                         overall_score=result.overall_score,
@@ -358,6 +380,7 @@ def save_result(
         run_id=run_id,
         faithfulness=result.faithfulness,
         answer_relevancy=result.answer_relevancy,
+        context_relevancy=result.context_relevancy,
         context_recall=result.context_recall,
         context_precision=result.context_precision,
         overall_score=result.overall_score,
@@ -365,35 +388,8 @@ def save_result(
     return EvalResultResponse(
         faithfulness=saved.faithfulness,
         answer_relevancy=saved.answer_relevancy,
+        context_relevancy=saved.context_relevancy,
         context_recall=saved.context_recall,
         context_precision=saved.context_precision,
         overall_score=saved.overall_score,
-    )
-
-
-# ---- Embedding ------------------------------------------------------------
-
-
-class EmbedRequest(BaseModel):
-    model: str
-    input: list[str]
-
-
-class EmbedResponse(BaseModel):
-    object: str = "list"
-    data: list[dict]
-    model: str
-
-
-@router.post("/embeddings", response_model=EmbedResponse)
-def embed_openai_compat(body: EmbedRequest) -> EmbedResponse:
-    from app.services.embedding_service import generate_embeddings_batch
-
-    vectors = generate_embeddings_batch(body.input)
-    return EmbedResponse(
-        model=body.model,
-        data=[
-            {"object": "embedding", "embedding": vec, "index": i}
-            for i, vec in enumerate(vectors)
-        ],
     )

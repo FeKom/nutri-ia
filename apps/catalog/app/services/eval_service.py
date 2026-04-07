@@ -412,6 +412,7 @@ def save_eval_result(
     run_id: UUID,
     faithfulness: float | None = None,
     answer_relevancy: float | None = None,
+    context_relevancy: float | None = None,
     context_recall: float | None = None,
     context_precision: float | None = None,
     overall_score: float | None = None,
@@ -421,6 +422,7 @@ def save_eval_result(
         run_id=run_id,
         faithfulness=faithfulness,
         answer_relevancy=answer_relevancy,
+        context_relevancy=context_relevancy,
         context_recall=context_recall,
         context_precision=context_precision,
         overall_score=overall_score,
@@ -436,3 +438,79 @@ def get_result_by_run(session: Session, run_id: UUID) -> EvalResult | None:
     return session.exec(
         select(EvalResult).where(EvalResult.run_id == run_id)
     ).first()
+
+
+# ─── Scoring ──────────────────────────────────────────────────────────────────
+
+def _cosine_similarity(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = sum(x * x for x in a) ** 0.5
+    norm_b = sum(x * x for x in b) ** 0.5
+    return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
+
+
+def score_eval(
+    question: str,
+    answer: str,
+    context_chunks: list[str],
+    expected_answer: str | None = None,
+) -> dict:
+    """
+    Compute embedding-similarity scores for a single eval run.
+    All embeddings are generated in one batch call.
+    """
+    from app.services.embedding_service import generate_embeddings_batch
+
+    context = "\n\n".join(context_chunks)
+    n = len(context_chunks)
+
+    texts = [question, answer, context, *context_chunks]
+    if expected_answer:
+        texts.append(expected_answer)
+
+    embeddings = generate_embeddings_batch(texts, is_query=True)
+
+    q_emb = embeddings[0]
+    a_emb = embeddings[1]
+    c_emb = embeddings[2]
+    chunk_embs = embeddings[3: 3 + n]
+    e_emb = embeddings[3 + n] if expected_answer else None
+
+    answer_relevancy = _cosine_similarity(q_emb, a_emb)
+    faithfulness = _cosine_similarity(a_emb, c_emb)
+    context_relevancy = _cosine_similarity(q_emb, c_emb)
+
+    context_recall: float | None = None
+    context_precision: float | None = None
+
+    if e_emb:
+        context_recall = _cosine_similarity(e_emb, c_emb)
+        context_precision = (
+            sum(_cosine_similarity(q_emb, ce) for ce in chunk_embs) / n
+            if n > 0
+            else 0.0
+        )
+
+    if context_recall is not None and context_precision is not None:
+        overall_score = (
+            faithfulness * 0.30
+            + answer_relevancy * 0.25
+            + context_relevancy * 0.20
+            + context_recall * 0.15
+            + context_precision * 0.10
+        )
+    else:
+        overall_score = (
+            faithfulness * 0.40
+            + answer_relevancy * 0.35
+            + context_relevancy * 0.25
+        )
+
+    return {
+        "faithfulness": faithfulness,
+        "answer_relevancy": answer_relevancy,
+        "context_relevancy": context_relevancy,
+        "context_recall": context_recall,
+        "context_precision": context_precision,
+        "overall_score": overall_score,
+    }

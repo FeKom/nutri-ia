@@ -48,9 +48,17 @@ class EvalExperimentCreate(BaseModel):
     dataset_filename: str = Field(default="golden_dataset.json", description="Dataset file inside tests/eval/datasets/")
     agent_mode: str = Field(default="direct", description="direct | production | test")
 
+class ScoreRequest(BaseModel):
+    question: str
+    answer: str
+    context_chunks: List[str]
+    expected_answer: Optional[str] = None
+
+
 class EvalResultResponse(BaseModel):
     faithfulness: Optional[float] = None
     answer_relevancy: Optional[float] = None
+    context_relevancy: Optional[float] = None
     context_recall: Optional[float] = None
     context_precision: Optional[float] = None
     overall_score: Optional[float] = None

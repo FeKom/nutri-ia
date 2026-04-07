@@ -6,20 +6,20 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
-def _truncate(password: str) -> str:
-    """bcrypt silently truncates at 72 bytes — truncate explicitly to avoid errors."""
-    return password.encode()[:72].decode(errors="ignore")
+def _to_bcrypt_bytes(password: str) -> bytes:
+    """Encode password to UTF-8 and truncate to 72 bytes (bcrypt hard limit)."""
+    return password.encode("utf-8")[:72]
 
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(_truncate(password))
+def hash_password(password):
+    return pwd_context.hash(password[:72])
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(_truncate(plain), hashed)
+def verify_password(plain, hashed):
+    return pwd_context.verify(plain, hashed)
 
 
 def create_access_token(user_id: UUID, username: str, name: str) -> str:
@@ -32,4 +32,6 @@ def create_access_token(user_id: UUID, username: str, name: str) -> str:
         "iss": settings.JWT_ISSUER,
         "aud": settings.JWT_AUDIENCE,
     }
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )

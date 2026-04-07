@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List, Optional, Tuple
 from sqlalchemy import text as sa_text
 from sqlmodel import Session, select, or_, col
@@ -7,6 +8,45 @@ from app.models.food import Food, FoodNutrient
 from app.schemas.food import FoodSearchFilters
 
 logger = logging.getLogger(__name__)
+
+# Cooking methods and preparation terms to strip from queries (PT + EN)
+_COOKING_METHODS = re.compile(
+    r"\b("
+    r"coz[ií]d[oa]s?|grelhad[oa]s?|assad[oa]s?|fritad[oa]s?|fritd[oa]s?|frit[oa]s?|"
+    r"refogad[oa]s?|ensopand[oa]s?|cru[a]?s?|na\s+vapor|no\s+vapor|"
+    r"escaldad[oa]s?|defumad[oa]s?|curad[oa]s?|marinado[a]?s?|temperado[a]?s?|"
+    r"boiled|grilled|roasted|baked|fried|raw|steamed|smoked|poached|sautéed|sauteed"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Quantity patterns: "50g", "100 ml", "2 colheres", "1 xícara", "meio", etc.
+_QUANTITIES = re.compile(
+    r"\b\d+[\.,]?\d*\s*(g|kg|ml|l|mg|cal|kcal|oz|lb|cup|tbsp|tsp|colher[es]*|xícar[as]*|unidade[s]*|fatia[s]*|porção|porcao)\b"
+    r"|\b\d+\s*(g|kg|ml|l)\b"
+    r"|\b(meio|meia|um|uma|dois|duas)\s+\w+",
+    re.IGNORECASE,
+)
+
+
+def _normalize_food_query(query: str) -> str:
+    """
+    Strip quantities and cooking methods from a food query before embedding.
+
+    Examples:
+        "ovo cozido 50g"        → "ovo"
+        "arroz branco cozido"   → "arroz branco"
+        "salmão cru 100g"       → "salmão"
+        "frango grelhado"       → "frango"
+        "egg boiled 2 units"    → "egg"
+    """
+    normalized = _QUANTITIES.sub("", query)
+    normalized = _COOKING_METHODS.sub("", normalized)
+    normalized = " ".join(normalized.split())  # collapse whitespace
+    result = normalized.strip() or query.strip()  # fallback to original if empty
+    if result != query.strip():
+        logger.debug(f"[food_service] query normalized: '{query}' → '{result}'")
+    return result
 
 
 def search_foods(
@@ -154,9 +194,10 @@ def search_foods_by_embedding(
     """
     from app.services.embedding_service import generate_embedding
 
-    # Gera embedding da query
-    logger.info(f"Generating embedding for query: '{query}'")
-    query_embedding = generate_embedding(query)
+    # Strip quantities and cooking methods before embedding
+    normalized_query = _normalize_food_query(query)
+    logger.info(f"Generating embedding for query: '{normalized_query}' (original: '{query}')")
+    query_embedding = generate_embedding(normalized_query)
 
     # Busca candidatos por similaridade vetorial (maior janela para re-rank)
     # Pedimos o dobro do limit para ter margem ao re-ranquear com o componente textual.
@@ -205,7 +246,7 @@ def search_foods_by_embedding(
     trgm_rows = session.execute(
         sa_text(
             "SELECT id, similarity(name, :q) AS trgm "
-            "FROM food WHERE id = ANY(:ids)"
+            "FROM foods WHERE id = ANY(:ids)"
         ),
         {"q": query, "ids": food_ids},
     ).fetchall()
@@ -304,8 +345,9 @@ def resolve_foods(
     """
     from app.services.embedding_service import generate_embeddings_batch
 
+    normalized = [_normalize_food_query(q) for q in queries]
     logger.info(f"Resolving {len(queries)} food queries in batch")
-    embeddings = generate_embeddings_batch(queries)
+    embeddings = generate_embeddings_batch(normalized)
 
     results: Dict[str, List[Tuple[Food, float]]] = {}
 

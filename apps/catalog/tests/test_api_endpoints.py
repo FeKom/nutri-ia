@@ -14,7 +14,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from app.main import app
-from app.api.dependencies import get_db
+from app.api.dependencies import get_current_user, get_db
 from app.models.food import Food, FoodNutrient, FoodSource
 from app.models.user import ActivityLevel, DietGoal, UserProfile
 
@@ -36,6 +36,7 @@ def client_fixture():
             yield session
 
     app.dependency_overrides[get_db] = get_test_db
+    app.dependency_overrides[get_current_user] = lambda: {"user_id": "00000000-0000-0000-0000-000000000001", "username": "test", "name": "Test User"}
 
     # Create test client
     client = TestClient(app)

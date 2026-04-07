@@ -2,6 +2,11 @@
         frontend-start backend-start catalog-start \
         frontend-install backend-install catalog-install \
         seed-taco seed-taco-dry \
+        test test-backend test-catalog \
+        lint lint-frontend lint-backend \
+        typecheck typecheck-frontend typecheck-backend \
+        check \
+        db-reset generate-types \
         dev build restart logs logs-f ps clean \
         logs-frontend logs-backend logs-catalog logs-postgres
 
@@ -25,10 +30,24 @@ help:
 	@echo "  make backend-start      - Run backend only   (bun dev,  :4111)"
 	@echo "  make catalog-start      - Run catalog only   (uvicorn,  :8000)"
 	@echo ""
+	@echo "$(GREEN)Quality:$(RESET)"
+	@echo "  make check              - lint + typecheck + test (full CI pass)"
+	@echo "  make test               - Run all tests"
+	@echo "  make test-backend       - vitest (backend)"
+	@echo "  make test-catalog       - pytest (catalog)"
+	@echo "  make lint               - Lint frontend and backend"
+	@echo "  make lint-frontend      - ESLint on frontend"
+	@echo "  make lint-backend       - ESLint on backend"
+	@echo "  make typecheck          - Type-check frontend and backend"
+	@echo "  make typecheck-frontend - tsc --noEmit on frontend"
+	@echo "  make typecheck-backend  - tsc --noEmit on backend"
+	@echo ""
 	@echo "$(GREEN)Database:$(RESET)"
 	@echo "  make migrate            - Run Alembic migrations (create/update tables)"
+	@echo "  make db-reset           - Drop everything and re-run migrations (DANGER)"
 	@echo "  make seed-taco          - Import ~600 TACO Brazilian foods into the DB"
 	@echo "  make seed-taco-dry      - Dry-run: validate without writing to DB"
+	@echo "  make generate-types     - Regenerate catalog TypeScript types from OpenAPI"
 	@echo ""
 	@echo "$(GREEN)Dependencies:$(RESET)"
 	@echo "  make install            - Install deps for all apps"
@@ -79,6 +98,55 @@ migrate:
 	@echo "Running Alembic migrations..."
 	cd apps/catalog && .venv/bin/alembic upgrade head
 	@echo "Migrations done."
+
+db-reset:
+	@echo "This will drop all tables and re-run migrations. Continue? [y/N] "; \
+	read REPLY; \
+	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
+		cd apps/catalog && .venv/bin/alembic downgrade base && .venv/bin/alembic upgrade head; \
+		echo "Database reset complete."; \
+	else \
+		echo "Cancelled."; \
+	fi
+
+# ── Tests ────────────────────────────────────────────────────────────────────
+
+test: test-backend test-catalog
+
+test-backend:
+	@$(NVM_INIT) && cd apps/backend && bun run test
+
+test-catalog:
+	cd apps/catalog && .venv/bin/pytest tests/ -v --tb=short
+
+# ── Lint ─────────────────────────────────────────────────────────────────────
+
+lint: lint-frontend lint-backend
+
+lint-frontend:
+	@$(NVM_INIT) && cd apps/frontend && pnpm exec eslint src/
+
+lint-backend:
+	@$(NVM_INIT) && cd apps/backend && bun x eslint src/
+
+# ── Typecheck ────────────────────────────────────────────────────────────────
+
+typecheck: typecheck-frontend typecheck-backend
+
+typecheck-frontend:
+	@$(NVM_INIT) && cd apps/frontend && node_modules/.bin/tsc --noEmit
+
+typecheck-backend:
+	@$(NVM_INIT) && cd apps/backend && node_modules/.bin/tsc --noEmit
+
+# ── Full CI pass ─────────────────────────────────────────────────────────────
+
+check: lint typecheck test
+
+# ── Code generation ──────────────────────────────────────────────────────────
+
+generate-types:
+	@$(NVM_INIT) && cd apps/frontend && pnpm run generate:catalog-types
 
 seed-taco:
 	cd apps/catalog && .venv/bin/python scripts/import_taco.py

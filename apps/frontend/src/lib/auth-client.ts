@@ -17,16 +17,17 @@ export function useSession() {
 export const signIn = {
   async email({ username, password }: { username: string; password: string }) {
     try {
+      const form = new URLSearchParams({ username, password });
       const res = await fetch(`${CATALOG_URL}/api/v1/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form.toString(),
       });
       const data = await res.json();
       if (!res.ok) {
         return { error: { message: data.detail || "Invalid credentials" } };
       }
-      window.dispatchEvent(new CustomEvent("nutria-set-token", { detail: data.token }));
+      window.dispatchEvent(new CustomEvent("nutria-set-token", { detail: data.access_token }));
       return { error: null };
     } catch {
       return { error: { message: "Network error. Please try again." } };
@@ -56,7 +57,7 @@ export const signUp = {
       if (!res.ok) {
         return { error: { message: data.detail || "Registration failed" } };
       }
-      window.dispatchEvent(new CustomEvent("nutria-set-token", { detail: data.token }));
+      window.dispatchEvent(new CustomEvent("nutria-set-token", { detail: data.access_token }));
       return { error: null };
     } catch {
       return { error: { message: "Network error. Please try again." } };

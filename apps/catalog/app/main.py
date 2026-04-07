@@ -67,17 +67,6 @@ app.include_router(
 app.include_router(goals.router, prefix=f"{settings.API_V1_STR}/goals", tags=["goals"])
 app.include_router(activities.router, prefix=f"{settings.API_V1_STR}/activities", tags=["activities"])
 
-# Also include routers with /api prefix for backward compatibility
-app.include_router(foods.router, prefix="/api/foods", tags=["foods"])
-app.include_router(recipes.router, prefix="/api/recipes", tags=["recipes"])
-app.include_router(nutrition.router, prefix="/api/nutrition", tags=["nutrition"])
-app.include_router(
-    recommendations.router, prefix="/api/recommendations", tags=["recommendations"]
-)
-app.include_router(tracking.router, prefix="/api/tracking", tags=["tracking"])
-app.include_router(users.router, prefix="/api/users", tags=["users"])
-app.include_router(meal_plans.router, prefix="/api/meal-plans", tags=["meal-plans"])
-
 
 @app.get("/", tags=["health"])
 async def root():

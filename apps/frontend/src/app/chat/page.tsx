@@ -65,6 +65,7 @@ function Chat() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const { token } = useJwt();
+  const tokenRef = useRef<string | null>(token);
   const [input, setInput] = useState<string>('');
   const [attachments, setAttachments] = useState<FileUIPart[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,13 +73,17 @@ function Chat() {
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const authFetch = useAuthFetch();
 
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
       headers: () => {
         const headers: Record<string, string> = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
+        if (tokenRef.current) {
+          headers['Authorization'] = `Bearer ${tokenRef.current}`;
         }
         return headers;
       },

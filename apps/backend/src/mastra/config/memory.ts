@@ -32,11 +32,11 @@ export function createNutritionMemory() {
     }),
     embedder: embedderModel,
     options: {
-      // 1️⃣ MESSAGE HISTORY: Últimas conversas (reduzido para evitar ultrapassar limite de tokens)
-      lastMessages: 10,
+      // 1️⃣ MESSAGE HISTORY: Últimas conversas (reduzido para caber no limite de 8k tokens do GitHub Models)
+      lastMessages: 5,
       semanticRecall: {
-        topK: 5,
-        messageRange: 3,
+        topK: 2,
+        messageRange: 1,
         scope: "resource",
         indexConfig: {
           type: "hnsw",

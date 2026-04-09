@@ -10,7 +10,8 @@ from app.schemas.food import FoodSearchFilters
 logger = logging.getLogger(__name__)
 
 # Cooking methods and preparation terms to strip from queries (PT + EN)
-_COOKING_METHODS = re.compile(
+     
+_COOKING_METHODS: List[str] = re.compile(
     r"\b("
     r"coz[ií]d[oa]s?|grelhad[oa]s?|assad[oa]s?|fritad[oa]s?|fritd[oa]s?|frit[oa]s?|"
     r"refogad[oa]s?|ensopand[oa]s?|cru[a]?s?|na\s+vapor|no\s+vapor|"
@@ -21,7 +22,7 @@ _COOKING_METHODS = re.compile(
 )
 
 # Quantity patterns: "50g", "100 ml", "2 colheres", "1 xícara", "meio", etc.
-_QUANTITIES = re.compile(
+_QUANTITIES: List[str] = re.compile(
     r"\b\d+[\.,]?\d*\s*(g|kg|ml|l|mg|cal|kcal|oz|lb|cup|tbsp|tsp|colher[es]*|xícar[as]*|unidade[s]*|fatia[s]*|porção|porcao)\b"
     r"|\b\d+\s*(g|kg|ml|l)\b"
     r"|\b(meio|meia|um|uma|dois|duas)\s+\w+",
@@ -29,7 +30,7 @@ _QUANTITIES = re.compile(
 )
 
 
-def _normalize_food_query(query: str) -> str:
+def _normalize_food_query(query: List[str]) -> List[str]:
     """
     Strip quantities and cooking methods from a food query before embedding.
 
@@ -40,18 +41,28 @@ def _normalize_food_query(query: str) -> str:
         "frango grelhado"       → "frango"
         "egg boiled 2 units"    → "egg"
     """
-    normalized = _QUANTITIES.sub("", query)
-    normalized = _COOKING_METHODS.sub("", normalized)
-    normalized = " ".join(normalized.split())  # collapse whitespace
-    result = normalized.strip() or query.strip()  # fallback to original if empty
-    if result != query.strip():
-        logger.debug(f"[food_service] query normalized: '{query}' → '{result}'")
-    return result
+    results = []
+
+    for  q in query:
+      normalized: List[str] = _QUANTITIES.sub("", q)
+      normalized = _COOKING_METHODS.sub("", normalized)
+
+      normalized = " ".join(normalized.split())  # collapse whitespace
+      result = normalized.strip() or q.strip()  # fallback to original if empty
+      if result != q.strip():
+        logger.debug(f"[food_service] query normalized: '{q}' → '{result}'")
+      if result:
+        results.append(result)
+        # Validação final: a lista resultante não pode ser vazia
+    if not results:
+      raise ValueError("Query cannot be empty")
+            
+    return results
 
 
 def search_foods(
     session: Session,
-    query: str,
+    query: List[str],
     limit: int = 10,
     filters: Optional[FoodSearchFilters] = None
 ) -> List[Food]:
@@ -60,7 +71,7 @@ def search_foods(
 
     Args:
         session: Database session
-        query: Search query string
+        query: List of search terms — each one generates an OR condition
         limit: Maximum number of results to return
         filters: Optional filters for category, nutrients, etc.
 
@@ -70,14 +81,13 @@ def search_foods(
     # Start with base query
     statement = select(Food).join(FoodNutrient, Food.id == FoodNutrient.food_id, isouter=True)
 
-    # Text search on name and name_normalized (case-insensitive)
-    search_term = f"%{query.lower()}%"
-    statement = statement.where(
-        or_(
-            col(Food.name).ilike(search_term),
-            col(Food.name_normalized).ilike(search_term)
-        )
-    )
+    # Text search: OR across all query terms on name and name_normalized
+    conditions = []
+    for term in query:
+        t = f"%{term.lower()}%"
+        conditions.append(col(Food.name).ilike(t))
+        conditions.append(col(Food.name_normalized).ilike(t))
+    statement = statement.where(or_(*conditions))
 
     # Apply filters if provided
     if filters:
@@ -166,7 +176,7 @@ def get_food_with_nutrients(session: Session, food_id: UUID) -> Optional[Food]:
     
 def search_foods_by_embedding(
     session: Session,
-    query: str,
+    query: List[str],
     limit: int = 10,
     filters: Optional[FoodSearchFilters] = None,
     min_similarity: float = 0.0
@@ -192,83 +202,94 @@ def search_foods_by_embedding(
         for food, score in results:
             print(f"{food.name}: {score:.2f}")
     """
-    from app.services.embedding_service import generate_embedding
+    from app.services.embedding_service import generate_embeddings_batch
 
     # Strip quantities and cooking methods before embedding
-    normalized_query = _normalize_food_query(query)
-    logger.info(f"Generating embedding for query: '{normalized_query}' (original: '{query}')")
-    query_embedding = generate_embedding(normalized_query)
+    normalized_queries: List[str] = _normalize_food_query(query)
+    logger.info(f"Generating embeddings for queries: {normalized_queries} (original: {query})")
 
-    # Busca candidatos por similaridade vetorial (maior janela para re-rank)
-    # Pedimos o dobro do limit para ter margem ao re-ranquear com o componente textual.
+    # is_query=True adds "query: " prefix — required for E5 asymmetric search
+    # (foods are indexed with "passage: ", queries must use "query: ")
+    query_embeddings: List[List[float]] = generate_embeddings_batch(normalized_queries, is_query=True)
+
     fetch_limit = limit * 2
 
-    statement = select(
-        Food,
-        Food.embedding.cosine_distance(query_embedding).label("distance")
-    ).where(Food.embedding.isnot(None))
+    # Collect best score per food across all query terms
+    best_by_food: dict = {}  # food.id -> (Food, float)
 
-    # Aplicar filtros opcionais
-    if filters:
-        if filters.category:
-            statement = statement.where(Food.category == filters.category)
+    for query_text, query_embedding in zip(normalized_queries, query_embeddings):
+        # query_embedding is List[float] — correct type for cosine_distance
+        statement = select(
+            Food,
+            Food.embedding.cosine_distance(query_embedding).label("distance")
+        ).where(Food.embedding.isnot(None))
 
-        if filters.source:
-            statement = statement.where(Food.source == filters.source)
+        # Aplicar filtros opcionais
+        if filters:
+            if filters.category:
+                statement = statement.where(Food.category == filters.category)
 
-        if filters.verified_only:
-            statement = statement.where(Food.is_verified == True)
+            if filters.source:
+                statement = statement.where(Food.source == filters.source)
 
-        # Filtros de nutrientes requerem join
-        if filters.min_protein is not None or filters.max_calories is not None:
-            statement = statement.join(FoodNutrient, Food.id == FoodNutrient.food_id, isouter=True)
+            if filters.verified_only:
+                statement = statement.where(Food.is_verified == True)
 
-            if filters.min_protein is not None:
-                statement = statement.where(FoodNutrient.protein_g_100g >= filters.min_protein)
+            # Filtros de nutrientes requerem join
+            if filters.min_protein is not None or filters.max_calories is not None:
+                statement = statement.join(FoodNutrient, Food.id == FoodNutrient.food_id, isouter=True)
 
-            if filters.max_calories is not None:
-                statement = statement.where(
-                    or_(
-                        Food.calorie_per_100g <= filters.max_calories,
-                        FoodNutrient.calories_100g <= filters.max_calories
+                if filters.min_protein is not None:
+                    statement = statement.where(FoodNutrient.protein_g_100g >= filters.min_protein)
+
+                if filters.max_calories is not None:
+                    statement = statement.where(
+                        or_(
+                            Food.calorie_per_100g <= filters.max_calories,
+                            FoodNutrient.calories_100g <= filters.max_calories
+                        )
                     )
-                )
 
-    statement = statement.order_by("distance").limit(fetch_limit)
-    candidates = session.exec(statement).all()
+        statement = statement.order_by("distance").limit(fetch_limit)
+        candidates = session.exec(statement).all()
 
-    if not candidates:
+        if not candidates:
+            continue
+
+        # Busca léxica: similarity() do pg_trgm para cada candidato.
+        # query_text is a plain str — required by pg_trgm similarity()
+        food_ids = [food.id for food, _ in candidates]
+        trgm_rows = session.execute(
+            sa_text(
+                "SELECT id, similarity(name, :q) AS trgm "
+                "FROM foods WHERE id = ANY(:ids)"
+            ),
+            {"q": query_text, "ids": food_ids},
+        ).fetchall()
+        trgm_by_id = {row.id: float(row.trgm) for row in trgm_rows}
+
+        # Score híbrido: 85% vetor + 15% texto
+        for food, distance in candidates:
+            vec_score = round(1 - float(distance), 4)
+            text_score = trgm_by_id.get(food.id, 0.0)
+            hybrid = round(0.85 * vec_score + 0.15 * text_score, 4)
+
+            food_id = str(food.id)
+            if food_id not in best_by_food or best_by_food[food_id][1] < hybrid:
+                best_by_food[food_id] = (food, hybrid)
+
+    if not best_by_food:
         return []
 
-    # Busca léxica: similarity() do pg_trgm para cada candidato.
-    # Retorna um score 0-1 de sobreposição de trigramas entre a query e o nome.
-    food_ids = [food.id for food, _ in candidates]
-    trgm_rows = session.execute(
-        sa_text(
-            "SELECT id, similarity(name, :q) AS trgm "
-            "FROM foods WHERE id = ANY(:ids)"
-        ),
-        {"q": query, "ids": food_ids},
-    ).fetchall()
-    trgm_by_id = {row.id: float(row.trgm) for row in trgm_rows}
-
-    # Score híbrido: 85% vetor + 15% texto
-    blended: List[tuple[Food, float]] = []
-    for food, distance in candidates:
-        vec_score = round(1 - distance, 4)
-        text_score = trgm_by_id.get(food.id, 0.0)
-        hybrid = round(0.85 * vec_score + 0.15 * text_score, 4)
-        blended.append((food, hybrid))
-
     # Re-ordena pelo score híbrido e corta no limit original
-    blended.sort(key=lambda x: x[1], reverse=True)
+    blended: List[tuple[Food, float]] = sorted(best_by_food.values(), key=lambda x: x[1], reverse=True)
     similar_foods = blended[:limit]
 
     # Filtra por threshold de similaridade mínima
     if min_similarity > 0.0:
         similar_foods = [(food, score) for food, score in similar_foods if score >= min_similarity]
 
-    logger.info(f"Found {len(similar_foods)} foods similar to '{query}' (hybrid search)")
+    logger.info(f"Found {len(similar_foods)} foods for {len(normalized_queries)} queries (hybrid search)")
     if similar_foods:
         logger.debug(f"Top match: {similar_foods[0][0].name} (score: {similar_foods[0][1]})")
 
@@ -345,9 +366,9 @@ def resolve_foods(
     """
     from app.services.embedding_service import generate_embeddings_batch
 
-    normalized = [_normalize_food_query(q) for q in queries]
+    normalized = [_normalize_food_query([q])[0] for q in queries]
     logger.info(f"Resolving {len(queries)} food queries in batch")
-    embeddings = generate_embeddings_batch(normalized)
+    embeddings = generate_embeddings_batch(normalized, is_query=True)
 
     results: Dict[str, List[Tuple[Food, float]]] = {}
 

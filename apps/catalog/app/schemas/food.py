@@ -107,7 +107,7 @@ class FoodSearchFilters(BaseModel):
 class FoodSearchRequest(BaseModel):
     """Request schema for food search"""
 
-    query: str = Field(..., min_length=1, max_length=255, description="Search query")
+    query: List[str] = Field(..., min_length=1, max_length=255, description="Search query")
     limit: int = Field(
         default=10, ge=1, le=100, description="Number of results to return"
     )
@@ -121,10 +121,12 @@ class FoodSearchRequest(BaseModel):
 
     @field_validator("query")
     @classmethod
-    def query_not_empty(cls, v: str) -> str:
-        if not v.strip():
+    def query_not_empty(cls, v: List[str]) -> List[str]:
+        cleaned_list = [s.strip() for s in v if s.strip()]
+        if not cleaned_list:
             raise ValueError("Query cannot be empty")
-        return v.strip()
+        
+        return cleaned_list
 
 
 class FoodSearchResponse(BaseModel):

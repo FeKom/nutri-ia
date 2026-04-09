@@ -45,9 +45,9 @@ export const calculateMacrosTool = withAuth({
   inputSchema: calculateMacrosToolInput,
   outputSchema: calculateMacrosToolOutput,
   execute: async (inputData, { userId, authToken, userProfile }) => {
-    const weight_kg = inputData.override_weight_kg ?? userProfile?.weight;
-    const height_cm = inputData.override_height_cm ?? userProfile?.height;
-    const age = inputData.override_age ?? userProfile?.age;
+    const weight_kg = inputData.override_weight_kg ?? (userProfile?.weight != null ? Number(userProfile.weight) : undefined);
+    const height_cm = inputData.override_height_cm ?? (userProfile?.height != null ? Number(userProfile.height) : undefined);
+    const age = inputData.override_age ?? (userProfile?.age != null ? Number(userProfile.age) : undefined);
     const gender = inputData.override_gender ?? (userProfile?.gender as "male" | "female" | "non_binary" | undefined);
     const activity_level = inputData.override_activity_level ?? userProfile?.activity_level;
     const diet_goal = inputData.override_diet_goal ?? userProfile?.goal;

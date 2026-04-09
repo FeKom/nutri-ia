@@ -135,5 +135,5 @@ Para conseguir conversar com uma LLM real, use a configuração do GitHub Models
 
 ## Documentação Adicional
 
-- Esse projeto foi criado usando o template do mastra.ai chamado "chat with pdf": https://mastra.ai/templates/pdf-questions
-- Template original preservado em [README-OLD.md](README-OLD.md) para referência
+- [Mastra Docs](https://mastra.ai/docs) — framework de agents usado no backend
+- [Root README](../../README.md) — visão geral da arquitetura do sistema

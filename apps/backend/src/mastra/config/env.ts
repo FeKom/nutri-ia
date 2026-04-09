@@ -79,6 +79,12 @@ export const env = {
    */
   GITHUB_TOKEN: process.env.GITHUB_TOKEN,
 
+  /**
+   * Modelo pequeno para classificação de intenção (intent agent)
+   * Default: Phi-4-mini (GitHub Models)
+   */
+  INTENT_MODEL: process.env.INTENT_MODEL || "Phi-4-mini",
+
   // ============================================
   // Environment
   // ============================================

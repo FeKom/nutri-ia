@@ -2,20 +2,19 @@ import { Agent } from "@mastra/core/agent";
 import { env } from "../config/env";
 import { loadNutritionAnalystInstructions } from "../utils/context-loader";
 import { createNutritionMemory } from "../config/memory";
-import { updateUserProfileTool } from "../tools/update-user-profile";
-import { calculateMacrosTool } from "../tools/calculate-macros";
-import { createMealPlanTool } from "../tools/create-meal-plan";
 import { addGoalTool } from "../tools/add-goal";
 import { addActivityTool } from "../tools/add-activity";
 import { suggestRecipeTool } from "../tools/suggest-recipe";
-import { toolSearch } from "../config/toolProcessor";
+import { toolInjectorProcessor } from "../config/toolInjectorProcessor";
 
 /**
  * Nutrition Analyst Agent
- * Responsável por análise de alimentos e cálculos nutricionais
  *
- * Tools estáticas: sempre disponíveis (fluxos críticos encadeados)
- * Tools dinâmicas: carregadas via ToolSearchProcessor conforme contexto
+ * Tools are injected per-step by ToolInjectorProcessor based on user intent:
+ *   - Regex fast-path covers ~90% of cases
+ *   - Small AI model (Phi-4-mini) classifies ambiguous messages
+ *
+ * Static tools below are always available regardless of intent.
  */
 export const nutritionAnalystAgent = new Agent({
   id: "nutrition-analyst",
@@ -25,12 +24,8 @@ export const nutritionAnalystAgent = new Agent({
   instructions: loadNutritionAnalystInstructions(),
   model: env.MODEL,
   memory: createNutritionMemory(),
-  inputProcessors: [toolSearch],
+  inputProcessors: [toolInjectorProcessor],
   tools: {
-    // Tools estáticas - sempre disponíveis independente do ToolSearchProcessor
-    update_user_profile: updateUserProfileTool,
-    calculate_macros: calculateMacrosTool,
-    create_meal_plan: createMealPlanTool,
     add_goal: addGoalTool,
     add_activity: addActivityTool,
     save_recipe: suggestRecipeTool,

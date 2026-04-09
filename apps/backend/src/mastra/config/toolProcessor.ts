@@ -42,7 +42,7 @@ export const toolSearch = new ToolSearchProcessor({
     getRecipeTool,
   },
   search: {
-    topK: 4,
-    minScore: 0.35,
+    topK: 6,
+    minScore: 0.2,
   },
-});
+})

@@ -9,6 +9,7 @@ import { createUIMessageStream, createUIMessageStreamResponse, generateText } fr
 import { createOpenAI } from "@ai-sdk/openai";
 import { PinoLogger } from "@mastra/loggers";
 import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
+import { createMealPlanWorkflow } from "./workflows/create-meal-plan";
 import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
 import { acquireChatLock, releaseChatLock } from "../lib/user-chat-queue";
@@ -28,7 +29,7 @@ const logger = new PinoLogger({ name: "NutriAI", level: "info" });
 
 export const mastra = new Mastra({
   storage: sharedStorage,
-  workflows: {},
+  workflows: { createMealPlanWorkflow },
   agents: {
     nutritionAnalystAgent,
   },
@@ -82,7 +83,7 @@ export const mastra = new Mastra({
 
             // Tenta carregar perfil do usuário
             const userProfile = await getUserProfileFromDB(userId);
-            const contextMessages = [];
+            const contextMessages: unknown[] = [];
 
             if (userProfile) {
               contextMessages.push(userProfileToContext(userProfile));

@@ -31,6 +31,9 @@ import type {
   WeeklyStatsResponse,
 } from "../schemas/tracking";
 
+import { searchFoods } from "../api/foods";
+import { logger } from "../../utils/logger";
+
 export type {
   UserProfile,
   CreateUserProfileRequest,
@@ -62,7 +65,7 @@ export interface SearchFilters {
 }
 
 export interface SearchFoodsRequest {
-  query: string;
+  query: string[];
   limit?: number;
   filters?: SearchFilters;
 }
@@ -201,12 +204,6 @@ export interface ClientConfig {
   retryDelay: number;
 }
 
-export interface ApiError {
-  message: string;
-  statusCode?: number;
-  isRetryable: boolean;
-}
-
 // ============================================
 // CONFIGURAÇÃO
 // ============================================
@@ -264,7 +261,7 @@ const isRetryableError = (error: unknown): boolean => {
  */
 const createApiError = (message: string, statusCode?: number, isRetryable?: boolean, rawError?: unknown) => ({ message, statusCode, isRetryable, rawError });
 
-type ApiError =  ReturnType<typeof createApiError>;
+export type ApiError =  ReturnType<typeof createApiError>;
 
 export type NutriaResponse<T> = {success: true; data: T; error?: never} | {success: false; data?: T, error: ApiError};
 /**
@@ -512,7 +509,7 @@ export const searchFoodsByEmbedding = async (
     authToken,
   ));
 
-  console.log(
+  logger.info(
     `✅ [CatalogClient] Encontrados ${response.count} alimentos similares`,
   );
 

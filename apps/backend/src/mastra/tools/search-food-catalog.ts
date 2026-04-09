@@ -30,11 +30,12 @@ const formatFoodItem = (food: SimilarFoodItem) => ({
 export const searchFoodCatalogTool = withAuth({
   id: 'search-food-catalog',
   description:
-    'Busca alimentos no catálogo nutricional por nome ou categoria. Retorna informações nutricionais básicas.',
+    'Busca alimentos no catálogo nutricional por embedding semântico. Sempre agrupe todos os alimentos em uma única chamada passando um array. Nunca chame esta tool múltiplas vezes para buscar alimentos separados.',
   inputSchema: z.object({
     query: z
-      .string()
-      .describe('Termo de busca (nome do alimento ou categoria)'),
+      .array(z.string())
+      .min(1)
+      .describe('Array com todos os alimentos a buscar de uma vez. Ex: ["arroz branco", "frango grelhado", "feijão"]. Nunca passe apenas um item se há mais alimentos para buscar.'),
     limit: z
       .number()
       .optional()

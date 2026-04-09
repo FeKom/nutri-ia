@@ -27,7 +27,7 @@ help:
 	@echo "$(GREEN)Local development (no Docker for apps):$(RESET)"
 	@echo "  make start              - Run all three apps concurrently"
 	@echo "  make frontend-start     - Run frontend only  (pnpm dev, :3000)"
-	@echo "  make backend-start      - Run backend only   (bun dev,  :4111)"
+	@echo "  make backend-start      - Run backend only   (pnpm dev, :4111)"
 	@echo "  make catalog-start      - Run catalog only   (uvicorn,  :8000)"
 	@echo ""
 	@echo "$(GREEN)Quality:$(RESET)"
@@ -52,7 +52,7 @@ help:
 	@echo "$(GREEN)Dependencies:$(RESET)"
 	@echo "  make install            - Install deps for all apps"
 	@echo "  make frontend-install   - pnpm install in apps/frontend"
-	@echo "  make backend-install    - bun install in apps/backend"
+	@echo "  make backend-install    - pnpm install in apps/backend"
 	@echo "  make catalog-install    - pip install in apps/catalog venv"
 	@echo ""
 	@echo "$(GREEN)Docker (full stack):$(RESET)"
@@ -77,7 +77,7 @@ start: migrate
 	@echo ""
 	@trap 'kill 0' INT; \
 	($(NVM_INIT) && cd apps/frontend && pnpm dev 2>&1 | sed 's/^/\033[0;36m[frontend]\033[0m /') & \
-	($(NVM_INIT) && cd apps/backend  && bun  run dev 2>&1 | sed 's/^/\033[0;33m[backend ]\033[0m /') & \
+	($(NVM_INIT) && cd apps/backend  && pnpm dev 2>&1 | sed 's/^/\033[0;33m[backend ]\033[0m /') & \
 	(cd apps/catalog  && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 2>&1 | sed 's/^/\033[0;32m[catalog ]\033[0m /') & \
 	wait
 
@@ -85,7 +85,7 @@ frontend-start:
 	@$(NVM_INIT) && cd apps/frontend && pnpm dev
 
 backend-start:
-	@$(NVM_INIT) && cd apps/backend && bun run dev
+	@$(NVM_INIT) && cd apps/backend && pnpm dev
 
 catalog-start: migrate
 	cd apps/catalog && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -114,7 +114,7 @@ db-reset:
 test: test-backend test-catalog
 
 test-backend:
-	@$(NVM_INIT) && cd apps/backend && bun run test
+	@$(NVM_INIT) && cd apps/backend && pnpm test
 
 test-catalog:
 	cd apps/catalog && .venv/bin/pytest tests/ -v --tb=short
@@ -127,7 +127,7 @@ lint-frontend:
 	@$(NVM_INIT) && cd apps/frontend && pnpm exec eslint src/
 
 lint-backend:
-	@$(NVM_INIT) && cd apps/backend && bun x eslint src/
+	@$(NVM_INIT) && cd apps/backend && pnpm exec eslint src/
 
 # ── Typecheck ────────────────────────────────────────────────────────────────
 
@@ -158,7 +158,7 @@ frontend-install:
 	@$(NVM_INIT) && cd apps/frontend && pnpm install
 
 backend-install:
-	@$(NVM_INIT) && cd apps/backend && bun install
+	@$(NVM_INIT) && cd apps/backend && pnpm install
 
 catalog-install:
 	cd apps/catalog && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt

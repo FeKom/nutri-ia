@@ -1,7 +1,7 @@
 # ==========================================
 # Dev Stage - Hot reload development
 # ==========================================
-FROM node:20-slim AS dev
+FROM node:22-slim AS dev
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
@@ -19,7 +19,7 @@ CMD ["pnpm", "dev"]
 # ==========================================
 # Production Stages
 # ==========================================
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # --- Dependencies (all, for build) ---
@@ -42,7 +42,7 @@ COPY . .
 RUN pnpm build
 
 # --- Production (distroless) ---
-FROM gcr.io/distroless/nodejs20-debian12
+FROM gcr.io/distroless/nodejs22-debian12
 
 WORKDIR /app
 

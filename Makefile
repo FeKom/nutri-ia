@@ -8,7 +8,9 @@
         check \
         db-reset generate-types \
         dev build restart logs logs-f ps clean \
-        logs-frontend logs-backend logs-catalog logs-postgres
+        logs-frontend logs-backend logs-catalog logs-postgres \
+        build-backend build-catalog \
+        push-backend push-catalog
 
 # ── Colours ────────────────────────────────────────────────────────────────
 CYAN  := \033[0;36m
@@ -19,6 +21,13 @@ RESET := \033[0m
 # Source nvm so Make subshells use the version pinned in .nvmrc (node 22).
 # Homebrew node (25.x) breaks due to a simdjson dylib version mismatch.
 NVM_INIT := export NVM_DIR="$$HOME/.nvm"; [ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; nvm use --silent
+
+# ── Image config (GHCR) ─────────────────────────────────────────────────────
+# Override via: make build-backend GITHUB_USER=youruser TAG=v1.2
+GITHUB_USER ?= $(shell git config user.name | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+TAG         ?= $(shell git rev-parse --short HEAD)
+BACKEND_IMG  = ghcr.io/$(GITHUB_USER)/nutria-backend:$(TAG)
+CATALOG_IMG  = ghcr.io/$(GITHUB_USER)/nutria-catalog:$(TAG)
 
 help:
 	@echo ""
@@ -64,6 +73,13 @@ help:
 	@echo "  make logs-f             - follow logs"
 	@echo "  make ps                 - list running containers"
 	@echo "  make clean              - remove containers, volumes and images"
+	@echo ""
+	@echo "$(GREEN)Production images (GHCR):$(RESET)"
+	@echo "  make build-backend      - build backend prod image"
+	@echo "  make build-catalog      - build catalog prod image"
+	@echo "  make push-backend       - build + push backend to ghcr.io"
+	@echo "  make push-catalog       - build + push catalog to ghcr.io"
+	@echo "  GITHUB_USER=xxx TAG=v1.0 make push-backend  - explicit user/tag"
 	@echo ""
 
 # ── Local development ───────────────────────────────────────────────────────
@@ -209,6 +225,26 @@ logs-postgres:
 
 ps:
 	@docker compose ps
+
+# ── Production images (GHCR) ─────────────────────────────────────────────────
+
+build-backend:
+	@echo "$(CYAN)Building backend prod image → $(BACKEND_IMG)$(RESET)"
+	docker build --target prod -t $(BACKEND_IMG) apps/backend
+
+build-catalog:
+	@echo "$(CYAN)Building catalog prod image → $(CATALOG_IMG)$(RESET)"
+	docker build -t $(CATALOG_IMG) apps/catalog
+
+push-backend: build-backend
+	@echo "$(CYAN)Pushing $(BACKEND_IMG) to GHCR...$(RESET)"
+	docker push $(BACKEND_IMG)
+	@echo "$(GREEN)Done: $(BACKEND_IMG)$(RESET)"
+
+push-catalog: build-catalog
+	@echo "$(CYAN)Pushing $(CATALOG_IMG) to GHCR...$(RESET)"
+	docker push $(CATALOG_IMG)
+	@echo "$(GREEN)Done: $(CATALOG_IMG)$(RESET)"
 
 clean:
 	@echo "This will delete all container data. Continue? [y/N] "; \

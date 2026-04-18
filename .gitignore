@@ -1,3 +1,6 @@
+# Local planning docs (never commit)
+docs/
+
 # Node.js (frontend + backend)
 node_modules/
 .next/

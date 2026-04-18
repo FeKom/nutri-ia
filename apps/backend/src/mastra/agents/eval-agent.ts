@@ -1,9 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { env } from "../config/env";
-import { toolSearch } from "../config/toolProcessor";
-import { updateUserProfileTool } from "../tools/update-user-profile";
-import { calculateMacrosTool } from "../tools/calculate-macros";
-import { createMealPlanTool } from "../tools/create-meal-plan";
+import { NutriaProcessor } from "../config/NutriaProcessor";
 
 /**
  * Creates a stateless eval agent with custom instructions.
@@ -11,14 +8,11 @@ import { createMealPlanTool } from "../tools/create-meal-plan";
  */
 export function createEvalAgent(instructions: string): Agent {
   return new Agent({
+    id: "eval-agent",
     name: "eval-agent",
     instructions,
     model: env.MODEL,
-    inputProcessors: [toolSearch],
-    tools: {
-      update_user_profile: updateUserProfileTool,
-      calculate_macros: calculateMacrosTool,
-      create_meal_plan: createMealPlanTool,
-    },
+    inputProcessors: [new NutriaProcessor(5)],
+    tools: {},
   });
 }

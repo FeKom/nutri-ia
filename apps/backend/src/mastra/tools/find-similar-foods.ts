@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { findSimilarFoods, searchFoodsByEmbedding, type SimilarFoodItem } from '../clients/catalog-client';
 import { findSimilarOutputSchema } from '../schemas/output';
 import { logger } from '../../utils/logger';
+import { filterByMetadata } from '../config/metadata-filter';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -58,7 +59,7 @@ export const findSimilarFoodsTool = withAuth({
       .describe('Tolerância de diferença nutricional (0.3 = 30% de diferença permitida)'),
   }),
   outputSchema: findSimilarOutputSchema,
-  execute: async (inputData, { authToken }) => {
+  execute: async (inputData, { authToken, userProfile }) => {
     const { foodId, limit = 5, sameCategory = false, tolerance = 0.3 } = inputData;
 
     logger.info(`🔄 [Tool] Buscando alimentos similares a: "${foodId}"`);
@@ -109,13 +110,30 @@ export const findSimilarFoodsTool = withAuth({
 
       const similarFoods = response.similar_foods.map(formatSimilarFood);
 
-      logger.info(`✅ [Tool] Encontrados ${similarFoods.length} alimentos similares`);
+      const { filtered, removed, reasons, allRemovedWarning } = filterByMetadata(similarFoods, userProfile);
+
+      if (removed.length > 0) {
+        removed.forEach((food) => {
+          logger.info(`🚫 [Tool] Removido "${food.name}": ${reasons.get(food.name)}`);
+        });
+      }
+
+      if (allRemovedWarning) {
+        logger.warn(`⚠️ [Tool] ${allRemovedWarning}`);
+      }
+
+      logger.info(`✅ [Tool] Encontrados ${filtered.length} alimentos similares (${removed.length} removidos por restrições)`);
+
+      const note = removed.length > 0
+        ? `Nota: ${removed.length} alimento(s) foram removidos por restrições alimentares.`
+        : allRemovedWarning;
 
       return {
         success: true,
         referenceFood,
-        similarFoods,
-        count: similarFoods.length,
+        similarFoods: filtered,
+        count: filtered.length,
+        ...(note && { note }),
       };
     } catch (error) {
       const errorMessage =

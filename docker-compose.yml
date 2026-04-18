@@ -76,12 +76,13 @@ services:
       - ./apps/backend:/app
       - /app/node_modules
       - /app/.mastra
+      - ./apps/backend/.env.docker:/app/.env.development:ro
     depends_on:
       - catalog
     networks:
       - nutria-network
     restart: unless-stopped
-    command: pnpm dev
+    command: pnpm exec mastra dev
 
   # ==========================================
   # Frontend (Next.js)

@@ -35,6 +35,7 @@ env/
 .env.production
 .env.*.local
 *.env
+.env.docker
 
 # Temporary files
 temp/

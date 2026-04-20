@@ -109,7 +109,7 @@ class TestFoodEndpoints:
         """Test food search endpoint"""
         response = client.post(
             "/api/v1/foods/search",
-            json={"query": "chicken", "limit": 10}
+            json={"query": ["chicken"], "limit": 10}
         )
         assert response.status_code == 200
         data = response.json()
@@ -122,7 +122,7 @@ class TestFoodEndpoints:
         response = client.post(
             "/api/v1/foods/search",
             json={
-                "query": "chicken",
+                "query": ["chicken"],
                 "limit": 10,
                 "filters": {
                     "category": "meat",

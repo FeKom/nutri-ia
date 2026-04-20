@@ -241,7 +241,7 @@ def dataset_new(
 @dataset_app.command("ingest")
 def dataset_ingest(filename: str = typer.Argument(...)):
     """Embed and store a dataset file in document_chunks."""
-    from app.services.eval_service import ingest_dataset
+    from app.eval.datasets import ingest_dataset
     with _get_session() as session:
         result = ingest_dataset(session, filename)
     console.print(f"[green]Ingested:[/green] {result.chunks_created} chunks (skipped {result.chunks_skipped})")

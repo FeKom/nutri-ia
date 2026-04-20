@@ -16,7 +16,7 @@ from app.eval.experiments import (
 )
 from app.eval.scorer import compute_weighted_score, load_weights
 from app.eval.scorers import ALL_SCORERS
-from app.schemas.eval import EvalExperimentCreate
+from app.schemas.eval import EvalExperimentCreate, EvalQuestion, GoldenDatasetItem, OverfittingDatasetItem
 
 logger = logging.getLogger(__name__)
 
@@ -177,3 +177,96 @@ def create_eval_experiment(session: Session, data: EvalExperimentCreate):
         "agent_mode": data.agent_mode,
     }
     return create_experiment(session, name=data.name, description=data.description, params=params)
+
+
+def run_eval_compat(session: Session, eval_question: EvalQuestion) -> list:
+    """
+    Compat wrapper for the old run_eval API endpoint.
+    Accepts an EvalQuestion with pre-loaded items (not from file).
+    """
+    experiment = get_experiment_by_id(session, eval_question.experiment_id)
+    params = experiment.params or {}
+    prompt = _resolve_prompt(params)
+    retrieval_source = params.get("retrieval_source", "json")
+    agent_mode = params.get("agent_mode", "direct")
+
+    global_weights = load_weights(WEIGHTS_PATH)
+    weights = _merge_weights(global_weights, params.get("weights"))
+
+    runs = []
+    for i, item in enumerate(eval_question.items):
+        if i > 0:
+            time.sleep(15)
+
+        is_golden = isinstance(item, GoldenDatasetItem)
+        expected_answer = item.expected_answer if is_golden else None
+
+        result = _call_mastra(
+            prompt=prompt,
+            question=item.question,
+            retrieval_source=retrieval_source,
+            expected_answer=expected_answer,
+            agent_mode=agent_mode,
+        )
+
+        run = create_run(
+            session,
+            experiment_id=experiment.id,
+            question=item.question,
+            answer=result["answer"],
+            expected_answer=expected_answer,
+            model_answer=result["answer"] if not is_golden else None,
+            context_used=result.get("context_used"),
+            latency_ms=result.get("latency_ms"),
+            weight=item.weight if item.weight is not None else 1.0,
+        )
+
+        context_chunks = []
+        if isinstance(result.get("context_used"), dict):
+            context_chunks = list(result["context_used"].values())
+        elif isinstance(result.get("context_used"), list):
+            context_chunks = result["context_used"]
+
+        scores = compute_weighted_score(
+            question=item.question,
+            answer=result["answer"] or "",
+            context=context_chunks,
+            expected_answer=expected_answer,
+            scorers=ALL_SCORERS,
+            weights=weights,
+        )
+
+        save_result(
+            session,
+            run_id=run.id,
+            faithfulness=scores.get("faithfulness"),
+            answer_relevancy=scores.get("answer_relevancy"),
+            context_relevancy=scores.get("context_relevancy"),
+            context_recall=scores.get("context_recall"),
+            context_precision=scores.get("context_precision"),
+            hallucination=scores.get("hallucination"),
+            jailbreak=scores.get("jailbreak"),
+            overall_score=scores.get("overall_score"),
+        )
+        runs.append(run)
+
+    session.commit()
+    return runs
+
+
+def score_eval_compat(
+    question: str,
+    answer: str,
+    context_chunks: list[str],
+    expected_answer: str | None = None,
+) -> dict:
+    """Compat wrapper for the /score endpoint. Uses plugin scorers."""
+    global_weights = load_weights(WEIGHTS_PATH)
+    return compute_weighted_score(
+        question=question,
+        answer=answer,
+        context=context_chunks,
+        expected_answer=expected_answer,
+        scorers=ALL_SCORERS,
+        weights=global_weights,
+    )

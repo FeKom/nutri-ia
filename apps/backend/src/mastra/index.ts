@@ -8,7 +8,6 @@ import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
 import { createMealPlanWorkflow } from "./workflows/create-meal-plan";
 import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
-import { acquireChatLock, releaseChatLock } from "../lib/user-chat-queue";
 import { checkRateLimit } from "../lib/rate-limiter";
 import { asyncContext } from "../lib/async-context";
 import { getUserProfileFromDB } from "./utils/user-profile-loader";
@@ -47,7 +46,6 @@ export const mastra = new Mastra({
       registerApiRoute("/chat", {
         method: "POST",
         handler: async (c) => {
-          let chatLockUserId: string | undefined;
           try {
             // Valida JWT do header Authorization
             const token = extractBearerToken(c.req.header("Authorization"));
@@ -132,15 +130,6 @@ export const mastra = new Mastra({
               return c.json({ error: "Rate limit exceeded. Too many messages — try again later." }, 429);
             }
 
-            // Serialise concurrent requests per user to prevent thread memory corruption
-            if (!acquireChatLock(userId)) {
-              return c.json(
-                { error: "Another message is already being processed. Please wait for the current response to finish." },
-                429,
-              );
-            }
-            chatLockUserId = userId;
-
             // jwt_token is propagated via asyncContext so tools can read it.
             // requestContext from c.get() is always undefined on custom registerApiRoute
             // routes — Mastra's middleware never runs for them. We pass resourceId and
@@ -151,7 +140,6 @@ export const mastra = new Mastra({
               const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
 
               if (!nutritionAgent) {
-                releaseChatLock(userId);
                 return c.json({ error: "Agent não encontrado" }, 500);
               }
 
@@ -186,14 +174,10 @@ export const mastra = new Mastra({
               const uiMessageStream = createUIMessageStream({
                 originalMessages: messages,
                 execute: async ({ writer }) => {
-                  try {
-                    for await (const part of toAISdkStream(result, {
-                      from: "agent",
-                    })) {
-                      await writer.write(part);
-                    }
-                  } finally {
-                    releaseChatLock(userId);
+                  for await (const part of toAISdkStream(result, {
+                    from: "agent",
+                  })) {
+                    await writer.write(part);
                   }
                 },
               });
@@ -203,7 +187,6 @@ export const mastra = new Mastra({
               });
             });
           } catch (error) {
-            if (chatLockUserId) releaseChatLock(chatLockUserId);
             logger.error({ error }, "error in /chat endpoint");
             return c.json(
               {

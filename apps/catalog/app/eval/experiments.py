@@ -80,6 +80,8 @@ def save_result(
     context_relevancy: float | None = None,
     context_recall: float | None = None,
     context_precision: float | None = None,
+    hallucination: float | None = None,
+    jailbreak: float | None = None,
     overall_score: float | None = None,
 ) -> EvalResult:
     result = EvalResult(
@@ -89,6 +91,8 @@ def save_result(
         context_relevancy=context_relevancy,
         context_recall=context_recall,
         context_precision=context_precision,
+        hallucination=hallucination,
+        jailbreak=jailbreak,
         overall_score=overall_score,
     )
     session.add(result)

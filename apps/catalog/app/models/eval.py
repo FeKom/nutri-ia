@@ -95,6 +95,8 @@ class EvalResult(UUIDMixin, TimestampMixin, SQLModel, table=True):
     context_relevancy: Optional[float] = Field(default=None)
     context_recall: Optional[float] = Field(default=None)
     context_precision: Optional[float] = Field(default=None)
+    hallucination: Optional[float] = Field(default=None)
+    jailbreak: Optional[float] = Field(default=None)
     overall_score: Optional[float] = Field(default=None)
 
     __table_args__ = (

@@ -12,9 +12,9 @@ export const env = {
 
   /**
    * URL base da API de catálogo de alimentos
-   * Default: localhost:8000 (desenvolvimento local)
+   * Default: localhost:8004 (desenvolvimento local)
    */
-  CATALOG_API_URL: process.env.CATALOG_API_URL || "http://localhost:8000",
+  CATALOG_API_URL: process.env.CATALOG_API_URL || "http://localhost:8004",
 
   /**
    * Timeout para requisições à API (em ms)
@@ -111,8 +111,8 @@ export function validateEnv(): void {
     warnings.push("GITHUB_TOKEN não configurado - Agent pode não funcionar");
   }
 
-  if (env.CATALOG_API_URL === "http://localhost:8000") {
-    warnings.push("CATALOG_API_URL usando default (localhost:8000)");
+  if (env.CATALOG_API_URL === "http://localhost:8004") {
+    warnings.push("CATALOG_API_URL usando default (localhost:8004)");
   }
 
   if (warnings.length > 0) {

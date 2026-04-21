@@ -24,7 +24,7 @@ export function createNutritionMemory() {
   return new Memory({
     storage: new PostgresStore({
       id: "nutria-agent-storage",
-      connectionString: process.env.DATABASE_URl || "postgresql://nutriauser:Ck1VMVI7gxKeO9sYxZRciw73BlHk4sgO32gXHTHEZW8@localhost:5432/nutriadb",
+      connectionString: process.env.DATABASE_URL,
     }),
     vector: new PgVector({
       id: "nutria-agent-vector",

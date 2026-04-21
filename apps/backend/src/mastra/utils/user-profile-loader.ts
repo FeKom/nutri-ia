@@ -9,7 +9,7 @@
 
 import { UserProfile, userProfileToContext } from "../config/memory";
 
-const CATALOG_API_URL = process.env.CATALOG_API_URL || 'http://localhost:8000';
+const CATALOG_API_URL = process.env.CATALOG_API_URL || 'http://localhost:8004';
 const CATALOG_API_TIMEOUT = parseInt(process.env.CATALOG_API_TIMEOUT || '5000');
 
 // Cache de perfis de usuário (TTL de 5 minutos)

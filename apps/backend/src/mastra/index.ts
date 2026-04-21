@@ -216,7 +216,7 @@ export const mastra = new Mastra({
                   ? nutritionAnalystAgent
                   : createEvalAgent(prompt ?? "");
 
-              const result = await agent.generate(question, { memoryConfig: { disabled: true } });
+              const result = await agent.generate(question, { memoryConfig: { disabled: true }});
               answer = result.text;
 
               // Extract context from tool call results so metrics are meaningful

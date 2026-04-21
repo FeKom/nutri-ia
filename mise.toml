@@ -63,7 +63,7 @@ dir = "apps/backend"
 run = "pnpm dev"
 
 [tasks.catalog-start]
-description = "Run migrations then start catalog API → http://localhost:8000"
+description = "Run migrations then start catalog API → http://localhost:8004"
 depends = ["migrate"]
 dir = "apps/catalog"
 run = ".venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8004"
@@ -124,6 +124,14 @@ dir = "apps/frontend"
 run = "pnpm run generate:catalog-types"
 
 # ── Docker ───────────────────────────────────────────────────────────────────
+
+[tasks.docker-infra]
+description = "Start only infrastructure services (postgres) via Docker Compose"
+run = "docker-compose up -d postgres"
+
+[tasks.docker-infra-down]
+description = "Stop infrastructure services"
+run = "docker-compose stop postgres"
 
 [tasks.docker-up]
 description = "Start all services via Docker Compose"

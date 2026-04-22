@@ -1,0 +1,150 @@
+[tools]
+node    = "22"
+python  = "3.11.7"
+pnpm    = "latest"
+
+[env]
+# Podman socket — confirme o caminho com: podman machine inspect | grep Socket
+DOCKER_HOST = "unix:///var/folders/7h/d4h1gw290yv0bq0h40tsnj5h0000gq/T/podman/podman-machine-default-api.sock"
+
+# ── Install ──────────────────────────────────────────────────────────────────
+
+[tasks.frontend-install]
+description = "Install frontend dependencies (pnpm install)"
+dir = "apps/frontend"
+run = "pnpm install"
+
+[tasks.backend-install]
+description = "Install backend dependencies (pnpm install)"
+dir = "apps/backend"
+run = "pnpm install"
+
+[tasks.catalog-install]
+description = "Create Python venv and install catalog dependencies"
+dir = "apps/catalog"
+run = "python -m venv .venv && .venv/bin/pip install -r requirements.txt"
+
+[tasks.install]
+description = "Install all dependencies"
+depends = ["frontend-install", "backend-install", "catalog-install"]
+
+# ── Database ─────────────────────────────────────────────────────────────────
+
+[tasks.migrate]
+description = "Run Alembic migrations (create/update tables)"
+dir = "apps/catalog"
+run = ".venv/bin/alembic upgrade head"
+
+[tasks.db-reset]
+description = "Drop everything and re-run migrations (DANGER)"
+dir = "apps/catalog"
+run = ".venv/bin/alembic downgrade base && .venv/bin/alembic upgrade head"
+
+[tasks.seed-taco]
+description = "Import ~600 TACO Brazilian foods into the DB"
+dir = "apps/catalog"
+run = ".venv/bin/python scripts/import_taco.py"
+
+[tasks.seed-taco-dry]
+description = "Dry-run TACO import — validate without writing to DB"
+dir = "apps/catalog"
+run = ".venv/bin/python scripts/import_taco.py --dry-run"
+
+# ── Dev servers ──────────────────────────────────────────────────────────────
+
+[tasks.frontend-start]
+description = "Start frontend dev server → http://localhost:3000"
+dir = "apps/frontend"
+run = "pnpm dev"
+
+[tasks.backend-start]
+description = "Start backend dev server → http://localhost:4111"
+dir = "apps/backend"
+run = "pnpm dev"
+
+[tasks.catalog-start]
+description = "Run migrations then start catalog API → http://localhost:8004"
+depends = ["migrate"]
+dir = "apps/catalog"
+run = ".venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8004"
+
+# ── Tests ────────────────────────────────────────────────────────────────────
+
+[tasks.test-backend]
+description = "Run backend tests (vitest)"
+dir = "apps/backend"
+run = "pnpm test"
+
+[tasks.test-catalog]
+description = "Run catalog tests (pytest)"
+dir = "apps/catalog"
+run = ".venv/bin/pytest tests/ -v --tb=short"
+
+[tasks.test]
+description = "Run all tests"
+depends = ["test-backend", "test-catalog"]
+
+# ── Lint ─────────────────────────────────────────────────────────────────────
+
+[tasks.lint-frontend]
+description = "ESLint on frontend"
+dir = "apps/frontend"
+run = "pnpm exec eslint src/"
+
+[tasks.lint-backend]
+description = "ESLint on backend"
+dir = "apps/backend"
+run = "pnpm exec eslint src/"
+
+[tasks.lint]
+description = "Lint all apps"
+depends = ["lint-frontend", "lint-backend"]
+
+# ── Typecheck ────────────────────────────────────────────────────────────────
+
+[tasks.typecheck-frontend]
+description = "tsc --noEmit on frontend"
+dir = "apps/frontend"
+run = "node_modules/.bin/tsc --noEmit"
+
+[tasks.typecheck-backend]
+description = "tsc --noEmit on backend"
+dir = "apps/backend"
+run = "node_modules/.bin/tsc --noEmit"
+
+[tasks.typecheck]
+description = "Type-check all apps"
+depends = ["typecheck-frontend", "typecheck-backend"]
+
+# ── Code generation ──────────────────────────────────────────────────────────
+
+[tasks.generate-types]
+description = "Regenerate catalog TypeScript types from OpenAPI"
+dir = "apps/frontend"
+run = "pnpm run generate:catalog-types"
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+
+[tasks.docker-infra]
+description = "Start only infrastructure services (postgres) via Docker Compose"
+run = "docker-compose up -d postgres"
+
+[tasks.docker-infra-down]
+description = "Stop infrastructure services"
+run = "docker-compose stop postgres"
+
+[tasks.docker-up]
+description = "Start all services via Docker Compose"
+run = "docker-compose up -d"
+
+[tasks.docker-down]
+description = "Stop all Docker services"
+run = "docker-compose down"
+
+[tasks.docker-rebuild-catalog]
+description = "Rebuild and restart the catalog container"
+run = "docker-compose up -d --build catalog"
+
+[tasks.docker-logs]
+description = "Follow logs from all services"
+run = "docker-compose logs -f"

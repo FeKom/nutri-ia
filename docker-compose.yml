@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ==========================================
   # PostgreSQL with pgvector
@@ -34,7 +32,7 @@ services:
       dockerfile: Dockerfile
     container_name: nutria-catalog
     ports:
-      - "8000:8000"
+      - "8004:8004"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -46,13 +44,19 @@ services:
       - ./apps/catalog:/app
       - /app/__pycache__
       - /app/.pytest_cache
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8004/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - nutria-network
     restart: unless-stopped
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8004"
 
   # ==========================================
   # Backend (Mastra.ai)
@@ -66,7 +70,7 @@ services:
     ports:
       - "4111:4111"
     environment:
-      CATALOG_API_URL: http://catalog:8000
+      CATALOG_API_URL: http://catalog:8004
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
@@ -76,9 +80,15 @@ services:
       - ./apps/backend:/app
       - /app/node_modules
       - /app/.mastra
-      - ./apps/backend/.env.docker:/app/.env.development:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:4111/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
-      - catalog
+      catalog:
+        condition: service_healthy
     networks:
       - nutria-network
     restart: unless-stopped
@@ -103,7 +113,8 @@ services:
       - /app/node_modules
       - /app/.next
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - nutria-network
     restart: unless-stopped

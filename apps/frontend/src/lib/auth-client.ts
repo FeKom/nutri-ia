@@ -3,7 +3,7 @@
 import { useAuthContext } from "./jwt-context";
 
 const CATALOG_URL =
-  process.env.NEXT_PUBLIC_CATALOG_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_CATALOG_URL || "http://localhost:8004";
 
 // --- useSession hook ---
 

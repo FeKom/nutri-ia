@@ -50,6 +50,93 @@ make logs      # View logs
 make clean     # Clean builds and dependencies
 ```
 
+## 🛠️ Local Dev with mise + Docker
+
+An alternative to the full Docker Compose stack: run only the database in Docker and each app locally via [mise](https://mise.jdx.dev).
+
+### Prerequisites
+
+- [mise](https://mise.jdx.dev/getting-started.html) — manages Node.js 22, Python 3.11 and pnpm automatically
+- [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io) — for PostgreSQL only
+
+### Setup (first time)
+
+**1. Configure environment variables**
+
+```bash
+cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
+cp apps/catalog/.env.example apps/catalog/.env
+cp apps/frontend/.env.example apps/frontend/.env
+```
+
+Required values to fill in:
+
+| Variable | File | How to get |
+|---|---|---|
+| `GITHUB_TOKEN` | `apps/backend/.env` | [github.com/settings/tokens](https://github.com/settings/tokens) — Models: Read |
+| `BETTER_AUTH_SECRET` | `.env` + `apps/backend/.env` | `openssl rand -base64 32` |
+
+**2. Start the database**
+
+```bash
+mise run docker-infra
+```
+
+**3. Install all dependencies**
+
+```bash
+mise run install
+```
+
+**4. Seed the food database**
+
+```bash
+mise run seed-taco
+```
+
+### Running the apps
+
+Open three terminals:
+
+```bash
+# Terminal 1 — Catalog API → http://127.0.0.1:8004
+mise run catalog-start
+
+# Terminal 2 — Backend (Mastra) → http://127.0.0.1:4111
+mise run backend-start
+
+# Terminal 3 — Frontend (Next.js) → http://localhost:3000
+mise run frontend-start
+```
+
+`catalog-start` runs Alembic migrations automatically before starting the server.
+
+### All available tasks
+
+```bash
+mise tasks   # list everything
+```
+
+| Task | Description |
+|---|---|
+| `mise run install` | Install all dependencies |
+| `mise run docker-infra` | Start PostgreSQL via Docker |
+| `mise run docker-infra-down` | Stop PostgreSQL |
+| `mise run catalog-start` | Migrations + Catalog API |
+| `mise run backend-start` | Backend (Mastra) dev server |
+| `mise run frontend-start` | Frontend (Next.js) dev server |
+| `mise run migrate` | Run Alembic migrations |
+| `mise run db-reset` | Drop and re-run all migrations |
+| `mise run seed-taco` | Import TACO food database |
+| `mise run test` | Run all tests |
+| `mise run lint` | Lint all apps |
+| `mise run typecheck` | Type-check all apps |
+| `mise run docker-up` | Start everything via Docker Compose |
+| `mise run docker-down` | Stop all Docker services |
+
+---
+
 ## 🤖 GitHub Models Setup (Free LLM Access)
 
 Nutria uses [GitHub Models](https://github.com/marketplace/models) as the LLM provider — no paid API required.

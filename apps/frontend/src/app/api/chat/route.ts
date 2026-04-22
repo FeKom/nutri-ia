@@ -70,6 +70,9 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Mastra API error:", response.status, errorText);
+      if (response.status === 401) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       throw new Error(`Mastra API error: ${response.status}`);
     }
 

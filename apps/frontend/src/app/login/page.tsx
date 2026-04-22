@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Leaf, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get('reason') === 'session_expired';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -92,6 +94,12 @@ export default function LoginPage() {
               Entre na sua conta para continuar
             </p>
           </div>
+
+          {sessionExpired && (
+            <div className="mb-6 p-3 rounded-xl bg-nutria-vermelho/5 border border-nutria-vermelho/15">
+              <p className="text-sm text-nutria-vermelho">Sua sessao expirou. Entre novamente para continuar.</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

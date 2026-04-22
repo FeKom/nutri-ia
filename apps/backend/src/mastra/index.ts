@@ -78,19 +78,21 @@ export const mastra = new Mastra({
               );
             }
 
-            // Tenta carregar perfil do usuário
-            const userProfile = await getUserProfileFromDB(userId);
+            // Load profile and daily summary in parallel — both are independent
+            const today = new Date().toISOString().split("T")[0];
+            const [userProfile, dailySummary] = await Promise.all([
+              getUserProfileFromDB(userId),
+              getDailySummary(userId, today, undefined, token).catch(() => null),
+            ]);
+
             const contextMessages: { role: "system"; content: string }[] = [];
 
             if (userProfile) {
               contextMessages.push(userProfileToContext(userProfile));
               logger.info({ userId }, "[Chat] user profile loaded");
 
-              // Injeta progresso do dia para que o agente dê conselhos contextualizados
-              try {
-                const today = new Date().toISOString().split("T")[0];
-                const daily = await getDailySummary(userId, today, undefined, token);
-                const { totals, targets, num_meals } = daily;
+              if (dailySummary) {
+                const { totals, targets, num_meals } = dailySummary;
                 const calPct = targets.calories > 0
                   ? Math.round((totals.calories / targets.calories) * 100)
                   : 0;
@@ -105,8 +107,7 @@ export const mastra = new Mastra({
                     `${num_meals} refeição(ões) registrada(s).`,
                 });
                 logger.info({ userId, num_meals, calPct }, "[Chat] daily progress injected");
-              } catch {
-                // Catalog pode estar indisponível ou usuário sem registros — não bloqueia o chat
+              } else {
                 logger.warn({ userId }, "[Chat] could not fetch daily progress, skipping");
               }
             } else {

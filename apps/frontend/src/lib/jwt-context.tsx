@@ -86,9 +86,23 @@ export function JwtProvider({ children }: { children: ReactNode }) {
       }
       setToken(newToken);
     };
+
+    // Check token expiry every minute and on window focus
+    const checkExpiry = () => {
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (current && !decodeToken(current)) {
+        localStorage.removeItem(STORAGE_KEY);
+        setToken(null);
+        window.location.href = "/login?reason=session_expired";
+      }
+    };
+    const interval = setInterval(checkExpiry, 60_000);
+    window.addEventListener("focus", checkExpiry);
     window.addEventListener("storage", onStorage);
     window.addEventListener("nutria-set-token", onSetToken);
     return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", checkExpiry);
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("nutria-set-token", onSetToken);
     };

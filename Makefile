@@ -111,6 +111,8 @@ catalog-start: migrate
 install: frontend-install backend-install catalog-install
 
 migrate:
+	@echo "Ensuring postgres is running..."
+	docker compose up -d postgres
 	@echo "Running Alembic migrations..."
 	cd apps/catalog && .venv/bin/alembic upgrade head
 	@echo "Migrations done."

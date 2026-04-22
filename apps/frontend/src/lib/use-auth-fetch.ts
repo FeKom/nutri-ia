@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { useJwt } from "./jwt-context";
+import { useAuthContext } from "./jwt-context";
 
 export function useAuthFetch() {
-  const { token } = useJwt();
+  const { token, updateToken } = useAuthContext();
 
   const authFetch = useCallback(
     async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -12,9 +12,15 @@ export function useAuthFetch() {
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-      return fetch(input, { ...init, headers });
+      const response = await fetch(input, { ...init, headers });
+      if (response.status === 401) {
+        updateToken(null);
+        window.location.href = "/login?reason=session_expired";
+        return response;
+      }
+      return response;
     },
-    [token],
+    [token, updateToken],
   );
 
   return authFetch;

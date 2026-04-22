@@ -1,10 +1,21 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import activities, auth, eval, foods, goals, meal_plans, nutrition, recipes, recommendations, tracking, users
 from app.core.config import settings
+from app.services.embedding_service import _get_model
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    _get_model()  # warm up the embedding model at startup
+    yield
+
 
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
     redirect_slashes=False,

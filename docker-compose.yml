@@ -106,6 +106,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      CATALOG_API_URL: http://catalog:8000
       NEXT_PUBLIC_BACKEND_URL: http://localhost:4111
       NODE_ENV: development
     volumes:

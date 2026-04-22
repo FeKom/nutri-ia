@@ -92,7 +92,7 @@ services:
     networks:
       - nutria-network
     restart: unless-stopped
-    command: pnpm dev
+    command: pnpm exec mastra dev
 
   # ==========================================
   # Frontend (Next.js)

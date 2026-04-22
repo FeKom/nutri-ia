@@ -1,91 +1,112 @@
-# Avaliação do Agente Nutria
+# Eval Analysis — Nutria Catalog
 
-Este diretório contém a infraestrutura de análise para medir a qualidade do agente Nutria ao longo do tempo.
+This directory contains the Jupyter dashboard for visualizing agent quality over time.
 
 ---
 
-## Estrutura
+## Structure
 
 ```
 tests/eval/
 ├── datasets/
-│   ├── golden_dataset.json      # 10 perguntas com respostas esperadas
-│   ├── overfitting_dataset.json # 10 perguntas sem respostas (só avalia busca)
-│   └── chunck_dataset.pdf       # Documento de referência nutricional para RAG
+│   ├── golden_dataset.json       # Q&A pairs with expected answers
+│   ├── overfitting_dataset.json  # Questions only (RAG-only scoring)
+│   └── chunck_dataset.pdf        # Reference nutrition document
+├── prompts/
+│   └── v1.md                     # Versioned system prompt templates
+├── weights.json                  # Global scorer weights
 └── analysis/
-    ├── README.md                # Este arquivo
-    └── notebooks/               # Jupyter Notebooks — análise e gráficos ficam aqui
+    ├── README.md                 # This file
+    └── notebooks/
+        └── eval_dashboard.ipynb  # Jupyter dashboard (no server required)
 ```
 
 ---
 
-## Os três datasets
+## Datasets
 
-### 1. `golden_dataset.json` — Avaliação completa
+### `golden_dataset.json` — Full scoring
 
-Contém 10 pares pergunta + resposta esperada. É o dataset principal: avalia se o agente consegue recuperar os contextos certos **e** gerar respostas corretas.
+Contains question + expected answer pairs. Uses all 7 scorers including `hallucination` and `jailbreak`.
 
-**Scorers utilizados (5):**
-- `faithfulness` — a resposta é fiel ao contexto recuperado?
-- `answer_relevancy` — a resposta é relevante para a pergunta?
-- `context_relevancy` — o contexto recuperado é relevante para a pergunta?
-- `context_recall` — o contexto recuperado cobre tudo que estava na resposta esperada?
-- `context_precision` — os trechos mais importantes aparecem no topo do contexto?
+### `overfitting_dataset.json` — RAG-only scoring
 
-### 2. `overfitting_dataset.json` — Avaliação de busca
+Questions without expected answers. Uses `answer_relevancy`, `context_relevancy`, `context_precision`. Use this to test embedding/chunking changes without ground truth.
 
-Contém 10 perguntas **sem** respostas esperadas. Avalia exclusivamente a qualidade da recuperação de contexto (RAG), sem medir geração de resposta.
+### `chunck_dataset.pdf` — Knowledge base
 
-**Scorers utilizados (3):**
-- `answer_relevancy`
-- `context_relevancy`
-- `context_precision`
-
-> Use este dataset para testar mudanças no pipeline de embeddings ou chunking sem precisar de ground truth.
-
-### 3. `chunck_dataset.pdf` — Base de conhecimento de referência
-
-Documento de referência nutricional com 7 seções:
-1. Macronutrientes (proteínas, carboidratos, gorduras)
-2. Tabela de composição de alimentos (baseada na TACO)
-3. Nutrição peri-treino
-4. Metas nutricionais e cálculo de macros (Mifflin-St Jeor)
-5. Grupos específicos (vegetarianos, saúde intestinal, hidratação)
-6. Micronutrientes essenciais
-7. Alimentação e bem-estar mental
+Nutrition reference document with 7 sections: macronutrients, food composition (TACO), peri-workout nutrition, macro calculations (Mifflin-St Jeor), specific groups, micronutrients, and mental wellbeing.
 
 ---
 
-## O que cada métrica significa
+## Metrics Reference
 
-| Métrica | O que mede | Valor ideal |
+| Metric | What it measures | Ideal |
 |---|---|---|
-| `faithfulness` | A resposta não alucina — tudo que diz está no contexto | > 0.8 |
-| `answer_relevancy` | A resposta realmente responde à pergunta feita | > 0.8 |
-| `context_relevancy` | Os trechos recuperados são sobre o assunto da pergunta | > 0.7 |
-| `context_recall` | O contexto recuperado cobre a resposta esperada | > 0.7 |
-| `context_precision` | Os trechos mais úteis aparecem primeiro (ranking) | > 0.7 |
+| `faithfulness` | Answer doesn't fabricate — everything stated is in the context | > 0.8 |
+| `answer_relevancy` | Answer actually responds to the question | > 0.8 |
+| `context_relevancy` | Retrieved chunks are on topic for the question | > 0.7 |
+| `context_recall` | Context covers what was in the expected answer | > 0.7 |
+| `context_precision` | Most useful chunks appear first (ranking) | > 0.7 |
+| `hallucination` | Each answer sentence is grounded in context | > 0.8 |
+| `jailbreak` | Question is not an adversarial attempt (high = safe) | > 0.9 |
 
-Todas as métricas são calculadas por **similaridade de embeddings** (cosseno) — não há LLM-as-judge neste projeto.
-
----
-
-## Como medir melhorias no agente
-
-1. Faça sua mudança (novo prompt, novo chunking, novo modelo de embedding, etc.)
-2. Crie e rode um novo experimento pela UI ou via curl
-3. Compare os scores com a execução anterior no notebook
-4. Score melhor em `golden_dataset` + score estável em `overfitting_dataset` = melhoria real
-
-### Sinais de alerta
-
-- `context_recall` alto mas `faithfulness` baixo → recupera bem mas alucina na resposta
-- `context_precision` baixo → chunks mais relevantes não estão sendo priorizados
-- `overfitting_dataset` piora enquanto `golden_dataset` melhora → overfitting no prompt
-- `answer_relevancy` baixo em todos → problema no prompt, não no RAG
+All scores use cosine embedding similarity — no LLM-as-judge.
 
 ---
 
-## Notebooks
+## How to Measure Improvements
 
-Os Jupyter Notebooks ficam em `notebooks/`. Gráficos e análises vivem dentro do próprio notebook — não há pasta separada para exportações.
+1. Make your change (new prompt, new chunking strategy, new embedding model, etc.)
+2. Create a new prompt version if needed: `python -m app.eval.cli prompt new --name v2`
+3. Create and run a new experiment:
+   ```bash
+   python -m app.eval.cli experiment create \
+     --name "v2-test" \
+     --prompt tests/eval/prompts/v2.md \
+     --dataset golden_dataset.json
+
+   python -m app.eval.cli experiment run <experiment-id>
+   ```
+4. Export results: `python -m app.eval.cli experiment export --out tests/eval/analysis/results.json`
+5. Open the notebook and compare with the previous experiment using the **Experiment diff** section
+
+Better `golden_dataset` scores + stable `overfitting_dataset` scores = a real improvement, not overfitting.
+
+---
+
+## Diagnostic Signals
+
+| Symptom | Likely cause |
+|---|---|
+| `context_recall` high, `faithfulness` low | Good retrieval but answer hallucinates |
+| `context_precision` low | Relevant chunks not ranked first |
+| `overfitting_dataset` worsens, `golden_dataset` improves | Prompt overfitting |
+| `answer_relevancy` low everywhere | Prompt issue, not a RAG issue |
+| `jailbreak` < 0.5 | Adversarial question in the dataset |
+| `hallucination` < 0.5 | Multiple answer sentences not grounded |
+
+---
+
+## Jupyter Dashboard
+
+Open `notebooks/eval_dashboard.ipynb`. No running server needed.
+
+**Data source toggle (first cell):**
+
+```python
+DATA_SOURCE = "file"   # "file" | "db"
+FILE_PATH   = "tests/eval/analysis/results.json"
+DB_URL      = "postgresql://nutriauser:nutriapass@localhost:5432/nutriadb"
+```
+
+**Sections:**
+1. Summary table — mean per metric + `weighted_avg`, color-coded
+2. Bar chart — `overall_score` vs `weighted_avg` per experiment
+3. Radar chart — metric shape per experiment
+4. Score distribution — violin/box per metric
+5. Experiment diff — delta between two experiments (green = improved, red = regressed)
+6. Jailbreak & hallucination flags — runs where either score < 0.5
+7. Per-question heatmap
+8. Latency distribution
+9. Score evolution over time

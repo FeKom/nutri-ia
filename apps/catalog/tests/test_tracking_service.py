@@ -96,7 +96,7 @@ class TestLogMeal:
 
         # Assert - Check that daily stats were created/updated
         summary = tracking_service.get_daily_summary(
-            session, sample_user.user_id, date.today()
+            session, sample_user.user_id, datetime.utcnow().date()
         )
         assert summary.num_meals == 1
         assert summary.totals["calories"] > 0
@@ -138,7 +138,7 @@ class TestGetDailySummary:
 
         # Act
         summary = tracking_service.get_daily_summary(
-            session, sample_user.user_id, date.today()
+            session, sample_user.user_id, datetime.utcnow().date()
         )
 
         # Assert

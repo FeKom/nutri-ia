@@ -1,9 +1,5 @@
 import { Mastra } from "@mastra/core/mastra";
 import { registerApiRoute } from "@mastra/core/server";
-import {
-  MASTRA_RESOURCE_ID_KEY,
-  MASTRA_THREAD_ID_KEY,
-} from "@mastra/core/request-context";
 import { toAISdkStream } from "@mastra/ai-sdk";
 import { createUIMessageStream, createUIMessageStreamResponse, generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -12,14 +8,16 @@ import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
 import { createMealPlanWorkflow } from "./workflows/create-meal-plan";
 import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
-import { acquireChatLock, releaseChatLock } from "../lib/user-chat-queue";
+import { checkRateLimit } from "../lib/rate-limiter";
 import { asyncContext } from "../lib/async-context";
 import { getUserProfileFromDB } from "./utils/user-profile-loader";
 import { userProfileToContext } from "../mastra/config/memory";
+import { applyGuardrails } from "./config/guardrails";
 import { getDailySummary } from "./clients/catalog-client";
 import { sharedStorage } from "./config/storage";
 import { getObservabilityConfig } from "./config/observabilityOptions";
 import { validateEnv, env } from "./config/env";
+import { summarizeHistory, injectSummaryAsContext } from "./config/summarizer";
 
 validateEnv();
 
@@ -48,7 +46,6 @@ export const mastra = new Mastra({
       registerApiRoute("/chat", {
         method: "POST",
         handler: async (c) => {
-          let chatLockUserId: string | undefined;
           try {
             // Valida JWT do header Authorization
             const token = extractBearerToken(c.req.header("Authorization"));
@@ -83,7 +80,7 @@ export const mastra = new Mastra({
 
             // Tenta carregar perfil do usuário
             const userProfile = await getUserProfileFromDB(userId);
-            const contextMessages: unknown[] = [];
+            const contextMessages: { role: "system"; content: string }[] = [];
 
             if (userProfile) {
               contextMessages.push(userProfileToContext(userProfile));
@@ -123,61 +120,73 @@ export const mastra = new Mastra({
 
             logger.info({ userId, userUsername, messageCount: messages.length }, "chat request received");
 
-            // Serialise concurrent requests per user to prevent thread memory corruption
-            if (!acquireChatLock(userId)) {
-              return c.json(
-                { error: "Another message is already being processed. Please wait for the current response to finish." },
-                429,
-              );
+            // Enforce per-user message rate limit before any expensive work
+            const rateLimit = checkRateLimit(userId);
+            if (!rateLimit.allowed) {
+              c.header("X-RateLimit-Limit", String(process.env.RATE_LIMIT_MAX_REQUESTS ?? 30));
+              c.header("X-RateLimit-Remaining", "0");
+              c.header("X-RateLimit-Reset", String(Math.ceil(rateLimit.resetAt / 1000)));
+              c.header("Retry-After", String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)));
+              return c.json({ error: "Rate limit exceeded. Too many messages — try again later." }, 429);
             }
-            chatLockUserId = userId;
 
-            // Configura contexto do request para que tools possam acessar userId e JWT
-            const requestContext = c.get("requestContext");
-            requestContext.set(MASTRA_RESOURCE_ID_KEY, userId);
-            requestContext.set(MASTRA_THREAD_ID_KEY, `chat-${userId}`);
-            requestContext.set("jwt_token", token);
-
-            // Mastra v1.4.0 does not reliably forward requestContext into tool
-            // execute() calls. AsyncLocalStorage is the guaranteed propagation path.
-            // Both are set so that utils/auth-context.ts#extractAuthContext can
-            // read from whichever is available. Do not remove either until the
-            // framework bug is resolved upstream.
+            // jwt_token is propagated via asyncContext so tools can read it.
+            // requestContext from c.get() is always undefined on custom registerApiRoute
+            // routes — Mastra's middleware never runs for them. We pass resourceId and
+            // threadId directly to agent.stream() so memory is routed correctly without
+            // depending on the framework's requestContext middleware.
             return asyncContext.run({ userId, jwtToken: token, userProfile }, async () => {
               const mastra = c.get("mastra");
               const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
 
               if (!nutritionAgent) {
-                releaseChatLock(userId);
                 return c.json({ error: "Agent não encontrado" }, 500);
               }
 
-              const result = await nutritionAgent.stream(messages, {
+              // Summarize older messages when thread grows long to save tokens
+              let streamMessages = messages;
+              if (messages.length > 8) {
+                try {
+                  const openai = createOpenAI({
+                    apiKey: process.env.GITHUB_TOKEN ?? "",
+                    baseURL: "https://models.inference.ai.azure.com",
+                  });
+                  const modelId = env.MODEL.replace("github-models/", "").replace("openai/", "");
+                  const summaryModel = openai.chat(modelId);
+
+                  const { summary, tokensSaved } = await summarizeHistory(messages, summaryModel);
+                  if (summary) {
+                    const recentMessages = messages.slice(-3);
+                    contextMessages.push(injectSummaryAsContext(summary));
+                    streamMessages = recentMessages;
+                    logger.info({ userId, tokensSaved }, "[Chat] conversation summarized");
+                  }
+                } catch (err) {
+                  logger.warn({ userId, err }, "[Chat] summarization failed, using original messages");
+                }
+              }
+
+              const result = await nutritionAgent.stream(streamMessages, {
                 context: contextMessages,
-                requestContext,
+                memory: { resource: userId, thread: `chat-${userId}` },
               });
 
               const uiMessageStream = createUIMessageStream({
                 originalMessages: messages,
                 execute: async ({ writer }) => {
-                  try {
-                    for await (const part of toAISdkStream(result, {
-                      from: "agent",
-                    })) {
-                      await writer.write(part);
-                    }
-                  } finally {
-                    releaseChatLock(userId);
+                  for await (const part of toAISdkStream(result, {
+                    from: "agent",
+                  })) {
+                    await writer.write(part);
                   }
                 },
               });
 
               return createUIMessageStreamResponse({
-                stream: uiMessageStream,
+                stream: applyGuardrails(uiMessageStream, userProfile),
               });
             });
           } catch (error) {
-            if (chatLockUserId) releaseChatLock(chatLockUserId);
             logger.error({ error }, "error in /chat endpoint");
             return c.json(
               {

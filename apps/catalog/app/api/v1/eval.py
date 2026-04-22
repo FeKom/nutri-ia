@@ -5,13 +5,33 @@ from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.api.dependencies import get_current_user, get_db
+from app.eval.datasets import (
+    list_datasets,
+    ingest_dataset,
+    search_chunks,
+)
+from app.eval.experiments import (
+    create_experiment,
+    get_experiment_by_id,
+    list_experiments,
+    create_run,
+    get_run_by_id,
+    list_runs_by_experiment,
+    save_result,
+    get_result_by_run,
+)
+from app.eval.runner import (
+    create_eval_experiment,
+    run_experiment,
+    run_eval_compat,
+    score_eval_compat,
+)
 from app.schemas.eval import (ChunkResult, ChunkSearchRequest,
                               ChunkSearchResponse, EvalExperimentCreate,
                               EvalExperimentResponse, EvalExperimentSummary,
                               EvalListResponse, EvalQuestion,
                               EvalResultResponse, EvalRunResponse,
                               IngestResponse, ScoreRequest)
-from app.services import eval_service
 
 router = APIRouter()
 
@@ -20,9 +40,9 @@ router = APIRouter()
 
 
 @router.get("/datasets", response_model=list[str])
-def list_datasets() -> list[str]:
+def list_datasets_route() -> list[str]:
     """List all available dataset files in tests/eval/datasets/."""
-    return eval_service.list_datasets()
+    return list_datasets()
 
 
 @router.post(
@@ -30,7 +50,7 @@ def list_datasets() -> list[str]:
     response_model=IngestResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def ingest_dataset(
+def ingest_dataset_route(
     filename: str,
     db: Session = Depends(get_db),
 ) -> IngestResponse:
@@ -40,7 +60,7 @@ def ingest_dataset(
     Supports .json, .pdf and .md files.
     """
     try:
-        return eval_service.ingest_dataset(db, filename)
+        return ingest_dataset(db, filename)
     except FileNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (ValueError, ImportError) as e:
@@ -81,13 +101,13 @@ def openai_embeddings(request: EmbeddingRequest) -> dict:
 
 
 @router.post("/chunks/search", response_model=ChunkSearchResponse)
-def search_chunks(
+def search_chunks_route(
     request: ChunkSearchRequest,
     db: Session = Depends(get_db),
 ) -> ChunkSearchResponse:
     """Search document_chunks by semantic similarity."""
     try:
-        chunks = eval_service.search_chunks(
+        chunks = search_chunks(
             db, request.query, request.retrieval_source, request.limit
         )
         return ChunkSearchResponse(
@@ -116,7 +136,7 @@ def score(request: ScoreRequest) -> EvalResultResponse:
     Compute embedding-similarity scores for a question/answer/context triple.
     Called by Mastra after each eval run — no DB writes, pure calculation.
     """
-    scores = eval_service.score_eval(
+    scores = score_eval_compat(
         question=request.question,
         answer=request.answer,
         context_chunks=request.context_chunks,
@@ -133,13 +153,13 @@ def score(request: ScoreRequest) -> EvalResultResponse:
     response_model=EvalExperimentSummary,
     status_code=status.HTTP_201_CREATED,
 )
-def create_experiment(
+def create_experiment_route(
     data: EvalExperimentCreate,
     db: Session = Depends(get_db),
     _user: dict = Depends(get_current_user),
 ) -> EvalExperimentSummary:
     """Create a new evaluation experiment."""
-    experiment = eval_service.create_eval_experiment(db, data)
+    experiment = create_eval_experiment(db, data)
     return EvalExperimentSummary(
         id=experiment.id,
         name=experiment.name,
@@ -152,12 +172,12 @@ def create_experiment(
 
 
 @router.get("/experiments", response_model=EvalListResponse)
-def list_experiments(db: Session = Depends(get_db)) -> EvalListResponse:
+def list_experiments_route(db: Session = Depends(get_db)) -> EvalListResponse:
     """List all experiments ordered by most recent."""
-    experiments = eval_service.list_experiments(db)
+    experiments = list_experiments(db)
     summaries = []
     for exp in experiments:
-        runs = eval_service.list_runs_by_experiment(db, exp.id)
+        runs = list_runs_by_experiment(db, exp.id)
         summaries.append(
             EvalExperimentSummary(
                 id=exp.id,
@@ -173,20 +193,20 @@ def list_experiments(db: Session = Depends(get_db)) -> EvalListResponse:
 
 
 @router.get("/experiments/{experiment_id}", response_model=EvalExperimentResponse)
-def get_experiment(
+def get_experiment_route(
     experiment_id: UUID,
     db: Session = Depends(get_db),
 ) -> EvalExperimentResponse:
     """Get a single experiment with all its runs and results."""
     try:
-        experiment = eval_service.get_experiment_by_id(db, experiment_id)
+        experiment = get_experiment_by_id(db, experiment_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-    runs = eval_service.list_runs_by_experiment(db, experiment_id)
+    runs = list_runs_by_experiment(db, experiment_id)
     run_responses = []
     for run in runs:
-        result = eval_service.get_result_by_run(db, run.id)
+        result = get_result_by_run(db, run.id)
         run_responses.append(
             EvalRunResponse(
                 id=run.id,
@@ -232,7 +252,7 @@ def run_eval(
 ) -> list[EvalRunResponse]:
     """Execute all questions against Mastra and persist the runs."""
     try:
-        runs = eval_service.run_eval(db, eval_question)
+        runs = run_eval_compat(db, eval_question)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
@@ -265,7 +285,7 @@ def run_eval_auto(
     No request body needed — reads dataset from experiment config.
     """
     try:
-        runs = eval_service.run_eval_auto(db, experiment_id)
+        runs = run_experiment(db, experiment_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -275,7 +295,7 @@ def run_eval_auto(
 
     result_list = []
     for run in runs:
-        result = eval_service.get_result_by_run(db, run.id)
+        result = get_result_by_run(db, run.id)
         result_list.append(
             EvalRunResponse(
                 id=run.id,
@@ -308,7 +328,7 @@ def list_runs(
     db: Session = Depends(get_db),
 ) -> list[EvalRunResponse]:
     """List all runs for a given experiment."""
-    runs = eval_service.list_runs_by_experiment(db, experiment_id)
+    runs = list_runs_by_experiment(db, experiment_id)
     return [
         EvalRunResponse(
             id=run.id,
@@ -330,11 +350,11 @@ def get_run(
 ) -> EvalRunResponse:
     """Get a single run by ID."""
     try:
-        run = eval_service.get_run_by_id(db, run_id)
+        run = get_run_by_id(db, run_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-    result = eval_service.get_result_by_run(db, run.id)
+    result = get_result_by_run(db, run.id)
     return EvalRunResponse(
         id=run.id,
         question=run.question,
@@ -364,18 +384,18 @@ def get_run(
     response_model=EvalResultResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def save_result(
+def save_result_route(
     run_id: UUID,
     result: EvalResultResponse,
     db: Session = Depends(get_db),
 ) -> EvalResultResponse:
     """Save scores for a run manually."""
     try:
-        eval_service.get_run_by_id(db, run_id)
+        get_run_by_id(db, run_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-    saved = eval_service.save_eval_result(
+    saved = save_result(
         db,
         run_id=run_id,
         faithfulness=result.faithfulness,

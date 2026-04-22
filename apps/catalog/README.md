@@ -1,6 +1,6 @@
 # Nutria Food Catalog API
 
-[![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen)](./tests)
+[![Tests](https://img.shields.io/badge/tests-76%20passed-brightgreen)](./tests)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-teal)](https://fastapi.tiangolo.com/)
@@ -18,7 +18,8 @@ Uma API completa de banco de dados de alimentos e nutrição construída com Fas
 - **Dados Multi-fonte**: Suporte para bases de dados USDA, TACO e customizadas
 - **Busca Semântica**: Infraestrutura preparada para busca semântica baseada em pgvector
 - **OpenAPI/Swagger**: Documentação completa da API disponível em `/docs`
-- **Totalmente Testado**: 53 testes automatizados com 100% de cobertura dos serviços principais
+- **Totalmente Testado**: 76 testes automatizados com 100% de cobertura dos serviços principais
+- **Framework de Avaliação**: CLI, scorers plugáveis, prompts versionados e dashboard Jupyter sem dependência de servidor
 
 ## Stack Tecnológica
 
@@ -65,6 +66,17 @@ nutria-catalog/
 │   │   ├── tracking_service.py      # Rastreamento de refeições
 │   │   ├── embedding_service.py     # Geração de embeddings
 │   │   └── food_analysis_service.py # Análise de imagens
+│   ├── eval/                        # ⭐ Framework de avaliação interno
+│   │   ├── __init__.py              # Re-exportações da API pública
+│   │   ├── cli.py                   # CLI Typer (python -m app.eval.cli)
+│   │   ├── runner.py                # Criação de experimentos, execução, chamadas Mastra
+│   │   ├── datasets.py              # Carregamento de datasets, ingestão, busca
+│   │   ├── experiments.py           # CRUD de EvalExperiment, EvalRun, EvalResult
+│   │   ├── scorer.py                # Classe base Scorer + motor de weighted average
+│   │   └── scorers/
+│   │       ├── embedding.py         # faithfulness, answer_relevancy, context_*
+│   │       ├── hallucination.py     # Detecção de alucinação (nível de sentença)
+│   │       └── jailbreak.py         # Detecção de perguntas adversariais
 │   └── core/
 │       ├── config.py                # Gerenciamento de configurações
 │       └── database.py              # Conexão com banco de dados
@@ -73,7 +85,7 @@ nutria-catalog/
 │   │   ├── 001-initial_migration.py
 │   │   └── bd1e66bb991d-add_tracking_tables.py
 │   └── env.py
-├── tests/                           # ⭐ Suite de testes (53 testes)
+├── tests/                           # ⭐ Suite de testes (76 testes)
 │   ├── __init__.py
 │   ├── conftest.py                  # Fixtures compartilhadas
 │   ├── test_api_endpoints.py        # Testes de integração
@@ -81,6 +93,11 @@ nutria-catalog/
 │   ├── test_nutrition_service.py    # Testes nutrition service
 │   ├── test_recommendation_service.py # Testes recommendations
 │   ├── test_tracking_service.py     # Testes tracking
+│   ├── eval/                        # Testes do framework de avaliação
+│   │   ├── test_experiments.py
+│   │   ├── test_datasets.py
+│   │   ├── test_scorer.py
+│   │   └── test_scorers_*.py
 │   └── README.md                    # Guia de testes
 ├── docs/
 │   ├── TRACKING_SYSTEM.md           # Documentação completa do tracking
@@ -237,6 +254,7 @@ make reset-db     # Reseta banco de dados (CUIDADO: apaga dados)
 
 - **[TRACKING_SYSTEM.md](docs/TRACKING_SYSTEM.md)** - Documentação completa do sistema de rastreamento
 - **[TRACKING_QUICKSTART.md](docs/TRACKING_QUICKSTART.md)** - Guia rápido para começar
+- **[Eval Framework](tests/eval/README.md)** - Guia completo do framework de avaliação do agente
 - **[Tests README](tests/README.md)** - Guia de execução de testes
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
@@ -621,6 +639,34 @@ source venv/bin/activate
 pip install -r requirements.txt
 # OU use: make install
 ```
+
+## Eval Framework
+
+O framework de avaliação mede a qualidade das respostas do agente Nutria ao longo do tempo. Tudo funciona via CLI — sem necessidade de servidor rodando.
+
+```bash
+# Criar e rodar um experimento
+python -m app.eval.cli experiment create \
+  --name "v1-baseline" \
+  --prompt tests/eval/prompts/v1.md \
+  --dataset golden_dataset.json
+
+python -m app.eval.cli experiment run <experiment-id>
+
+# Ver resultados
+python -m app.eval.cli experiment show <experiment-id>
+
+# Exportar para o notebook
+python -m app.eval.cli experiment export --out tests/eval/analysis/results.json
+```
+
+**Scorers disponíveis:** faithfulness, answer_relevancy, context_relevancy, context_recall, context_precision, hallucination, jailbreak — todos baseados em similaridade de embeddings.
+
+**Weighted average**: pesos globais em `tests/eval/weights.json`, com override por experimento.
+
+Veja **[tests/eval/README.md](tests/eval/README.md)** para documentação completa.
+
+---
 
 ## 🚀 Melhorias Futuras
 

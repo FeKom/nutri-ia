@@ -1,14 +1,18 @@
+import os
 from typing import List, Union
 
 from pydantic import PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_APP_ENV = os.getenv("APP_ENV", "development")
 
 
 class Settings(BaseSettings):
     """Application settings"""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Loads .env first (base), then .env.{APP_ENV} overrides it
+        env_file=(".env", f".env.{_APP_ENV}"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         # ignora variaveis extra do .env por ex: POSTGRES_USER

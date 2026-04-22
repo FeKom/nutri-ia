@@ -39,6 +39,15 @@ pytest tests/ --cov=app --cov-report=html
 
 - `conftest.py` - Fixtures compartilhadas e configuração do pytest
 - `test_tracking_service.py` - Testes do serviço de rastreamento de refeições
+- `eval/` - Suite de testes do framework de avaliação do agente
+  - `test_experiments.py` - CRUD de experimentos, runs e resultados
+  - `test_datasets.py` - Carregamento de datasets e prompts
+  - `test_scorer.py` - Base scorer, weighted average engine, load_weights
+  - `test_scorers_embedding.py` - Scorers de embedding (faithfulness, relevancy, etc.)
+  - `test_scorers_hallucination.py` - HallucinationScorer
+  - `test_scorers_jailbreak.py` - JailbreakScorer
+
+Veja [`tests/eval/README.md`](eval/README.md) para detalhes completos sobre o framework de avaliação.
 
 ## Fixtures Disponíveis
 

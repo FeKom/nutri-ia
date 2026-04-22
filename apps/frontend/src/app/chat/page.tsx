@@ -32,6 +32,7 @@ import {
   ToolOutput,
 } from '@/components/ai-elements/tool';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
@@ -332,7 +333,10 @@ function Chat() {
               <div className="relative">
                 <PromptInput
                   onSubmit={handleSubmit}
-                  className="border border-nutria-creme-dark rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow duration-300"
+                  className={cn(
+                    'border border-nutria-creme-dark rounded-2xl bg-white shadow-sm hover:shadow-md transition-[box-shadow,opacity] duration-300',
+                    status === 'streaming' && 'opacity-60'
+                  )}
                 >
                   {attachments.length > 0 && (
                     <MessageAttachments className="p-3 pb-0">
@@ -359,7 +363,6 @@ function Chat() {
                       className="pr-11 max-h-80"
                       value={input}
                       placeholder="Pergunte sobre nutricao, receitas ou alimentacao..."
-                      disabled={status === 'streaming'}
                     />
                     <Button
                       type="submit"

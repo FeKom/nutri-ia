@@ -342,7 +342,7 @@ def get_weekly_stats(
     Returns:
         Weekly stats with daily breakdown and averages
     """
-    end_date = date.today()
+    end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=days - 1)
 
     # Get daily stats for the period

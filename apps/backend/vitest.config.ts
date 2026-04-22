@@ -6,6 +6,7 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     passWithNoTests: true,
+    envFile: ".env.test",
     coverage: {
       include: ["src/mastra/tools/**", "src/mastra/clients/**"],
     },

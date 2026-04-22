@@ -15,12 +15,14 @@ export const baseOutputSchema = z.object({
 export const searchFoodOutputSchema = baseOutputSchema.extend({
   foods: z.array(foodWithPortionSchema),
   count: z.number(),
+  note: z.string().optional(),
 });
 
 export const findSimilarOutputSchema = baseOutputSchema.extend({
   referenceFood: foodWithNutritionSchema,
   similarFoods: z.array(similarFoodSchema),
   count: z.number(),
+  note: z.string().optional(),
 });
 
 export const nutritionDetailSchema = z.object({

@@ -1,12 +1,12 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
-
 from app.api.dependencies import get_current_user_id, get_db
 from app.models.user import UserProfile
-from app.schemas.user import UserProfileCreate, UserProfileUpdate, UserProfileResponse
+from app.schemas.user import (UserProfileCreate, UserProfileResponse,
+                              UserProfileUpdate)
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session, select
 
 router = APIRouter()
 

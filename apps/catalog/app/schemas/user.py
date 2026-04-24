@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
-from uuid import UUID
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class UserProfileCreate(BaseModel):
@@ -12,7 +13,9 @@ class UserProfileCreate(BaseModel):
     age: int = Field(..., ge=1, le=120, description="User's age")
     weight_kg: Optional[float] = Field(None, gt=0, description="Weight in kg")
     height_cm: Optional[float] = Field(None, gt=0, description="Height in cm")
-    gender: Optional[str] = Field(None, max_length=20, description="Gender (male, female, non_binary)")
+    gender: Optional[str] = Field(
+        None, max_length=20, description="Gender (male, female, non_binary)"
+    )
     activity_level: Optional[str] = Field(
         "moderate",
         description="Activity level (sedentary, light, moderate, active, very_active)",
@@ -42,7 +45,9 @@ class UserProfileCreate(BaseModel):
 class UserProfileUpdate(BaseModel):
     """Schema for updating a user profile (all fields optional)"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="User's name")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=255, description="User's name"
+    )
     age: Optional[int] = Field(None, ge=1, le=120, description="User's age")
     weight_kg: Optional[float] = Field(None, gt=0, description="Weight in kg")
     height_cm: Optional[float] = Field(None, gt=0, description="Height in cm")
@@ -82,8 +87,8 @@ class UserProfileResponse(BaseModel):
     weight_kg: Optional[float]
     height_cm: Optional[float]
     gender: Optional[str]
-    activity_level: str
-    diet_goal: str
+    activity_level: Optional[str]
+    diet_goal: Optional[str]
     dietary_restrictions: List[str]
     allergies: List[str]
     disliked_foods: List[str]

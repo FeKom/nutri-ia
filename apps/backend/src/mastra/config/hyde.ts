@@ -21,20 +21,23 @@ const github = createOpenAI({
  * Generates a hypothetical food document that would be the ideal answer
  * for the given query. Falls back to the original query on any error.
  */
-export const generateHypotheticalDocument = async (query: string): Promise<string> => {
+export const generateHypotheticalDocument = async (
+  query: string,
+): Promise<string> => {
   try {
     const model = github(env.INTENT_MODEL);
     const { text } = await generateText({
       model,
-      prompt:
-        `Você é um especialista em nutrição. Descreva em 2-3 frases um alimento que seria a resposta perfeita para: "${query}". Seja específico sobre macronutrientes, categoria e características.`,
-      maxTokens: 80,
+      prompt: `Você é um especialista em nutrição. Descreva em 2-3 frases um alimento que seria a resposta perfeita para: "${query}". Seja específico sobre macronutrientes, categoria e características.`,
+      maxOutputTokens: 80,
     });
 
     return text.trim();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`⚠️ [HyDE] LLM call failed, using original query. Error: ${message}`);
+    console.warn(
+      `⚠️ [HyDE] LLM call failed, using original query. Error: ${message}`,
+    );
     return query;
   }
 };

@@ -6,13 +6,16 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { PinoLogger } from "@mastra/loggers";
 import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
 import { createMealPlanWorkflow } from "./workflows/create-meal-plan";
+import { logImageMealWorkflow } from "./workflows/log-image-meal";
+import { weeklyProgressReportWorkflow } from "./workflows/weekly-progress-report";
 import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
 import { checkRateLimit } from "../lib/rate-limiter";
 import { asyncContext } from "../lib/async-context";
 import { getUserProfileFromDB } from "./utils/user-profile-loader";
 import { userProfileToContext } from "../mastra/config/memory";
-import { applyGuardrails } from "./config/guardrails";
+import { USER_PROFILE_KEY } from "./config/guardrails";
+import { RequestContext } from "@mastra/core/request-context";
 import { getDailySummary } from "./clients/catalog-client";
 import { sharedStorage } from "./config/storage";
 import { getObservabilityConfig } from "./config/observabilityOptions";
@@ -27,7 +30,7 @@ const logger = new PinoLogger({ name: "NutriAI", level: "info" });
 
 export const mastra = new Mastra({
   storage: sharedStorage,
-  workflows: { createMealPlanWorkflow },
+  workflows: { createMealPlanWorkflow, logImageMealWorkflow, weeklyProgressReportWorkflow },
   agents: {
     nutritionAnalystAgent,
   },
@@ -167,9 +170,15 @@ export const mastra = new Mastra({
                 }
               }
 
+              const requestContext = new RequestContext();
+              if (userProfile) {
+                requestContext.set(USER_PROFILE_KEY, userProfile);
+              }
+
               const result = await nutritionAgent.stream(streamMessages, {
                 context: contextMessages,
                 memory: { resource: userId, thread: `chat-${userId}` },
+                requestContext,
               });
 
               const uiMessageStream = createUIMessageStream({
@@ -184,7 +193,7 @@ export const mastra = new Mastra({
               });
 
               return createUIMessageStreamResponse({
-                stream: applyGuardrails(uiMessageStream, userProfile),
+                stream: uiMessageStream,
               });
             });
           } catch (error) {

@@ -8,7 +8,7 @@ sys.path.insert(0, str(root_dir))
 from app.database.database import engine
 from app.models.food import Food, FoodNutrient
 from app.services.embedding_service import generate_food_embedding
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 # Tenta importar line_profiler, mas funciona sem ele também
 try:
@@ -18,15 +18,15 @@ except AttributeError:
     def profile(func):
         return func
 
+
 @profile
 def generate_all_embeddings():
     """Gera embeddings para todos os alimentos no banco"""
 
     with Session(engine) as session:
         # Buscar todos os alimentos com nutrients
-        statement = (
-            select(Food, FoodNutrient)
-            .join(FoodNutrient, Food.id == FoodNutrient.food_id, isouter=True)
+        statement = select(Food, FoodNutrient).join(
+            FoodNutrient, col(Food.id) == FoodNutrient.food_id, isouter=True
         )
         results = session.exec(statement).all()
 
@@ -46,5 +46,7 @@ def generate_all_embeddings():
         session.commit()
         print(f"✅ Embeddings gerados para {count} alimentos")
 
+
 if __name__ == "__main__":
     generate_all_embeddings()
+

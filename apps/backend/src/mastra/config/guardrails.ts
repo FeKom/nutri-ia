@@ -1,19 +1,88 @@
+import { createOpenAI } from "@ai-sdk/openai";
+import {
+  PromptInjectionDetector,
+  ModerationProcessor,
+  PIIDetector,
+} from "@mastra/core/processors";
+import type { Processor, ProcessOutputResultArgs } from "@mastra/core/processors";
+import type { MastraDBMessage } from "@mastra/core/agent";
 import type { UserProfile } from "./memory";
 import { logger } from "../../utils/logger";
 
-export type GuardrailResult = {
-  safe: boolean;
-  reason?: string;
-  sanitized?: string;
-};
+// Key used to pass userProfile through RequestContext to output processors
+export const USER_PROFILE_KEY = "userProfile" as const;
 
-// Minimal shape of a UI message chunk emitted by createUIMessageStream
-type UIChunk = {
-  type: string;
-  id?: string;
-  textDelta?: string;
-  [key: string]: unknown;
-};
+// Shared fast model for all guardrail processors to minimise latency
+function createGuardrailModel() {
+  const github = createOpenAI({
+    apiKey: process.env.GITHUB_TOKEN || "",
+    baseURL: "https://models.inference.ai.azure.com",
+  });
+  return github(process.env.INTENT_MODEL || "Phi-4-mini");
+}
+
+const GUARDRAIL_MODEL = createGuardrailModel();
+
+// Force JSON via prompt injection for models that lack native structured-output support
+const STRUCTURED_OUTPUT_OPTIONS = { jsonPromptInjection: true } as const;
+
+// ---------------------------------------------------------------------------
+// Input processors
+// ---------------------------------------------------------------------------
+
+/**
+ * Detects and neutralises prompt-injection / jailbreak attempts.
+ * strategy: 'rewrite' preserves any legitimate nutritional question the user had.
+ */
+export const promptInjectionDetector = new PromptInjectionDetector({
+  model: GUARDRAIL_MODEL,
+  strategy: "rewrite",
+  structuredOutputOptions: STRUCTURED_OUTPUT_OPTIONS,
+});
+
+/**
+ * Blocks requests for medical diagnoses or otherwise harmful content before
+ * the LLM ever sees them.
+ */
+export const inputModerationProcessor = new ModerationProcessor({
+  model: GUARDRAIL_MODEL,
+  strategy: "block",
+  categories: [
+    "medical_diagnosis",
+    "harmful_health_advice",
+    "violence",
+    "hate_speech",
+    "sexual_content",
+  ],
+  structuredOutputOptions: STRUCTURED_OUTPUT_OPTIONS,
+});
+
+/**
+ * Redacts any PII the user might share (e-mail, CPF, phone, etc.) before
+ * it reaches the LLM or is stored in memory.
+ */
+export const piiDetector = new PIIDetector({
+  model: GUARDRAIL_MODEL,
+  strategy: "redact",
+  structuredOutputOptions: STRUCTURED_OUTPUT_OPTIONS,
+});
+
+// ---------------------------------------------------------------------------
+// Output processors
+// ---------------------------------------------------------------------------
+
+/**
+ * Moderates the agent's own responses for harmful or inappropriate content.
+ */
+export const outputModerationProcessor = new ModerationProcessor({
+  model: GUARDRAIL_MODEL,
+  strategy: "block",
+  structuredOutputOptions: STRUCTURED_OUTPUT_OPTIONS,
+});
+
+// ---------------------------------------------------------------------------
+// Domain-specific nutritional output guardrail
+// ---------------------------------------------------------------------------
 
 const MEDICAL_CLAIM_PATTERNS = [
   /vai curar/i,
@@ -25,128 +94,95 @@ const MEDICAL_CLAIM_PATTERNS = [
 
 const CALORIE_REGEX = /(\d[\d,.]*)\s*kcal/gi;
 const WARNING_PHRASES = ["verifique", "cuidado", "atenção"];
-
 const ALLERGEN_NOTE =
   "\n\n⚠️ **Atenção às alergias:** Verifique sempre os rótulos dos alimentos para confirmar que não contêm seus alérgenos antes de consumir.";
 
 function parseCalorieValue(raw: string): number {
-  // Strip separators — handles both "9.000" (PT) and "9,000" (EN)
   return parseFloat(raw.replace(/[.,]/g, ""));
 }
 
-export function validateAgentResponse(
-  text: string,
-  userProfile: UserProfile | null,
-): GuardrailResult {
-  if (text.length < 5) {
-    return { safe: false, reason: "response_too_short" };
-  }
+/**
+ * Domain-specific output processor for nutritional safety:
+ *
+ * - Blocks responses with medical-diagnosis language
+ * - Blocks responses with hallucinated calorie values (>9000 kcal)
+ * - Appends an allergen safety note when a user allergen is mentioned
+ *   without an accompanying warning phrase
+ *
+ * The userProfile is read from RequestContext[USER_PROFILE_KEY], set by
+ * the route handler before calling agent.stream().
+ */
+class NutritionalOutputGuardrail implements Processor<"nutritional-output-guardrail"> {
+  readonly id = "nutritional-output-guardrail";
+  readonly name = "Nutritional Output Guardrail";
 
-  for (const pattern of MEDICAL_CLAIM_PATTERNS) {
-    if (pattern.test(text)) {
-      logger.warn({ pattern: pattern.source }, "[Guardrails] medical claim detected");
-      return { safe: false, reason: "medical_claim_detected" };
-    }
-  }
+  processOutputResult({ messages, abort, requestContext }: ProcessOutputResultArgs): MastraDBMessage[] {
+    const userProfile =
+      (requestContext?.get(USER_PROFILE_KEY) as UserProfile | undefined) ?? null;
 
-  for (const match of text.matchAll(CALORIE_REGEX)) {
-    const value = parseCalorieValue(match[1]);
-    if (value > 9000) {
-      logger.warn({ value }, "[Guardrails] hallucinated calorie value detected");
-      return { safe: false, reason: "calorie_hallucination" };
-    }
-  }
-
-  if (userProfile && userProfile.allergies.length > 0) {
-    const lowerText = text.toLowerCase();
-    const allergenMentioned = userProfile.allergies.some((allergen) =>
-      lowerText.includes(allergen.toLowerCase()),
+    const lastAssistantIdx = messages.reduce<number>(
+      (acc, m, i) => (m.role === "assistant" ? i : acc),
+      -1,
     );
-    const hasWarning = WARNING_PHRASES.some((phrase) => lowerText.includes(phrase));
+    if (lastAssistantIdx === -1) return messages;
 
-    if (allergenMentioned && !hasWarning) {
-      logger.info("[Guardrails] allergen mentioned without safety warning — appending note");
-      return { safe: true, sanitized: text + ALLERGEN_NOTE };
+    const assistantMsg = messages[lastAssistantIdx];
+    const textContent = assistantMsg.content.parts
+      .filter((p) => p.type === "text")
+      .map((p) => (p as { type: "text"; text: string }).text)
+      .join("");
+
+    if (!textContent) return messages;
+
+    // Medical claim check
+    for (const pattern of MEDICAL_CLAIM_PATTERNS) {
+      if (pattern.test(textContent)) {
+        logger.warn({ pattern: pattern.source }, "[Guardrails] medical claim detected");
+        abort("medical_claim_detected");
+      }
     }
-  }
 
-  return { safe: true, sanitized: text };
-}
-
-const FALLBACK_MESSAGE =
-  "Desculpe, não consigo fornecer esta resposta pois ela pode conter informações imprecisas ou inadequadas para o seu caso. Para orientações nutricionais personalizadas e seguras, consulte um nutricionista profissional.";
-
-function buildFallbackChunks(): UIChunk[] {
-  const id = `guardrail-${Date.now()}`;
-  return [
-    { type: "text-start", id },
-    { type: "text-delta", id, textDelta: FALLBACK_MESSAGE },
-    { type: "text-end", id },
-    { type: "finish", finishReason: "stop", usage: { inputTokens: 0, outputTokens: 0 } },
-  ];
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function applyGuardrails(stream: ReadableStream<any>, userProfile: UserProfile | null): ReadableStream<any> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new ReadableStream<any>({
-    async start(controller) {
-      const reader = (stream as ReadableStream<UIChunk>).getReader();
-      const chunks: UIChunk[] = [];
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) chunks.push(value as UIChunk);
-        }
-      } catch (err) {
-        reader.releaseLock();
-        logger.error({ err }, "[Guardrails] error buffering stream — using fallback");
-        for (const chunk of buildFallbackChunks()) controller.enqueue(chunk);
-        controller.close();
-        return;
+    // Calorie hallucination check
+    for (const match of textContent.matchAll(CALORIE_REGEX)) {
+      const value = parseCalorieValue(match[1]);
+      if (value > 9000) {
+        logger.warn({ value }, "[Guardrails] hallucinated calorie value detected");
+        abort("calorie_hallucination");
       }
-      reader.releaseLock();
+    }
 
-      // Extract text from text-delta chunks
-      const textContent = chunks
-        .filter((c) => c.type === "text-delta" && typeof c.textDelta === "string")
-        .map((c) => c.textDelta as string)
-        .join("");
+    // Allergen note injection
+    if (userProfile && userProfile.allergies.length > 0) {
+      const lowerText = textContent.toLowerCase();
+      const allergenMentioned = userProfile.allergies.some((a) =>
+        lowerText.includes(a.toLowerCase()),
+      );
+      const hasWarning = WARNING_PHRASES.some((p) => lowerText.includes(p));
 
-      // No text parts — pass through unchanged (e.g. tool-result-only responses)
-      if (textContent.length === 0) {
-        for (const chunk of chunks) controller.enqueue(chunk);
-        controller.close();
-        return;
-      }
+      if (allergenMentioned && !hasWarning) {
+        logger.info("[Guardrails] allergen mentioned without safety warning — appending note");
 
-      const result = validateAgentResponse(textContent, userProfile);
-
-      if (!result.safe) {
-        logger.warn(
-          { reason: result.reason, userId: userProfile?.id },
-          "[Guardrails] unsafe response — replacing with fallback",
+        const updatedParts = [...assistantMsg.content.parts];
+        const lastTextIdx = updatedParts.reduce<number>(
+          (acc, p, i) => (p.type === "text" ? i : acc),
+          -1,
         );
-        for (const chunk of buildFallbackChunks()) controller.enqueue(chunk);
-        controller.close();
-        return;
+
+        if (lastTextIdx !== -1) {
+          const part = updatedParts[lastTextIdx] as { type: "text"; text: string };
+          updatedParts[lastTextIdx] = { ...part, text: part.text + ALLERGEN_NOTE };
+
+          return messages.map((m, i) =>
+            i === lastAssistantIdx
+              ? { ...m, content: { ...m.content, parts: updatedParts } }
+              : m,
+          );
+        }
       }
+    }
 
-      // Re-emit original chunks
-      for (const chunk of chunks) controller.enqueue(chunk);
-
-      // Append allergen note if the sanitized text is longer than the original
-      if (result.sanitized && result.sanitized.length > textContent.length) {
-        const note = result.sanitized.slice(textContent.length);
-        const id = `guardrail-note-${Date.now()}`;
-        controller.enqueue({ type: "text-start", id });
-        controller.enqueue({ type: "text-delta", id, textDelta: note });
-        controller.enqueue({ type: "text-end", id });
-      }
-
-      controller.close();
-    },
-  });
+    return messages;
+  }
 }
+
+export const nutritionalOutputGuardrail = new NutritionalOutputGuardrail();

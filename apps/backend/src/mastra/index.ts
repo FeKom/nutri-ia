@@ -65,14 +65,14 @@ export const mastra = new Mastra({
             try {
               jwtPayload = await verifyJwt(token);
             } catch (err) {
-              logger.error({ err }, "JWT verification failed");
+              logger.error(`JWT verification failed: ${err}`);
               return c.json({ error: "Token inválido ou expirado" }, 401);
             }
 
             const userId = jwtPayload.sub;
             const userUsername = jwtPayload.username;
 
-            const { messages } = await c.req.json();
+            const { messages, id: threadId } = await c.req.json();
 
             if (!messages || !Array.isArray(messages)) {
               return c.json(
@@ -92,7 +92,7 @@ export const mastra = new Mastra({
 
             if (userProfile) {
               contextMessages.push(userProfileToContext(userProfile));
-              logger.info({ userId }, "[Chat] user profile loaded");
+              logger.info(`[Chat] user profile loaded — userId: ${userId}`);
 
               if (dailySummary) {
                 const { totals, targets, num_meals } = dailySummary;
@@ -109,12 +109,12 @@ export const mastra = new Mastra({
                     `Gordura ${Math.round(totals.fat_g)}g/${Math.round(targets.fat_g)}g · ` +
                     `${num_meals} refeição(ões) registrada(s).`,
                 });
-                logger.info({ userId, num_meals, calPct }, "[Chat] daily progress injected");
+                logger.info(`[Chat] daily progress injected — userId: ${userId}, meals: ${num_meals}, calPct: ${calPct}%`);
               } else {
-                logger.warn({ userId }, "[Chat] could not fetch daily progress, skipping");
+                logger.warn(`[Chat] could not fetch daily progress, skipping — userId: ${userId}`);
               }
             } else {
-              logger.warn({ userId }, "[Chat] user has no profile — continuing without personalisation");
+              logger.warn(`[Chat] user has no profile — continuing without personalisation — userId: ${userId}`);
               contextMessages.push({
                 role: "system" as const,
                 content:
@@ -122,7 +122,7 @@ export const mastra = new Mastra({
               });
             }
 
-            logger.info({ userId, userUsername, messageCount: messages.length }, "chat request received");
+            logger.info(`chat request received — userId: ${userId}, username: ${userUsername}, messages: ${messages.length}`);
 
             // Enforce per-user message rate limit before any expensive work
             const rateLimit = checkRateLimit(userId);
@@ -163,10 +163,10 @@ export const mastra = new Mastra({
                     const recentMessages = messages.slice(-3);
                     contextMessages.push(injectSummaryAsContext(summary));
                     streamMessages = recentMessages;
-                    logger.info({ userId, tokensSaved }, "[Chat] conversation summarized");
+                    logger.info(`[Chat] conversation summarized — userId: ${userId}, tokensSaved: ${tokensSaved}`);
                   }
                 } catch (err) {
-                  logger.warn({ userId, err }, "[Chat] summarization failed, using original messages");
+                  logger.warn(`[Chat] summarization failed, using original messages — userId: ${userId}: ${err}`);
                 }
               }
 
@@ -175,9 +175,14 @@ export const mastra = new Mastra({
                 requestContext.set(USER_PROFILE_KEY, userProfile);
               }
 
+              // Use the conversation ID sent from the frontend as the thread ID so
+              // each conversation gets its own isolated memory context.
+              // Falls back to the legacy per-user thread for requests without an id.
+              const memoryThread = threadId || `chat-${userId}`;
+
               const result = await nutritionAgent.stream(streamMessages, {
                 context: contextMessages,
-                memory: { resource: userId, thread: `chat-${userId}` },
+                memory: { resource: userId, thread: memoryThread },
                 requestContext,
               });
 
@@ -187,7 +192,8 @@ export const mastra = new Mastra({
                   for await (const part of toAISdkStream(result, {
                     from: "agent",
                   })) {
-                    await writer.write(part);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await writer.write(part as any);
                   }
                 },
               });
@@ -197,7 +203,7 @@ export const mastra = new Mastra({
               });
             });
           } catch (error) {
-            logger.error({ error }, "error in /chat endpoint");
+            logger.error(`error in /chat endpoint: ${error}`);
             return c.json(
               {
                 error: "Erro ao processar a requisição",
@@ -235,7 +241,7 @@ export const mastra = new Mastra({
                   ? nutritionAnalystAgent
                   : createEvalAgent(prompt ?? "");
 
-              const result = await agent.generate(question, { memoryConfig: { disabled: true }});
+              const result = await agent.generate(question);
               answer = result.text;
 
               // Extract context from tool call results so metrics are meaningful
@@ -309,7 +315,7 @@ export const mastra = new Mastra({
               scores,
             });
           } catch (error) {
-            logger.error({ error }, "error in /eval/run endpoint");
+            logger.error(`error in /eval/run endpoint: ${error}`);
             return c.json(
               {
                 error: "Failed to run eval",

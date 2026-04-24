@@ -89,7 +89,7 @@ export const searchFoodCatalogTool = withAuth({
         foodSearchCache.set(queryEmbedding, response);
       }
 
-      const reranked = rerankFoods(response.similar_foods, query.join(' '), userProfile);
+      const reranked = rerankFoods(response.similar_foods as any, query.join(' '), userProfile);
       const foods = reranked.map(formatFoodItem);
 
       const { filtered, removed, reasons, allRemovedWarning } = filterByMetadata(foods, userProfile);

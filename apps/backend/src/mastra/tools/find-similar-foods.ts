@@ -70,7 +70,7 @@ export const findSimilarFoodsTool = withAuth({
       // If not a UUID, search by name first to resolve
       if (!UUID_REGEX.test(foodId)) {
         logger.info(`🔍 [Tool] "${foodId}" não é UUID, buscando por semântica...`);
-        const searchResult = await searchFoodsByEmbedding({ query: foodId, limit: 1 }, undefined, authToken);
+        const searchResult = await searchFoodsByEmbedding({ query: [foodId], limit: 1 }, undefined, authToken);
         if (!searchResult.similar_foods || searchResult.similar_foods.length === 0) {
           return {
             success: false,

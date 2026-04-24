@@ -114,8 +114,11 @@ export async function GET(req: Request) {
       Authorization: token,
     };
 
+    const urlThreadId = new URL(req.url).searchParams.get("threadId");
+    const threadId = urlThreadId || `chat-${userId}`;
+
     const response = await fetch(
-      `${MASTRA_API_URL}/agents/nutri-ia/memory?threadId=chat-${userId}&resourceId=${userId}`,
+      `${MASTRA_API_URL}/agents/nutri-ia/memory?threadId=${threadId}&resourceId=${userId}`,
       { method: "GET", headers },
     );
 

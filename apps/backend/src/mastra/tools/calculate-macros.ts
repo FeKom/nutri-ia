@@ -70,7 +70,7 @@ export const calculateMacrosTool = withAuth({
     logger.info(`🧮 [Tool:calculateMacros] Calculando macros para usuário: ${userId}`);
 
     const data = unwrap(await calculateMacros(
-      { weight_kg, height_cm, age, gender, activity_level, diet_goal },
+      { weight_kg: weight_kg!, height_cm: height_cm!, age: age!, gender: gender!, activity_level: activity_level!, diet_goal: diet_goal! },
       undefined,
       authToken,
     ));

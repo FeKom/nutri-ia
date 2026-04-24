@@ -79,7 +79,7 @@ export const confirmAndLogImageMealTool = withAuth({
       confirmedFoods.map(async (food) => {
         try {
           const searchResult = await searchFoodsByEmbedding(
-            { query: food.food_name, limit: 1 },
+            { query: [food.food_name], limit: 1 },
             undefined,
             authToken,
           );

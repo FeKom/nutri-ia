@@ -37,6 +37,7 @@ interface EvalExperiment {
     prompt: string;
     retrieval_source: string;
     dataset_filename: string;
+    agent_mode?: string;
   } | null;
   created_at: string;
   run_count: number;

@@ -6,12 +6,14 @@ import { useSession } from '@/lib/auth-client';
 import { useAuthFetch } from '@/lib/use-auth-fetch';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { FlaskConical, Play, ChevronDown, ChevronUp, Clock, CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
+import {
+  FlaskConical, Play, ChevronDown, ChevronUp,
+  Clock, CheckCircle2, Loader2, Database,
+  Zap, BarChart2, AlertCircle,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface EvalRun {
   id: string;
@@ -45,6 +47,66 @@ interface EvalExperiment {
 }
 
 const RETRIEVAL_SOURCES = ['json', 'pdf', 'md'];
+
+function ScoreBar({ label, value }: { label: string; value: number | null }) {
+  const pct = value !== null ? Math.round(value * 100) : null;
+  const color =
+    pct === null ? 'bg-gray-200'
+    : pct >= 80   ? 'bg-green-500'
+    : pct >= 50   ? 'bg-amber-400'
+    : 'bg-red-400';
+  const textColor =
+    pct === null ? 'text-slate-400'
+    : pct >= 80   ? 'text-green-700'
+    : pct >= 50   ? 'text-amber-700'
+    : 'text-red-600';
+
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">{label}</span>
+        <span className={cn('text-xs font-bold tabular-nums', textColor)}>
+          {pct !== null ? `${pct}%` : '—'}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-all duration-500', color)}
+          style={{ width: pct !== null ? `${pct}%` : '0%' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function OverallBadge({ score }: { score: number | null }) {
+  if (score === null) return <span className="text-xs text-slate-400">—</span>;
+  const pct = Math.round(score * 100);
+  const cls =
+    pct >= 80 ? 'bg-green-50 text-green-700 border-green-200'
+    : pct >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-red-50 text-red-600 border-red-200';
+  return (
+    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border', cls)}>
+      <BarChart2 className="w-3 h-3" />
+      {pct}%
+    </span>
+  );
+}
+
+function AgentBadge({ mode }: { mode?: string }) {
+  const map: Record<string, string> = {
+    production: 'bg-green-50 text-green-700 border-green-200',
+    test:       'bg-blue-50 text-blue-700 border-blue-200',
+    direct:     'bg-gray-100 text-slate-600 border-gray-200',
+  };
+  const cls = map[mode ?? 'direct'] ?? map.direct;
+  return (
+    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold border', cls)}>
+      {mode ?? 'direct'}
+    </span>
+  );
+}
 
 export default function EvalPage() {
   const { data: session, isPending } = useSession();
@@ -101,7 +163,7 @@ export default function EvalPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.name || !form.prompt) return;
     setLoading(true);
@@ -121,10 +183,7 @@ export default function EvalPage() {
   }
 
   async function toggleExpand(id: string) {
-    if (expandedId === id) {
-      setExpandedId(null);
-      return;
-    }
+    if (expandedId === id) { setExpandedId(null); return; }
     setExpandedId(id);
     if (!expandedRuns[id]) {
       const res = await fetch(`/api/eval/experiments/${id}`);
@@ -148,278 +207,341 @@ export default function EvalPage() {
     }
   }
 
-  function scoreColor(score: number | null) {
-    if (score === null) return 'text-muted-foreground';
-    if (score >= 0.8) return 'text-green-600';
-    if (score >= 0.5) return 'text-yellow-600';
-    return 'text-red-500';
+  // Avg overall across runs for an experiment
+  function avgScore(id: string): number | null {
+    const runs = expandedRuns[id];
+    if (!runs || runs.length === 0) return null;
+    const scores = runs.map(r => r.result?.overall_score).filter((s): s is number => s !== null);
+    if (scores.length === 0) return null;
+    return scores.reduce((a, b) => a + b, 0) / scores.length;
   }
 
   if (isPending) return null;
 
+  const labelCls = 'block text-xs font-semibold text-slate-600 mb-1.5';
+  const selectCls = 'w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:border-green-400 transition-colors';
+
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Eval Lab" />
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        <Header title="Eval Lab" subtitle="Experimentos de avaliação de qualidade da IA" />
 
-          {/* Datasets */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Database className="w-5 h-5 text-nutria-verde" />
-              <h2 className="font-semibold text-lg">Datasets</h2>
-              <span className="text-xs text-muted-foreground ml-1">— ingira antes de rodar experimentos</span>
+        <main className="flex-1 overflow-y-auto p-6 space-y-5">
+
+          {/* ── Datasets ── */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Database className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-900 text-sm">Datasets</h2>
+                <p className="text-[11px] text-slate-400">Ingira antes de rodar experimentos</p>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
+              {datasets.length === 0 && (
+                <p className="text-sm text-slate-400 italic">Nenhum dataset encontrado.</p>
+              )}
               {datasets.map(d => {
                 const result = ingestResults[d];
                 return (
-                  <div key={d} className="flex items-center gap-2 border rounded-lg px-3 py-2 text-sm bg-muted/30">
-                    <span className="font-mono text-xs">{d}</span>
+                  <div key={d} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                    <code className="text-xs text-slate-600 font-mono">{d}</code>
                     {result && (
-                      <span className="text-xs text-muted-foreground">
-                        {result.chunks_created > 0
-                          ? `+${result.chunks_created} chunks`
-                          : `${result.chunks_skipped} já ingeridos`}
+                      <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                        result.chunks_created > 0
+                          ? 'bg-green-50 text-green-700'
+                          : 'bg-gray-100 text-slate-500'
+                      )}>
+                        {result.chunks_created > 0 ? `+${result.chunks_created} chunks` : `${result.chunks_skipped} já ingeridos`}
                       </span>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-xs gap-1"
+                    <button
                       disabled={ingesting === d}
                       onClick={() => ingestDataset(d)}
+                      className="flex items-center gap-1 h-6 px-2 rounded-lg bg-white border border-gray-200 text-[10px] font-semibold text-slate-600 hover:border-green-400 hover:text-green-700 disabled:opacity-50 transition-all"
                     >
-                      {ingesting === d ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      {ingesting === d ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : null}
                       {ingesting === d ? 'Ingerindo...' : 'Ingerir'}
-                    </Button>
+                    </button>
                   </div>
                 );
               })}
-              {datasets.length === 0 && (
-                <p className="text-sm text-muted-foreground">Nenhum dataset encontrado.</p>
-              )}
             </div>
-          </Card>
+          </section>
 
-          {/* Form */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <FlaskConical className="w-5 h-5 text-nutria-verde" />
-              <h2 className="font-semibold text-lg">Novo Experimento</h2>
+          {/* ── New Experiment Form ── */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-green-50 flex items-center justify-center">
+                <FlaskConical className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-900 text-sm">Novo Experimento</h2>
+                <p className="text-[11px] text-slate-400">Configure e crie um novo experimento de avaliação</p>
+              </div>
             </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Nome</label>
+                <div>
+                  <label className={labelCls}>Nome</label>
                   <Input
                     placeholder="Ex: Prompt v2 restritivo"
                     value={form.name}
                     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                     required
+                    className="h-10 rounded-xl border-gray-200 focus:border-green-400 text-slate-800 placeholder:text-slate-300"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Descrição</label>
+                <div>
+                  <label className={labelCls}>Descrição <span className="font-normal text-slate-400">(opcional)</span></label>
                   <Input
-                    placeholder="Opcional"
+                    placeholder="Breve descrição do experimento"
                     value={form.description}
                     onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                    className="h-10 rounded-xl border-gray-200 focus:border-green-400 text-slate-800 placeholder:text-slate-300"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Prompt</label>
+              <div>
+                <label className={labelCls}>Prompt do sistema</label>
                 <Textarea
                   placeholder="Você é um assistente nutricional. Use APENAS o contexto fornecido..."
                   value={form.prompt}
                   onChange={e => setForm(p => ({ ...p, prompt: e.target.value }))}
-                  className="min-h-[140px] font-mono text-sm"
+                  className="min-h-[120px] rounded-xl border-gray-200 focus:border-green-400 font-mono text-sm text-slate-800 placeholder:text-slate-300 resize-none"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Dataset</label>
+                <div>
+                  <label className={labelCls}>Dataset</label>
                   <select
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    className={selectCls}
                     value={form.dataset_filename}
                     onChange={e => setForm(p => ({ ...p, dataset_filename: e.target.value }))}
                   >
-                    {datasets.length === 0 && (
-                      <option value="golden_dataset.json">golden_dataset.json</option>
-                    )}
-                    {datasets.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
+                    {datasets.length === 0 && <option value="golden_dataset.json">golden_dataset.json</option>}
+                    {datasets.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Retrieval Source</label>
+                <div>
+                  <label className={labelCls}>Retrieval Source</label>
                   <select
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    className={selectCls}
                     value={form.retrieval_source}
                     onChange={e => setForm(p => ({ ...p, retrieval_source: e.target.value }))}
                   >
-                    {RETRIEVAL_SOURCES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                    {RETRIEVAL_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Agent</label>
+                <div>
+                  <label className={labelCls}>Modo do agente</label>
                   <select
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    className={selectCls}
                     value={form.agent_mode}
                     onChange={e => setForm(p => ({ ...p, agent_mode: e.target.value }))}
                   >
                     <option value="direct">direct — sem tools</option>
-                    <option value="production">production — agent atual</option>
+                    <option value="production">production — agent real</option>
                     <option value="test">test — agent customizado</option>
                   </select>
                 </div>
               </div>
 
-              <Button type="submit" disabled={loading} className="gap-2">
-                <Play className="w-4 h-4" />
-                {loading ? 'Criando...' : 'Criar Experimento'}
-              </Button>
-            </form>
-          </Card>
-
-          {/* Experiments list */}
-          <div className="space-y-3">
-            <h2 className="font-semibold text-lg">Experimentos</h2>
-            {experiments.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum experimento ainda.</p>
-            )}
-            {experiments.map(exp => (
-              <Card key={exp.id} className="overflow-hidden">
-                <div className="px-5 py-4 flex items-center justify-between hover:bg-muted/40 transition-colors">
-                  <button
-                    onClick={() => toggleExpand(exp.id)}
-                    className="flex-1 flex items-center gap-3 text-left"
-                  >
-                    <div>
-                      <p className="font-medium">{exp.name}</p>
-                      {exp.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{exp.description}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge variant="secondary">{exp.params?.dataset_filename}</Badge>
-                      <Badge variant="outline">{exp.params?.retrieval_source}</Badge>
-                      <Badge variant={exp.params?.agent_mode === 'production' ? 'default' : exp.params?.agent_mode === 'test' ? 'secondary' : 'outline'}>
-                        {exp.params?.agent_mode ?? 'direct'}
-                      </Badge>
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {new Date(exp.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                    <span>{exp.run_count} runs</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 h-7 px-2.5 text-xs"
-                      disabled={running === exp.id}
-                      onClick={() => runExperiment(exp.id)}
-                    >
-                      {running === exp.id
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : <Play className="w-3 h-3" />}
-                      {running === exp.id ? 'Rodando...' : 'Rodar'}
-                    </Button>
-                    <button onClick={() => toggleExpand(exp.id)}>
-                      {expandedId === exp.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {expandedId === exp.id && (
-                  <div className="border-t">
-                    {/* Prompt preview */}
-                    <div className="px-5 py-3 bg-muted/30 border-b">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">PROMPT</p>
-                      <p className="text-xs font-mono whitespace-pre-wrap line-clamp-3">
-                        {exp.params?.prompt}
-                      </p>
-                    </div>
-
-                    {/* Runs */}
-                    <div className="divide-y">
-                      {(expandedRuns[exp.id] || []).length === 0 && (
-                        <p className="px-5 py-4 text-sm text-muted-foreground">Sem runs ainda.</p>
-                      )}
-                      {(expandedRuns[exp.id] || []).map((run, i) => (
-                        <div key={run.id} className="px-5 py-4 space-y-2">
-                          <div className="flex items-start justify-between gap-4">
-                            <p className="text-sm font-medium">
-                              <span className="text-muted-foreground mr-2">#{i + 1}</span>
-                              {run.question}
-                            </p>
-                            {run.latency_ms && (
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {run.latency_ms}ms
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 text-xs">
-                            {run.expected_answer && (
-                              <div className="space-y-1">
-                                <p className="font-medium flex items-center gap-1 text-muted-foreground">
-                                  <CheckCircle2 className="w-3 h-3" /> Esperado
-                                </p>
-                                <p className="bg-green-50 border border-green-100 rounded p-2 text-green-800">
-                                  {run.expected_answer}
-                                </p>
-                              </div>
-                            )}
-                            {run.answer && (
-                              <div className="space-y-1">
-                                <p className="font-medium flex items-center gap-1 text-muted-foreground">
-                                  <XCircle className="w-3 h-3" /> Resposta do Model
-                                </p>
-                                <p className="bg-blue-50 border border-blue-100 rounded p-2 text-blue-800">
-                                  {run.answer}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-
-                          {run.result && (
-                            <div className="flex gap-4 text-xs pt-1">
-                              {[
-                                ['Faithfulness', run.result.faithfulness],
-                                ['Relevancy', run.result.answer_relevancy],
-                                ['Recall', run.result.context_recall],
-                                ['Precision', run.result.context_precision],
-                                ['Score', run.result.overall_score],
-                              ].map(([label, value]) => (
-                                <div key={label as string} className="text-center">
-                                  <p className="text-muted-foreground">{label}</p>
-                                  <p className={`font-semibold ${scoreColor(value as number | null)}`}>
-                                    {value !== null ? (value as number).toFixed(2) : '—'}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex items-center gap-2 h-10 px-5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-60 transition-colors shadow-sm"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  {loading ? 'Criando...' : 'Criar Experimento'}
+                </button>
+                {!form.name && (
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Nome e prompt são obrigatórios
+                  </span>
                 )}
-              </Card>
-            ))}
-          </div>
+              </div>
+            </form>
+          </section>
 
+          {/* ── Experiments list ── */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-slate-900 text-sm">
+                Experimentos
+                {experiments.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-100 text-slate-500 text-xs font-normal">
+                    {experiments.length}
+                  </span>
+                )}
+              </h2>
+            </div>
+
+            {experiments.length === 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+                <FlaskConical className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                <p className="text-sm text-slate-400">Nenhum experimento ainda. Crie o primeiro acima.</p>
+              </div>
+            )}
+
+            {experiments.map(exp => {
+              const isExpanded = expandedId === exp.id;
+              const isRunning = running === exp.id;
+              const score = avgScore(exp.id);
+
+              return (
+                <div key={exp.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  {/* Row */}
+                  <div className="px-5 py-4 flex items-center gap-4">
+                    {/* Icon */}
+                    <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                      <FlaskConical className="w-4 h-4 text-green-600" />
+                    </div>
+
+                    {/* Name + meta */}
+                    <button
+                      onClick={() => toggleExpand(exp.id)}
+                      className="flex-1 text-left min-w-0"
+                    >
+                      <p className="font-semibold text-slate-900 text-sm truncate">{exp.name}</p>
+                      {exp.description && (
+                        <p className="text-xs text-slate-400 mt-0.5 truncate">{exp.description}</p>
+                      )}
+                    </button>
+
+                    {/* Badges */}
+                    <div className="hidden md:flex items-center gap-1.5 shrink-0">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-slate-600 border border-gray-200 font-mono">
+                        {exp.params?.dataset_filename?.replace('.json', '')}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-slate-600 border border-gray-200">
+                        {exp.params?.retrieval_source}
+                      </span>
+                      <AgentBadge mode={exp.params?.agent_mode} />
+                    </div>
+
+                    {/* Score */}
+                    <div className="shrink-0">
+                      <OverallBadge score={score} />
+                    </div>
+
+                    {/* Meta */}
+                    <div className="hidden lg:flex items-center gap-1 text-[11px] text-slate-400 shrink-0">
+                      <Clock className="w-3 h-3" />
+                      {new Date(exp.created_at).toLocaleDateString('pt-BR')}
+                    </div>
+                    <span className="text-[11px] text-slate-400 shrink-0">{exp.run_count} runs</span>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        disabled={isRunning}
+                        onClick={() => runExperiment(exp.id)}
+                        className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors"
+                      >
+                        {isRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                        {isRunning ? 'Rodando...' : 'Rodar'}
+                      </button>
+                      <button
+                        onClick={() => toggleExpand(exp.id)}
+                        className="w-8 h-8 rounded-xl border border-gray-200 flex items-center justify-center text-slate-400 hover:bg-gray-50 hover:text-slate-700 transition-colors"
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded panel */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100">
+                      {/* Prompt preview */}
+                      {exp.params?.prompt && (
+                        <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Prompt</p>
+                          <pre className="text-xs font-mono text-slate-600 whitespace-pre-wrap line-clamp-4 leading-relaxed">
+                            {exp.params.prompt}
+                          </pre>
+                        </div>
+                      )}
+
+                      {/* Runs */}
+                      <div className="divide-y divide-gray-50">
+                        {(expandedRuns[exp.id] || []).length === 0 && (
+                          <div className="px-5 py-8 text-center">
+                            <p className="text-sm text-slate-400">Sem runs ainda. Clique em Rodar para iniciar.</p>
+                          </div>
+                        )}
+                        {(expandedRuns[exp.id] || []).map((run, i) => (
+                          <div key={run.id} className="px-5 py-4">
+                            {/* Question row */}
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                              <div className="flex items-start gap-2 min-w-0">
+                                <span className="text-[10px] font-bold text-slate-300 mt-0.5 shrink-0">#{i + 1}</span>
+                                <p className="text-sm font-medium text-slate-800 leading-snug">{run.question}</p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {run.latency_ms && (
+                                  <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                    <Zap className="w-2.5 h-2.5" />{run.latency_ms}ms
+                                  </span>
+                                )}
+                                {run.result && <OverallBadge score={run.result.overall_score} />}
+                              </div>
+                            </div>
+
+                            {/* Score bars */}
+                            {run.result && (
+                              <div className="flex gap-4 mb-3">
+                                <ScoreBar label="Faithfulness" value={run.result.faithfulness} />
+                                <ScoreBar label="Relevancy" value={run.result.answer_relevancy} />
+                                <ScoreBar label="Recall" value={run.result.context_recall} />
+                                <ScoreBar label="Precision" value={run.result.context_precision} />
+                              </div>
+                            )}
+
+                            {/* Answer comparison */}
+                            {(run.expected_answer || run.answer) && (
+                              <div className="grid grid-cols-2 gap-3 mt-1">
+                                {run.expected_answer && (
+                                  <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-green-500" /> Esperado
+                                    </p>
+                                    <p className="text-xs text-slate-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2.5 leading-relaxed">
+                                      {run.expected_answer}
+                                    </p>
+                                  </div>
+                                )}
+                                {run.answer && (
+                                  <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                                      Resposta do modelo
+                                    </p>
+                                    <p className="text-xs text-slate-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5 leading-relaxed">
+                                      {run.answer}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </section>
         </main>
       </div>
     </div>

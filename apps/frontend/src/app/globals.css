@@ -56,50 +56,50 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  /* Paleta Nutria - expandida */
-  --nutria-verde: #8BA344;
-  --nutria-verde-light: #A7BD6A;
-  --nutria-laranja: #E08419;
-  --nutria-bege: #F2DFD0;
-  --nutria-vermelho: #B81C1C;
-  --nutria-bordo: #4A0D0D;
-  --nutria-creme: #FAF7F4;
-  --nutria-creme-dark: #F0EBE5;
+  /* Paleta Nutria - modern health */
+  --nutria-verde: #16A34A;
+  --nutria-verde-light: #4ADE80;
+  --nutria-laranja: #EA580C;
+  --nutria-bege: #DCFCE7;
+  --nutria-vermelho: #DC2626;
+  --nutria-bordo: #111827;
+  --nutria-creme: #F9FAFB;
+  --nutria-creme-dark: #F3F4F6;
 
   /* Sistema */
-  --background: #FAF7F4;
-  --foreground: #4A0D0D;
+  --background: #F9FAFB;
+  --foreground: #111827;
   --card: #FFFFFF;
-  --card-foreground: #4A0D0D;
+  --card-foreground: #111827;
   --popover: #FFFFFF;
-  --popover-foreground: #4A0D0D;
-  --primary: #4A0D0D;
-  --primary-foreground: #FAF7F4;
-  --secondary: #F2DFD0;
-  --secondary-foreground: #4A0D0D;
-  --muted: #F0EBE5;
-  --muted-foreground: #7A5C5C;
-  --accent: #8BA344;
+  --popover-foreground: #111827;
+  --primary: #16A34A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #DCFCE7;
+  --secondary-foreground: #166534;
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+  --accent: #16A34A;
   --accent-foreground: #FFFFFF;
-  --destructive: #B81C1C;
-  --border: #E8E0D8;
-  --input: #E8E0D8;
-  --ring: #8BA344;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --destructive: #DC2626;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #16A34A;
+  --chart-1: oklch(0.627 0.194 142.5);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.7 0.2 35);
+  --chart-5: oklch(0.6 0.2 280);
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #4A0D0D;
-  --sidebar-primary: #4A0D0D;
-  --sidebar-primary-foreground: #FAF7F4;
-  --sidebar-accent: #F0EBE5;
-  --sidebar-accent-foreground: #4A0D0D;
-  --sidebar-border: #E8E0D8;
-  --sidebar-ring: #8BA344;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #16A34A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F0FDF4;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #16A34A;
 }
 
 .dark {
@@ -178,6 +178,21 @@
   50% { opacity: 0.6; }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.08); }
+}
+
 .animate-fade-in {
   animation: fade-in 0.2s var(--ease-out-strong) forwards;
 }
@@ -196,6 +211,20 @@
 
 .animate-pulse-soft {
   animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(22,163,74,0.08), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
 }
 
 /* Stagger delays para elementos em lista */
@@ -242,24 +271,35 @@
 
 /* Glass effect para cards */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(229, 231, 235, 0.6);
+}
+
+/* Health gradient — green to teal, for hero/accent areas */
+.gradient-health {
+  background: linear-gradient(135deg, #16A34A 0%, #059669 100%);
+}
+
+/* Subtle green shimmer for stat cards */
+.card-health {
+  background: linear-gradient(145deg, #FFFFFF 60%, #F0FDF4 100%);
+  border: 1px solid #D1FAE5;
 }
 
 /* Scrollbar refinada */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4CBC2;
-  border-radius: 3px;
+  background: #D1D5DB;
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B8AEA4;
+  background: #9CA3AF;
 }
 
 /* Headings com fonte serif */

@@ -97,12 +97,12 @@ export default function DietasPage() {
 
   if (isPending || loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nutria-creme">
+      <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3 animate-fade-in">
-          <div className="w-10 h-10 rounded-xl bg-nutria-verde/10 flex items-center justify-center">
-            <Flame className="w-5 h-5 text-nutria-verde animate-pulse-soft" />
+          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+            <Flame className="w-5 h-5 text-green-600 animate-pulse-soft" />
           </div>
-          <p className="text-sm text-nutria-bordo/50">Carregando dietas...</p>
+          <p className="text-sm text-slate-400">Carregando dietas...</p>
         </div>
       </div>
     );
@@ -111,7 +111,7 @@ export default function DietasPage() {
   if (!session) return null;
 
   return (
-    <div className="flex h-screen bg-nutria-creme">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
@@ -122,16 +122,16 @@ export default function DietasPage() {
             {/* Header com acao */}
             <div className="flex items-center justify-between mb-8 animate-slide-up">
               <div>
-                <h1 className="heading-serif text-3xl text-nutria-bordo mb-1">
+                <h1 className="heading-serif text-3xl text-slate-900 mb-1">
                   Meus Planos
                 </h1>
-                <p className="text-sm text-nutria-bordo/50">
+                <p className="text-sm text-slate-400">
                   {mealPlans.length} {mealPlans.length === 1 ? 'plano criado' : 'planos criados'}
                 </p>
               </div>
               <Button
                 onClick={handleCreatePlan}
-                className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                className="bg-green-600 hover:bg-green-600-light text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Plano
@@ -141,18 +141,18 @@ export default function DietasPage() {
             {/* Lista de planos */}
             {mealPlans.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-                <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
-                  <Flame className="w-10 h-10 text-nutria-verde/40" />
+                <div className="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center mb-6">
+                  <Flame className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="heading-serif text-xl text-nutria-bordo mb-2">
+                <h3 className="heading-serif text-xl text-slate-900 mb-2">
                   Nenhum plano criado ainda
                 </h3>
-                <p className="text-sm text-nutria-bordo/50 mb-8 max-w-sm text-center">
+                <p className="text-sm text-slate-400 mb-8 max-w-sm text-center">
                   Crie seu primeiro plano alimentar com ajuda da IA para comecar sua jornada
                 </p>
                 <Button
                   onClick={handleCreatePlan}
-                  className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+                  className="bg-green-600 hover:bg-green-600-light text-white rounded-xl"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Criar com IA
@@ -163,7 +163,7 @@ export default function DietasPage() {
                 {mealPlans.map((plan, index) => (
                   <Card
                     key={plan.id}
-                    className={`group p-0 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border-transparent hover:border-nutria-verde/20 animate-slide-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
+                    className={`group p-0 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border-transparent hover:border-green-600/20 animate-slide-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
                     onClick={() => setSelectedPlan(plan)}
                   >
                     {/* Badge bar */}
@@ -171,8 +171,8 @@ export default function DietasPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
                           plan.created_by === 'ai'
-                            ? 'bg-nutria-verde/10 text-nutria-verde'
-                            : 'bg-nutria-bordo/10 text-nutria-bordo'
+                            ? 'bg-green-50 text-green-600'
+                            : 'bg-slate-900/10 text-slate-900'
                         }`}
                       >
                         {plan.created_by === 'ai' ? (
@@ -186,7 +186,7 @@ export default function DietasPage() {
                           e.stopPropagation();
                           handleDeletePlan(plan.id);
                         }}
-                        className="p-1.5 rounded-lg text-nutria-bordo/20 hover:text-nutria-vermelho hover:bg-nutria-vermelho/5 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg text-slate-900/20 hover:text-red-600 hover:bg-red-600/5 transition-all duration-200 opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -194,42 +194,42 @@ export default function DietasPage() {
 
                     {/* Content */}
                     <div className="px-5 py-4">
-                      <h3 className="font-semibold text-nutria-bordo mb-1 line-clamp-1">
+                      <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1">
                         {plan.plan_name}
                       </h3>
                       {plan.description && (
-                        <p className="text-sm text-nutria-bordo/50 line-clamp-2 mb-4">
+                        <p className="text-sm text-slate-400 line-clamp-2 mb-4">
                           {plan.description}
                         </p>
                       )}
                     </div>
 
                     {/* Macros grid */}
-                    <div className="grid grid-cols-4 gap-0 border-t border-nutria-creme-dark">
-                      <div className="p-3 text-center border-r border-nutria-creme-dark">
-                        <Flame className="w-3.5 h-3.5 text-nutria-laranja mx-auto mb-1" />
-                        <p className="text-xs font-semibold text-nutria-bordo">{plan.daily_calories}</p>
-                        <p className="text-[10px] text-nutria-bordo/40">kcal</p>
+                    <div className="grid grid-cols-4 gap-0 border-t border-gray-200">
+                      <div className="p-3 text-center border-r border-gray-200">
+                        <Flame className="w-3.5 h-3.5 text-orange-600 mx-auto mb-1" />
+                        <p className="text-xs font-semibold text-slate-900">{plan.daily_calories}</p>
+                        <p className="text-[10px] text-slate-400">kcal</p>
                       </div>
-                      <div className="p-3 text-center border-r border-nutria-creme-dark">
-                        <Beef className="w-3.5 h-3.5 text-nutria-vermelho mx-auto mb-1" />
-                        <p className="text-xs font-semibold text-nutria-bordo">{plan.daily_protein_g}g</p>
-                        <p className="text-[10px] text-nutria-bordo/40">prot</p>
+                      <div className="p-3 text-center border-r border-gray-200">
+                        <Beef className="w-3.5 h-3.5 text-red-600 mx-auto mb-1" />
+                        <p className="text-xs font-semibold text-slate-900">{plan.daily_protein_g}g</p>
+                        <p className="text-[10px] text-slate-400">prot</p>
                       </div>
-                      <div className="p-3 text-center border-r border-nutria-creme-dark">
-                        <Wheat className="w-3.5 h-3.5 text-nutria-laranja mx-auto mb-1" />
-                        <p className="text-xs font-semibold text-nutria-bordo">{plan.daily_carbs_g}g</p>
-                        <p className="text-[10px] text-nutria-bordo/40">carb</p>
+                      <div className="p-3 text-center border-r border-gray-200">
+                        <Wheat className="w-3.5 h-3.5 text-orange-600 mx-auto mb-1" />
+                        <p className="text-xs font-semibold text-slate-900">{plan.daily_carbs_g}g</p>
+                        <p className="text-[10px] text-slate-400">carb</p>
                       </div>
                       <div className="p-3 text-center">
-                        <Droplets className="w-3.5 h-3.5 text-nutria-verde mx-auto mb-1" />
-                        <p className="text-xs font-semibold text-nutria-bordo">{plan.daily_fat_g}g</p>
-                        <p className="text-[10px] text-nutria-bordo/40">gord</p>
+                        <Droplets className="w-3.5 h-3.5 text-green-600 mx-auto mb-1" />
+                        <p className="text-xs font-semibold text-slate-900">{plan.daily_fat_g}g</p>
+                        <p className="text-[10px] text-slate-400">gord</p>
                       </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="px-5 py-3 bg-nutria-creme/50 flex items-center text-[11px] text-nutria-bordo/40">
+                    <div className="px-5 py-3 bg-gray-50/50 flex items-center text-[11px] text-slate-400">
                       <Calendar className="w-3 h-3 mr-1.5" />
                       {new Date(plan.created_at).toLocaleDateString('pt-BR')}
                     </div>
@@ -257,8 +257,8 @@ export default function DietasPage() {
                 <span
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium mb-3 ${
                     selectedPlan.created_by === 'ai'
-                      ? 'bg-nutria-verde/10 text-nutria-verde'
-                      : 'bg-nutria-bordo/10 text-nutria-bordo'
+                      ? 'bg-green-50 text-green-600'
+                      : 'bg-slate-900/10 text-slate-900'
                   }`}
                 >
                   {selectedPlan.created_by === 'ai' ? (
@@ -267,45 +267,45 @@ export default function DietasPage() {
                     <><UserPen className="w-3 h-3" /> Criado manualmente</>
                   )}
                 </span>
-                <h2 className="heading-serif text-2xl text-nutria-bordo">
+                <h2 className="heading-serif text-2xl text-slate-900">
                   {selectedPlan.plan_name}
                 </h2>
               </div>
               <button
                 onClick={() => setSelectedPlan(null)}
-                className="p-2 rounded-xl hover:bg-nutria-creme-dark transition-colors"
+                className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5 text-nutria-bordo/40" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
             {selectedPlan.description && (
-              <p className="px-6 pb-4 text-sm text-nutria-bordo/60 leading-relaxed">
+              <p className="px-6 pb-4 text-sm text-slate-500 leading-relaxed">
                 {selectedPlan.description}
               </p>
             )}
 
             {/* Macros detalhados */}
             <div className="grid grid-cols-2 gap-3 px-6 pb-6">
-              <div className="p-4 bg-gradient-to-br from-nutria-laranja/10 to-nutria-laranja/5 rounded-2xl">
-                <Flame className="w-5 h-5 text-nutria-laranja mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedPlan.daily_calories}</p>
-                <p className="text-xs text-nutria-bordo/50">kcal / dia</p>
+              <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-2xl">
+                <Flame className="w-5 h-5 text-orange-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedPlan.daily_calories}</p>
+                <p className="text-xs text-slate-400">kcal / dia</p>
               </div>
-              <div className="p-4 bg-gradient-to-br from-nutria-vermelho/10 to-nutria-vermelho/5 rounded-2xl">
-                <Beef className="w-5 h-5 text-nutria-vermelho mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedPlan.daily_protein_g}g</p>
-                <p className="text-xs text-nutria-bordo/50">Proteina / dia</p>
+              <div className="p-4 bg-gradient-to-br from-red-600/10 to-red-600/5 rounded-2xl">
+                <Beef className="w-5 h-5 text-red-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedPlan.daily_protein_g}g</p>
+                <p className="text-xs text-slate-400">Proteina / dia</p>
               </div>
-              <div className="p-4 bg-gradient-to-br from-nutria-laranja/10 to-nutria-laranja/5 rounded-2xl">
-                <Wheat className="w-5 h-5 text-nutria-laranja mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedPlan.daily_carbs_g}g</p>
-                <p className="text-xs text-nutria-bordo/50">Carboidratos / dia</p>
+              <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-2xl">
+                <Wheat className="w-5 h-5 text-orange-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedPlan.daily_carbs_g}g</p>
+                <p className="text-xs text-slate-400">Carboidratos / dia</p>
               </div>
-              <div className="p-4 bg-gradient-to-br from-nutria-verde/10 to-nutria-verde/5 rounded-2xl">
-                <Droplets className="w-5 h-5 text-nutria-verde mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedPlan.daily_fat_g}g</p>
-                <p className="text-xs text-nutria-bordo/50">Gordura / dia</p>
+              <div className="p-4 bg-gradient-to-br from-green-600/10 to-green-600/5 rounded-2xl">
+                <Droplets className="w-5 h-5 text-green-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedPlan.daily_fat_g}g</p>
+                <p className="text-xs text-slate-400">Gordura / dia</p>
               </div>
             </div>
 
@@ -314,7 +314,7 @@ export default function DietasPage() {
               <Button
                 onClick={() => handleDownloadPdf(selectedPlan.id, selectedPlan.plan_name)}
                 variant="outline"
-                className="flex-1 rounded-xl border-nutria-creme-dark hover:border-nutria-verde/30"
+                className="flex-1 rounded-xl border-gray-200 hover:border-green-600/30"
               >
                 <FileDown className="w-4 h-4 mr-2" />
                 Baixar PDF
@@ -323,7 +323,7 @@ export default function DietasPage() {
                 onClick={() => {
                   router.push(`/chat?prompt=${encodeURIComponent(`Edite o plano ${selectedPlan.plan_name}`)}`);
                 }}
-                className="flex-1 bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+                className="flex-1 bg-green-600 hover:bg-green-600-light text-white rounded-xl"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 Editar com IA
@@ -331,7 +331,7 @@ export default function DietasPage() {
             </div>
 
             {/* Date footer */}
-            <div className="px-6 py-3 bg-nutria-creme/50 border-t border-nutria-creme-dark flex items-center text-xs text-nutria-bordo/40">
+            <div className="px-6 py-3 bg-gray-50/50 border-t border-gray-200 flex items-center text-xs text-slate-400">
               <Calendar className="w-3 h-3 mr-1.5" />
               Criado em {new Date(selectedPlan.created_at).toLocaleDateString('pt-BR')}
             </div>

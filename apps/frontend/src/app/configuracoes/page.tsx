@@ -55,8 +55,8 @@ export default function ConfiguracoesPage() {
 
   if (isPending) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nutria-creme">
-        <p className="text-sm text-nutria-bordo/50 animate-fade-in">Carregando...</p>
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-sm text-slate-400 animate-fade-in">Carregando...</p>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default function ConfiguracoesPage() {
   if (!session) return null;
 
   return (
-    <div className="flex h-screen bg-nutria-creme">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
@@ -75,30 +75,30 @@ export default function ConfiguracoesPage() {
 
             {/* Perfil */}
             <Card className="p-0 overflow-hidden animate-slide-up">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-nutria-creme-dark bg-nutria-creme/30">
-                <div className="w-8 h-8 rounded-lg bg-nutria-verde/10 flex items-center justify-center">
-                  <User className="w-4 h-4 text-nutria-verde" />
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50/30">
+                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                  <User className="w-4 h-4 text-green-600" />
                 </div>
-                <h2 className="font-semibold text-nutria-bordo">Meu Perfil</h2>
+                <h2 className="font-semibold text-slate-900">Meu Perfil</h2>
               </div>
 
               <div className="p-6 space-y-5">
                 {/* Avatar */}
-                <div className="flex items-center gap-4 pb-5 border-b border-nutria-creme-dark">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-nutria-verde to-nutria-verde-light flex items-center justify-center shadow-sm">
+                <div className="flex items-center gap-4 pb-5 border-b border-gray-200">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-600 to-green-400 flex items-center justify-center shadow-sm">
                     <span className="text-2xl font-bold text-white">
                       {name?.charAt(0).toUpperCase() || 'U'}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-nutria-bordo">{name || 'Usuario'}</p>
-                    <p className="text-sm text-nutria-bordo/50">{email}</p>
+                    <p className="font-medium text-slate-900">{name || 'Usuario'}</p>
+                    <p className="text-sm text-slate-400">{email}</p>
                   </div>
                 </div>
 
                 {/* Campos */}
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-nutria-bordo/70 text-sm font-medium">
+                  <Label htmlFor="name" className="text-slate-900/70 text-sm font-medium">
                     Nome
                   </Label>
                   <Input
@@ -106,12 +106,12 @@ export default function ConfiguracoesPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Seu nome"
-                    className="h-11 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl"
+                    className="h-11 bg-white border-gray-200 focus:border-green-600 rounded-xl"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-nutria-bordo/70 text-sm font-medium">
+                  <Label htmlFor="email" className="text-slate-900/70 text-sm font-medium">
                     Email
                   </Label>
                   <Input
@@ -119,7 +119,7 @@ export default function ConfiguracoesPage() {
                     type="email"
                     value={email}
                     disabled
-                    className="h-11 bg-nutria-creme/50 border-nutria-creme-dark rounded-xl cursor-not-allowed"
+                    className="h-11 bg-gray-50/50 border-gray-200 rounded-xl cursor-not-allowed"
                   />
                 </div>
 
@@ -128,8 +128,8 @@ export default function ConfiguracoesPage() {
                   <div
                     className={`flex items-center gap-2 p-3 rounded-xl text-sm animate-scale-in ${
                       message.includes('sucesso')
-                        ? 'bg-nutria-verde/10 text-nutria-verde'
-                        : 'bg-nutria-vermelho/10 text-nutria-vermelho'
+                        ? 'bg-green-50 text-green-600'
+                        : 'bg-red-600/10 text-red-600'
                     }`}
                   >
                     {message.includes('sucesso') && <CheckCircle className="w-4 h-4 shrink-0" />}
@@ -140,7 +140,7 @@ export default function ConfiguracoesPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl transition-all duration-200"
+                  className="bg-green-600 hover:bg-green-600-light text-white rounded-xl transition-all duration-200"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? 'Salvando...' : 'Salvar Alteracoes'}
@@ -150,22 +150,22 @@ export default function ConfiguracoesPage() {
 
             {/* Conta */}
             <Card className="p-0 overflow-hidden animate-slide-up stagger-2 opacity-0">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-nutria-creme-dark bg-nutria-creme/30">
-                <div className="w-8 h-8 rounded-lg bg-nutria-laranja/10 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-nutria-laranja" />
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50/30">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-orange-600" />
                 </div>
-                <h2 className="font-semibold text-nutria-bordo">Conta</h2>
+                <h2 className="font-semibold text-slate-900">Conta</h2>
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 bg-nutria-creme/50 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl">
                   <div>
-                    <p className="text-sm font-medium text-nutria-bordo">Plano atual</p>
-                    <p className="text-sm text-nutria-bordo/50 capitalize mt-0.5">
+                    <p className="text-sm font-medium text-slate-900">Plano atual</p>
+                    <p className="text-sm text-slate-400 capitalize mt-0.5">
                       {session.user.planType || 'Free'}
                     </p>
                   </div>
-                  <div className="px-3 py-1 bg-nutria-verde/10 text-nutria-verde text-xs font-medium rounded-lg">
+                  <div className="px-3 py-1 bg-green-50 text-green-600 text-xs font-medium rounded-lg">
                     Ativo
                   </div>
                 </div>
@@ -173,22 +173,22 @@ export default function ConfiguracoesPage() {
             </Card>
 
             {/* Sair */}
-            <Card className="p-0 overflow-hidden border-nutria-vermelho/10 animate-slide-up stagger-3 opacity-0">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-nutria-creme-dark bg-nutria-creme/30">
-                <div className="w-8 h-8 rounded-lg bg-nutria-vermelho/10 flex items-center justify-center">
-                  <LogOut className="w-4 h-4 text-nutria-vermelho" />
+            <Card className="p-0 overflow-hidden border-red-600/10 animate-slide-up stagger-3 opacity-0">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-gray-50/30">
+                <div className="w-8 h-8 rounded-lg bg-red-600/10 flex items-center justify-center">
+                  <LogOut className="w-4 h-4 text-red-600" />
                 </div>
-                <h2 className="font-semibold text-nutria-bordo">Sessao</h2>
+                <h2 className="font-semibold text-slate-900">Sessao</h2>
               </div>
 
               <div className="p-6">
-                <p className="text-sm text-nutria-bordo/50 mb-4">
+                <p className="text-sm text-slate-400 mb-4">
                   Encerre sua sessao atual. Voce precisara fazer login novamente.
                 </p>
                 <Button
                   onClick={handleLogout}
                   variant="outline"
-                  className="border-nutria-vermelho/20 text-nutria-vermelho hover:bg-nutria-vermelho/5 rounded-xl transition-all duration-200"
+                  className="border-red-600/20 text-red-600 hover:bg-red-600/5 rounded-xl transition-all duration-200"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sair da conta

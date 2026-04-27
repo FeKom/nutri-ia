@@ -147,12 +147,12 @@ export default function ReceitasPage() {
 
   if (isPending) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nutria-creme">
+      <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3 animate-fade-in">
-          <div className="w-10 h-10 rounded-xl bg-nutria-verde/10 flex items-center justify-center">
-            <UtensilsCrossed className="w-5 h-5 text-nutria-verde animate-pulse-soft" />
+          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+            <UtensilsCrossed className="w-5 h-5 text-green-600 animate-pulse-soft" />
           </div>
-          <p className="text-sm text-nutria-bordo/50">Carregando receitas...</p>
+          <p className="text-sm text-slate-400">Carregando receitas...</p>
         </div>
       </div>
     );
@@ -161,7 +161,7 @@ export default function ReceitasPage() {
   if (!session) return null;
 
   return (
-    <div className="flex h-screen bg-nutria-creme">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
@@ -174,7 +174,7 @@ export default function ReceitasPage() {
               <div />
               <Button
                 onClick={() => setShowCreateForm(true)}
-                className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+                className="bg-green-600 hover:bg-green-600-light text-white rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Receita
@@ -184,12 +184,12 @@ export default function ReceitasPage() {
           {/* Search + filters */}
             <div className="mb-8 animate-slide-up">
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-nutria-bordo/30" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar receitas..."
-                  className="pl-10 h-11 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl"
+                  className="pl-10 h-11 bg-white border-gray-200 focus:border-green-600 rounded-xl"
                 />
               </div>
 
@@ -200,8 +200,8 @@ export default function ReceitasPage() {
                     onClick={() => setActiveFilter(tab.key)}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                       activeFilter === tab.key
-                        ? 'bg-nutria-verde text-white shadow-sm'
-                        : 'bg-white text-nutria-bordo/60 hover:bg-nutria-creme-dark hover:text-nutria-bordo'
+                        ? 'bg-green-600 text-white shadow-sm'
+                        : 'bg-white text-slate-500 hover:bg-gray-100 hover:text-slate-900'
                     }`}
                   >
                     {tab.label}
@@ -213,20 +213,20 @@ export default function ReceitasPage() {
             {/* Recipe grid */}
             {loadingRecipes ? (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-                <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
-                  <UtensilsCrossed className="w-10 h-10 text-nutria-verde/40 animate-pulse" />
+                <div className="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center mb-6">
+                  <UtensilsCrossed className="w-10 h-10 text-green-600 animate-pulse" />
                 </div>
-                <p className="text-sm text-nutria-bordo/50">Carregando receitas...</p>
+                <p className="text-sm text-slate-400">Carregando receitas...</p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-                <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
-                  <Search className="w-10 h-10 text-nutria-verde/40" />
+                <div className="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center mb-6">
+                  <Search className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="heading-serif text-xl text-nutria-bordo mb-2">
+                <h3 className="heading-serif text-xl text-slate-900 mb-2">
                   Nenhuma receita encontrada
                 </h3>
-                <p className="text-sm text-nutria-bordo/50">
+                <p className="text-sm text-slate-400">
                   Tente buscar com outros termos ou filtros
                 </p>
               </div>
@@ -235,26 +235,26 @@ export default function ReceitasPage() {
                 {filtered.map((recipe, index) => (
                   <Card
                     key={recipe.id}
-                    className={`group p-0 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border-transparent hover:border-nutria-verde/20 animate-slide-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
+                    className={`group p-0 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border-transparent hover:border-green-600/20 animate-slide-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
                     onClick={() => setSelectedRecipe(recipe)}
                   >
                     {/* Category badge */}
                     <div className="px-5 pt-5">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-nutria-verde/10 text-nutria-verde">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-600">
                         {categoryLabels[recipe.category]}
                       </span>
                     </div>
 
                     {/* Content */}
                     <div className="px-5 py-4">
-                      <h3 className="font-semibold text-nutria-bordo mb-1.5">
+                      <h3 className="font-semibold text-slate-900 mb-1.5">
                         {recipe.name}
                       </h3>
-                      <p className="text-sm text-nutria-bordo/50 line-clamp-2 mb-4">
+                      <p className="text-sm text-slate-400 line-clamp-2 mb-4">
                         {recipe.description}
                       </p>
 
-                      <div className="flex items-center gap-4 text-xs text-nutria-bordo/50">
+                      <div className="flex items-center gap-4 text-xs text-slate-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
                           {recipe.prep_time_minutes} min
@@ -271,18 +271,18 @@ export default function ReceitasPage() {
                     </div>
 
                     {/* Macros bar */}
-                    <div className="grid grid-cols-3 gap-0 border-t border-nutria-creme-dark">
-                      <div className="p-3 text-center border-r border-nutria-creme-dark">
-                        <p className="text-xs font-semibold text-nutria-bordo">{recipe.protein_g}g</p>
-                        <p className="text-[10px] text-nutria-bordo/40">prot</p>
+                    <div className="grid grid-cols-3 gap-0 border-t border-gray-200">
+                      <div className="p-3 text-center border-r border-gray-200">
+                        <p className="text-xs font-semibold text-slate-900">{recipe.protein_g}g</p>
+                        <p className="text-[10px] text-slate-400">prot</p>
                       </div>
-                      <div className="p-3 text-center border-r border-nutria-creme-dark">
-                        <p className="text-xs font-semibold text-nutria-bordo">{recipe.carbs_g}g</p>
-                        <p className="text-[10px] text-nutria-bordo/40">carb</p>
+                      <div className="p-3 text-center border-r border-gray-200">
+                        <p className="text-xs font-semibold text-slate-900">{recipe.carbs_g}g</p>
+                        <p className="text-[10px] text-slate-400">carb</p>
                       </div>
                       <div className="p-3 text-center">
-                        <p className="text-xs font-semibold text-nutria-bordo">{recipe.fat_g}g</p>
-                        <p className="text-[10px] text-nutria-bordo/40">gord</p>
+                        <p className="text-xs font-semibold text-slate-900">{recipe.fat_g}g</p>
+                        <p className="text-[10px] text-slate-400">gord</p>
                       </div>
                     </div>
                   </Card>
@@ -306,32 +306,32 @@ export default function ReceitasPage() {
             {/* Header */}
             <div className="flex items-start justify-between p-6 pb-4">
               <div className="flex-1">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-nutria-verde/10 text-nutria-verde mb-3">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-600 mb-3">
                   {categoryLabels[selectedRecipe.category]}
                 </span>
-                <h2 className="heading-serif text-2xl text-nutria-bordo">
+                <h2 className="heading-serif text-2xl text-slate-900">
                   {selectedRecipe.name}
                 </h2>
               </div>
               <button
                 onClick={() => setSelectedRecipe(null)}
-                className="p-2 rounded-xl hover:bg-nutria-creme-dark transition-colors"
+                className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5 text-nutria-bordo/40" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
-            <p className="px-6 pb-4 text-sm text-nutria-bordo/60 leading-relaxed">
+            <p className="px-6 pb-4 text-sm text-slate-500 leading-relaxed">
               {selectedRecipe.description}
             </p>
 
             {/* Info badges */}
             <div className="flex gap-3 px-6 pb-4">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-nutria-creme-dark rounded-lg text-xs text-nutria-bordo/70">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-lg text-xs text-slate-900/70">
                 <Clock className="w-3.5 h-3.5" />
                 {selectedRecipe.prep_time_minutes} min
               </span>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-nutria-creme-dark rounded-lg text-xs text-nutria-bordo/70">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-lg text-xs text-slate-900/70">
                 <ChefHat className="w-3.5 h-3.5" />
                 {difficultyLabels[selectedRecipe.difficulty]}
               </span>
@@ -339,35 +339,35 @@ export default function ReceitasPage() {
 
             {/* Macros */}
             <div className="grid grid-cols-2 gap-3 px-6 pb-4">
-              <div className="p-4 bg-gradient-to-br from-nutria-laranja/10 to-nutria-laranja/5 rounded-2xl">
-                <Flame className="w-5 h-5 text-nutria-laranja mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedRecipe.calories}</p>
-                <p className="text-xs text-nutria-bordo/50">kcal</p>
+              <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-2xl">
+                <Flame className="w-5 h-5 text-orange-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedRecipe.calories}</p>
+                <p className="text-xs text-slate-400">kcal</p>
               </div>
-              <div className="p-4 bg-gradient-to-br from-nutria-vermelho/10 to-nutria-vermelho/5 rounded-2xl">
-                <Beef className="w-5 h-5 text-nutria-vermelho mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedRecipe.protein_g}g</p>
-                <p className="text-xs text-nutria-bordo/50">Proteina</p>
+              <div className="p-4 bg-gradient-to-br from-red-600/10 to-red-600/5 rounded-2xl">
+                <Beef className="w-5 h-5 text-red-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedRecipe.protein_g}g</p>
+                <p className="text-xs text-slate-400">Proteina</p>
               </div>
-              <div className="p-4 bg-gradient-to-br from-nutria-laranja/10 to-nutria-laranja/5 rounded-2xl">
-                <Wheat className="w-5 h-5 text-nutria-laranja mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedRecipe.carbs_g}g</p>
-                <p className="text-xs text-nutria-bordo/50">Carboidratos</p>
+              <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-2xl">
+                <Wheat className="w-5 h-5 text-orange-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedRecipe.carbs_g}g</p>
+                <p className="text-xs text-slate-400">Carboidratos</p>
               </div>
-              <div className="p-4 bg-gradient-to-br from-nutria-verde/10 to-nutria-verde/5 rounded-2xl">
-                <Droplets className="w-5 h-5 text-nutria-verde mb-2" />
-                <p className="text-2xl font-bold text-nutria-bordo">{selectedRecipe.fat_g}g</p>
-                <p className="text-xs text-nutria-bordo/50">Gordura</p>
+              <div className="p-4 bg-gradient-to-br from-green-600/10 to-green-600/5 rounded-2xl">
+                <Droplets className="w-5 h-5 text-green-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{selectedRecipe.fat_g}g</p>
+                <p className="text-xs text-slate-400">Gordura</p>
               </div>
             </div>
 
             {/* Ingredients */}
             <div className="px-6 pb-4">
-              <h3 className="font-semibold text-nutria-bordo mb-3">Ingredientes</h3>
+              <h3 className="font-semibold text-slate-900 mb-3">Ingredientes</h3>
               <ul className="space-y-2">
                 {selectedRecipe.ingredients.map((ing, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-nutria-bordo/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-nutria-verde shrink-0" />
+                  <li key={i} className="flex items-center gap-2 text-sm text-slate-900/70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-600 shrink-0" />
                     {ing}
                   </li>
                 ))}
@@ -380,7 +380,7 @@ export default function ReceitasPage() {
                 onClick={() => {
                   router.push(`/chat?prompt=${encodeURIComponent(`Me de a receita completa de ${selectedRecipe.name} com modo de preparo detalhado`)}`);
                 }}
-                className="w-full bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+                className="w-full bg-green-600 hover:bg-green-600-light text-white rounded-xl"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Pedir receita detalhada com IA
@@ -400,10 +400,10 @@ export default function ReceitasPage() {
             className="max-w-lg w-full p-0 overflow-hidden shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-6 pb-4 border-b border-nutria-creme-dark">
-              <h2 className="heading-serif text-xl text-nutria-bordo">Nova Receita</h2>
-              <button onClick={() => setShowCreateForm(false)} className="p-2 rounded-xl hover:bg-nutria-creme-dark">
-                <X className="w-5 h-5 text-nutria-bordo/40" />
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200">
+              <h2 className="heading-serif text-xl text-slate-900">Nova Receita</h2>
+              <button onClick={() => setShowCreateForm(false)} className="p-2 rounded-xl hover:bg-gray-100">
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
@@ -419,7 +419,7 @@ export default function ReceitasPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Categoria</Label>
-                  <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as Recipe['category'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo">
+                  <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as Recipe['category'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm text-slate-900">
                     <option value="cafe-da-manha">Cafe da Manha</option>
                     <option value="almoco">Almoco</option>
                     <option value="jantar">Jantar</option>
@@ -428,7 +428,7 @@ export default function ReceitasPage() {
                 </div>
                 <div>
                   <Label>Dificuldade</Label>
-                  <select value={newDifficulty} onChange={(e) => setNewDifficulty(e.target.value as Recipe['difficulty'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo">
+                  <select value={newDifficulty} onChange={(e) => setNewDifficulty(e.target.value as Recipe['difficulty'])} className="mt-1 w-full h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm text-slate-900">
                     <option value="facil">Facil</option>
                     <option value="medio">Medio</option>
                     <option value="dificil">Dificil</option>
@@ -466,7 +466,7 @@ export default function ReceitasPage() {
                   onChange={(e) => setNewIngredients(e.target.value)}
                   placeholder={"200g peito de frango\n150g batata doce\nAzeite a gosto"}
                   rows={4}
-                  className="mt-1 w-full px-3 py-2 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo resize-none focus:outline-none focus:border-nutria-verde"
+                  className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-slate-900 resize-none focus:outline-none focus:border-green-600"
                 />
               </div>
             </div>
@@ -475,7 +475,7 @@ export default function ReceitasPage() {
               <Button
                 onClick={handleCreateRecipe}
                 disabled={saving || !newName || !newPrepTime || !newCalories}
-                className="w-full bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+                className="w-full bg-green-600 hover:bg-green-600-light text-white rounded-xl"
               >
                 {saving ? 'Salvando...' : 'Salvar Receita'}
               </Button>

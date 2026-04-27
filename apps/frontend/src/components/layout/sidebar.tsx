@@ -47,14 +47,14 @@ export function Sidebar() {
       : null;
 
   return (
-    <aside className="w-[220px] h-screen bg-white border-r border-border flex flex-col animate-slide-in-left">
+    <aside className="w-[220px] h-screen bg-white border-r border-gray-100 flex flex-col animate-slide-in-left" style={{ background: 'linear-gradient(to bottom, #ffffff 0%, #f0fdf4 100%)' }}>
       {/* Logo */}
       <div className="h-[72px] flex items-center px-5 border-b border-border">
         <Link href="/chat" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-nutria-verde flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+          <div className="w-9 h-9 rounded-xl gradient-health flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
             <Leaf className="w-5 h-5 text-white" />
           </div>
-          <span className="heading-serif text-xl text-nutria-bordo tracking-tight">
+          <span className="heading-serif text-xl text-foreground tracking-tight">
             nutri.a
           </span>
         </Link>
@@ -64,7 +64,7 @@ export function Sidebar() {
       {session?.user && (
         <div className="px-5 py-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-nutria-verde to-nutria-verde-light flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-full gradient-health flex items-center justify-center shadow-sm">
               {session.user.avatarUrl ? (
                 <img
                   src={session.user.avatarUrl}
@@ -78,10 +78,10 @@ export function Sidebar() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-nutria-bordo truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 {session.user.name || 'Usuario'}
               </p>
-              <p className="text-xs text-nutria-bordo/50 capitalize">
+              <p className="text-xs text-muted-foreground capitalize">
                 Plano free
               </p>
             </div>
@@ -103,16 +103,16 @@ export function Sidebar() {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200',
                     isActive
-                      ? 'bg-nutria-verde/10 text-nutria-bordo font-medium shadow-sm'
-                      : 'text-nutria-bordo/60 hover:bg-nutria-creme-dark hover:text-nutria-bordo'
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
                   {isActive && (
-                    <div className="absolute left-0 w-[3px] h-5 bg-nutria-verde rounded-r-full" />
+                    <div className="absolute left-0 w-[3px] h-5 bg-primary rounded-r-full" />
                   )}
                   <Icon className={cn(
                     'w-[18px] h-[18px] shrink-0 transition-colors',
-                    isActive ? 'text-nutria-verde' : ''
+                    isActive ? 'text-primary' : ''
                   )} />
                   <span>{item.label}</span>
                 </Link>
@@ -126,14 +126,14 @@ export function Sidebar() {
       {isChat && (
         <div className="border-t border-border flex flex-col min-h-0">
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <span className="text-[10px] text-nutria-bordo/40 uppercase tracking-wider font-medium">
+            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
               Conversas
             </span>
             <button
               type="button"
               onClick={() => router.push(`/chat?conv=${nanoid()}`)}
               title="Nova conversa"
-              className="w-5 h-5 flex items-center justify-center rounded text-nutria-bordo/40 hover:text-nutria-verde hover:bg-nutria-verde/10 transition-colors"
+              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -154,8 +154,8 @@ export function Sidebar() {
                       className={cn(
                         'flex-1 min-w-0 text-left px-2 py-1.5 rounded-lg text-xs truncate transition-colors duration-150',
                         isActive
-                          ? 'bg-nutria-verde/10 text-nutria-bordo font-medium'
-                          : 'text-nutria-bordo/60 hover:bg-nutria-creme-dark hover:text-nutria-bordo'
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       )}
                     >
                       {conv.title}
@@ -167,7 +167,7 @@ export function Sidebar() {
                         if (isActive) router.push('/chat');
                       }}
                       title="Excluir conversa"
-                      className="shrink-0 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover/conv:opacity-100 text-nutria-bordo/30 hover:text-nutria-vermelho transition-all"
+                      className="shrink-0 w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover/conv:opacity-100 text-muted-foreground/40 hover:text-destructive transition-all"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -181,7 +181,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-border">
-        <p className="text-[10px] text-nutria-bordo/30 tracking-wide uppercase">
+        <p className="text-[10px] text-muted-foreground/40 tracking-wide uppercase">
           nutri.a v1.0
         </p>
       </div>

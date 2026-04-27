@@ -142,12 +142,12 @@ export default function AtividadesPage() {
 
   if (isPending) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nutria-creme">
+      <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3 animate-fade-in">
-          <div className="w-10 h-10 rounded-xl bg-nutria-verde/10 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-nutria-verde animate-pulse-soft" />
+          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+            <Activity className="w-5 h-5 text-green-600 animate-pulse-soft" />
           </div>
-          <p className="text-sm text-nutria-bordo/50">Carregando atividades...</p>
+          <p className="text-sm text-slate-400">Carregando atividades...</p>
         </div>
       </div>
     );
@@ -156,7 +156,7 @@ export default function AtividadesPage() {
   if (!session) return null;
 
   return (
-    <div className="flex h-screen bg-nutria-creme">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
@@ -166,38 +166,38 @@ export default function AtividadesPage() {
           <div className="max-w-6xl mx-auto">
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 animate-slide-up">
-              <Card className="p-5 bg-gradient-to-br from-nutria-verde/10 to-nutria-verde/5 border-transparent">
+              <Card className="p-5 bg-gradient-to-br from-green-600/10 to-green-600/5 border-transparent">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-nutria-verde/20 flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-nutria-verde" />
+                  <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-nutria-bordo">{weekActivities.length}</p>
-                    <p className="text-xs text-nutria-bordo/50">Atividades esta semana</p>
+                    <p className="text-2xl font-bold text-slate-900">{weekActivities.length}</p>
+                    <p className="text-xs text-slate-400">Atividades esta semana</p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-5 bg-gradient-to-br from-nutria-laranja/10 to-nutria-laranja/5 border-transparent">
+              <Card className="p-5 bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-transparent">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-nutria-laranja/20 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-nutria-laranja" />
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-nutria-bordo">{formatDuration(totalMinutes)}</p>
-                    <p className="text-xs text-nutria-bordo/50">Tempo total</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatDuration(totalMinutes)}</p>
+                    <p className="text-xs text-slate-400">Tempo total</p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-5 bg-gradient-to-br from-nutria-bordo/10 to-nutria-bordo/5 border-transparent">
+              <Card className="p-5 bg-gradient-to-br from-slate-900/10 to-slate-900/5 border-transparent">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-nutria-bordo/20 flex items-center justify-center">
-                    <Flame className="w-5 h-5 text-nutria-bordo" />
+                  <div className="w-10 h-10 rounded-xl bg-slate-900/20 flex items-center justify-center">
+                    <Flame className="w-5 h-5 text-slate-900" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-nutria-bordo">{totalCalories.toLocaleString()}</p>
-                    <p className="text-xs text-nutria-bordo/50">Calorias queimadas</p>
+                    <p className="text-2xl font-bold text-slate-900">{totalCalories.toLocaleString()}</p>
+                    <p className="text-xs text-slate-400">Calorias queimadas</p>
                   </div>
                 </div>
               </Card>
@@ -206,12 +206,12 @@ export default function AtividadesPage() {
             {/* Header + add button */}
             <div className="flex items-center justify-between mb-6 animate-slide-up stagger-2 opacity-0">
               <div>
-                <h2 className="heading-serif text-2xl text-nutria-bordo">Historico</h2>
-                <p className="text-sm text-nutria-bordo/50">{activities.length} atividades registradas</p>
+                <h2 className="heading-serif text-2xl text-slate-900">Historico</h2>
+                <p className="text-sm text-slate-400">{activities.length} atividades registradas</p>
               </div>
               <Button
                 onClick={() => setShowForm(true)}
-                className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                className="bg-green-600 hover:bg-green-600-light text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Atividade
@@ -221,14 +221,14 @@ export default function AtividadesPage() {
             {/* Activity list */}
             {activities.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-                <div className="w-20 h-20 rounded-3xl bg-nutria-verde/10 flex items-center justify-center mb-6">
-                  <Activity className="w-10 h-10 text-nutria-verde/40" />
+                <div className="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center mb-6">
+                  <Activity className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="heading-serif text-xl text-nutria-bordo mb-2">Nenhuma atividade</h3>
-                <p className="text-sm text-nutria-bordo/50 mb-8">Registre sua primeira atividade fisica</p>
+                <h3 className="heading-serif text-xl text-slate-900 mb-2">Nenhuma atividade</h3>
+                <p className="text-sm text-slate-400 mb-8">Registre sua primeira atividade fisica</p>
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl"
+                  className="bg-green-600 hover:bg-green-600-light text-white rounded-xl"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Registrar Atividade
@@ -241,22 +241,22 @@ export default function AtividadesPage() {
                   return (
                     <Card
                       key={activity.id}
-                      className={`group p-4 flex items-center gap-4 hover:shadow-md transition-all duration-200 border-transparent hover:border-nutria-verde/20 animate-slide-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
+                      className={`group p-4 flex items-center gap-4 hover:shadow-md transition-all duration-200 border-transparent hover:border-green-600/20 animate-slide-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
                     >
-                      <div className="w-10 h-10 rounded-xl bg-nutria-verde/10 flex items-center justify-center shrink-0">
-                        <Icon className="w-5 h-5 text-nutria-verde" />
+                      <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                        <Icon className="w-5 h-5 text-green-600" />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-nutria-bordo">
+                        <p className="font-medium text-slate-900">
                           {activityLabels[activity.type] || activity.type}
                         </p>
                         {activity.notes && (
-                          <p className="text-sm text-nutria-bordo/50 truncate">{activity.notes}</p>
+                          <p className="text-sm text-slate-400 truncate">{activity.notes}</p>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-5 text-sm text-nutria-bordo/60 shrink-0">
+                      <div className="flex items-center gap-5 text-sm text-slate-500 shrink-0">
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           {formatDuration(activity.duration_minutes)}
@@ -273,7 +273,7 @@ export default function AtividadesPage() {
 
                       <button
                         onClick={() => handleDelete(activity.id)}
-                        className="p-1.5 rounded-lg text-nutria-bordo/20 hover:text-nutria-vermelho hover:bg-nutria-vermelho/5 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg text-slate-900/20 hover:text-red-600 hover:bg-red-600/5 transition-all duration-200 opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -297,22 +297,22 @@ export default function AtividadesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-6 pb-4">
-              <h2 className="heading-serif text-xl text-nutria-bordo">Nova Atividade</h2>
+              <h2 className="heading-serif text-xl text-slate-900">Nova Atividade</h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="p-2 rounded-xl hover:bg-nutria-creme-dark transition-colors"
+                className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5 text-nutria-bordo/40" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
             <div className="px-6 pb-6 space-y-4">
               <div className="space-y-2">
-                <Label className="text-nutria-bordo/70 text-sm font-medium">Tipo de atividade</Label>
+                <Label className="text-slate-900/70 text-sm font-medium">Tipo de atividade</Label>
                 <select
                   value={formType}
                   onChange={(e) => setFormType(e.target.value)}
-                  className="h-11 w-full bg-white border border-nutria-creme-dark rounded-xl px-3 text-sm text-nutria-bordo focus:border-nutria-verde outline-none transition-colors"
+                  className="h-11 w-full bg-white border border-gray-200 rounded-xl px-3 text-sm text-slate-900 focus:border-green-600 outline-none transition-colors"
                 >
                   {Object.entries(activityLabels).map(([key, label]) => (
                     <option key={key} value={key}>{label}</option>
@@ -322,51 +322,51 @@ export default function AtividadesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-nutria-bordo/70 text-sm font-medium">Duracao (min)</Label>
+                  <Label className="text-slate-900/70 text-sm font-medium">Duracao (min)</Label>
                   <Input
                     type="number"
                     value={formDuration}
                     onChange={(e) => setFormDuration(e.target.value)}
                     placeholder="30"
-                    className="h-11 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl"
+                    className="h-11 bg-white border-gray-200 focus:border-green-600 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-nutria-bordo/70 text-sm font-medium">Calorias</Label>
+                  <Label className="text-slate-900/70 text-sm font-medium">Calorias</Label>
                   <Input
                     type="number"
                     value={formCalories}
                     onChange={(e) => setFormCalories(e.target.value)}
                     placeholder="200"
-                    className="h-11 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl"
+                    className="h-11 bg-white border-gray-200 focus:border-green-600 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-nutria-bordo/70 text-sm font-medium">Data</Label>
+                <Label className="text-slate-900/70 text-sm font-medium">Data</Label>
                 <Input
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
-                  className="h-11 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl"
+                  className="h-11 bg-white border-gray-200 focus:border-green-600 rounded-xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-nutria-bordo/70 text-sm font-medium">Observacoes (opcional)</Label>
+                <Label className="text-slate-900/70 text-sm font-medium">Observacoes (opcional)</Label>
                 <Input
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="Ex: treino leve, foco em pernas..."
-                  className="h-11 bg-white border-nutria-creme-dark focus:border-nutria-verde rounded-xl"
+                  className="h-11 bg-white border-gray-200 focus:border-green-600 rounded-xl"
                 />
               </div>
 
               <Button
                 onClick={handleAdd}
                 disabled={!formDuration || !formCalories}
-                className="w-full bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl mt-2"
+                className="w-full bg-green-600 hover:bg-green-600-light text-white rounded-xl mt-2"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Registrar Atividade

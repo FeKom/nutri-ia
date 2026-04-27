@@ -115,31 +115,31 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-nutria-creme grain flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-50 grain flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-nutria-verde/20 flex items-center justify-center">
-            <Leaf className="w-5 h-5 text-nutria-verde" />
+          <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center">
+            <Leaf className="w-5 h-5 text-green-600" />
           </div>
-          <span className="heading-serif text-2xl text-nutria-bordo">nutri.a</span>
+          <span className="heading-serif text-2xl text-slate-900">nutri.a</span>
         </div>
 
         {/* Progress */}
         <div className="flex gap-2 mb-8">
           {STEPS.map((s, i) => (
             <div key={s} className="flex-1">
-              <div className={`h-1.5 rounded-full transition-all duration-300 ${i <= step ? 'bg-nutria-verde' : 'bg-nutria-creme-dark'}`} />
-              <p className={`text-xs mt-1.5 ${i === step ? 'text-nutria-verde font-medium' : 'text-nutria-bordo/40'}`}>{s}</p>
+              <div className={`h-1.5 rounded-full transition-all duration-300 ${i <= step ? 'bg-green-600' : 'bg-gray-100'}`} />
+              <p className={`text-xs mt-1.5 ${i === step ? 'text-green-600 font-medium' : 'text-slate-400'}`}>{s}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-nutria-creme-dark">
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
           {/* Step 0 */}
           {step === 0 && (
             <div className="space-y-5">
-              <h2 className="heading-serif text-2xl text-nutria-bordo">Informacoes pessoais</h2>
+              <h2 className="heading-serif text-2xl text-slate-900">Informacoes pessoais</h2>
               <div>
                 <Label>Nome</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-1.5" />
@@ -154,7 +154,7 @@ export default function OnboardingPage() {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value as any)}
-                    className="mt-1.5 w-full h-10 px-3 rounded-xl border border-nutria-creme-dark bg-white text-sm text-nutria-bordo"
+                    className="mt-1.5 w-full h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm text-slate-900"
                   >
                     <option value="male">Masculino</option>
                     <option value="female">Feminino</option>
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
           {/* Step 1 */}
           {step === 1 && (
             <div className="space-y-6">
-              <h2 className="heading-serif text-2xl text-nutria-bordo">Seu objetivo</h2>
+              <h2 className="heading-serif text-2xl text-slate-900">Seu objetivo</h2>
               <div className="space-y-2">
                 {goalOptions.map((g) => (
                   <button
@@ -186,16 +186,16 @@ export default function OnboardingPage() {
                     onClick={() => setGoal(g.value)}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                       goal === g.value
-                        ? 'border-nutria-verde bg-nutria-verde/5'
-                        : 'border-nutria-creme-dark hover:border-nutria-verde/30'
+                        ? 'border-green-600 bg-green-600'
+                        : 'border-gray-200 hover:border-green-600/30'
                     }`}
                   >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${goal === g.value ? 'border-nutria-verde bg-nutria-verde' : 'border-nutria-bordo/30'}`}>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${goal === g.value ? 'border-green-600 bg-green-600' : 'border-slate-900/30'}`}>
                       {goal === g.value && <Check className="w-3 h-3 text-white" />}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-nutria-bordo">{g.label}</p>
-                      <p className="text-xs text-nutria-bordo/50">{g.desc}</p>
+                      <p className="text-sm font-medium text-slate-900">{g.label}</p>
+                      <p className="text-xs text-slate-400">{g.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -210,16 +210,16 @@ export default function OnboardingPage() {
                       onClick={() => setActivity(a.value)}
                       className={`w-full flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${
                         activity === a.value
-                          ? 'border-nutria-verde bg-nutria-verde/5'
-                          : 'border-nutria-creme-dark hover:border-nutria-verde/30'
+                          ? 'border-green-600 bg-green-600'
+                          : 'border-gray-200 hover:border-green-600/30'
                       }`}
                     >
-                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${activity === a.value ? 'border-nutria-verde bg-nutria-verde' : 'border-nutria-bordo/30'}`}>
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${activity === a.value ? 'border-green-600 bg-green-600' : 'border-slate-900/30'}`}>
                         {activity === a.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </div>
                       <div className="text-left">
-                        <p className="text-xs font-medium text-nutria-bordo">{a.label}</p>
-                        <p className="text-[11px] text-nutria-bordo/50">{a.desc}</p>
+                        <p className="text-xs font-medium text-slate-900">{a.label}</p>
+                        <p className="text-[11px] text-slate-400">{a.desc}</p>
                       </div>
                     </button>
                   ))}
@@ -231,8 +231,8 @@ export default function OnboardingPage() {
           {/* Step 2 */}
           {step === 2 && (
             <div className="space-y-5">
-              <h2 className="heading-serif text-2xl text-nutria-bordo">Restricoes alimentares</h2>
-              <p className="text-sm text-nutria-bordo/50">Separe por virgula. Deixe em branco se nao houver.</p>
+              <h2 className="heading-serif text-2xl text-slate-900">Restricoes alimentares</h2>
+              <p className="text-sm text-slate-400">Separe por virgula. Deixe em branco se nao houver.</p>
               <div>
                 <Label>Restricoes dieteticas</Label>
                 <Input value={restrictions} onChange={(e) => setRestrictions(e.target.value)} placeholder="vegetariano, sem gluten..." className="mt-1.5" />
@@ -258,12 +258,12 @@ export default function OnboardingPage() {
               </Button>
             )}
             {step < STEPS.length - 1 ? (
-              <Button onClick={() => setStep(step + 1)} className="flex-1 bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl">
+              <Button onClick={() => setStep(step + 1)} className="flex-1 bg-green-600 hover:bg-green-600-light text-white rounded-xl">
                 Proximo
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={loading} className="flex-1 bg-nutria-verde hover:bg-nutria-verde-light text-white rounded-xl">
+              <Button onClick={handleSubmit} disabled={loading} className="flex-1 bg-green-600 hover:bg-green-600-light text-white rounded-xl">
                 {loading ? 'Salvando...' : 'Concluir'}
                 {!loading && <Check className="w-4 h-4 ml-2" />}
               </Button>

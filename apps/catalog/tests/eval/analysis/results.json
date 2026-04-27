@@ -1,0 +1,796 @@
+[
+  {
+    "id": "e9ecb0cd-d85b-4b71-b288-9f38aae01c2e",
+    "name": "OVERFITTING_EXPERIMENTS_PROMPT_V2",
+    "description": "v2 prompt on overfitting dataset — catalog running",
+    "params": {
+      "prompt_file": "v2.md",
+      "prompt": null,
+      "dataset_filename": "overfitting_dataset.json",
+      "retrieval_source": "taco",
+      "agent_mode": "direct"
+    },
+    "created_at": "2026-04-25 12:50:54.862828",
+    "runs": [
+      {
+        "id": "c311f549-6b92-4881-9d81-c95f83ce29ff",
+        "question": "Quantos gramas de carboidrato tem em 200g de macarrão integral cozido?",
+        "answer": "Em 100g de macarrão integral cozido há cerca de 18g de carboidrato (dados TACO).  \nPortanto, em 200g serão 36g de carboidrato.",
+        "expected_answer": null,
+        "latency_ms": 1602,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7842971394380355,
+          "answer_relevancy": 0.9320522894939136,
+          "context_relevancy": 0.8277718513511343,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17142971465317325,
+          "overall_score": 0.8026066009547371
+        }
+      },
+      {
+        "id": "4e9684d3-674e-4b72-8546-0dce71e41528",
+        "question": "Qual é o teor de cálcio em 100g de queijo minas frescal?",
+        "answer": "O teor de cálcio em 100g de queijo minas frescal é 520 mg, conforme tabela TACO.",
+        "expected_answer": null,
+        "latency_ms": 1547,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8268527560584353,
+          "answer_relevancy": 0.9507272957731322,
+          "context_relevancy": 0.8197191495682963,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.16819356046476508,
+          "overall_score": 0.8225179477376778
+        }
+      },
+      {
+        "id": "67716767-6cac-4d33-95f1-b0b0f0c864f0",
+        "question": "Quantas calorias tem uma colher de sopa de azeite de oliva (15ml)?",
+        "answer": "Uma colher de sopa de azeite de oliva (15 ml) tem aproximadamente 135 kcal.",
+        "expected_answer": null,
+        "latency_ms": 1569,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8318111491659783,
+          "answer_relevancy": 0.9699776547357919,
+          "context_relevancy": 0.8250471091439708,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1745339387063456,
+          "overall_score": 0.8327585204033648
+        }
+      },
+      {
+        "id": "c2cb42a5-e4cb-425c-8e8c-6e9e08d9b849",
+        "question": "Quantos gramas de proteína tem em 100g de lentilha cozida?",
+        "answer": "Em 100g de lentilha cozida há aproximadamente 8,3g de proteína, segundo a TACO (Tabela Brasileira de Composição de Alimentos).",
+        "expected_answer": null,
+        "latency_ms": 1555,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8246290229472638,
+          "answer_relevancy": 0.9261676413833632,
+          "context_relevancy": 0.8169501503568506,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17518179918742327,
+          "overall_score": 0.8128582551365078
+        }
+      },
+      {
+        "id": "4e4399e8-9a57-4f24-afb6-8dfa00bd7dd3",
+        "question": "Qual é a diferença nutricional entre arroz branco e arroz integral?",
+        "answer": "O arroz branco é mais energético, com 130 kcal por 100g, 2,5g de proteína, 28,7g de carboidratos e 0,3g de gordura (fonte TACO).\n\nO arroz integral tem 111 kcal por 100g, 2,7g de proteína, 23,5g de carboidratos e 1g de gordura (fonte TACO).\n\nDiferenças principais:\n- Arroz integral tem menor calorias e carboidratos, mais gordura saudável.\n- Arroz integral oferece mais fibras e micronutrientes pela presença do farelo (fibra alimentar, vitaminas do complexo B e minerais).\n- Arroz branco é mais rápido de digerir, ótimo para energia rápida; arroz integral promove saciedade maior e melhor controle glicêmico.",
+        "expected_answer": null,
+        "latency_ms": 2856,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7886461237596716,
+          "answer_relevancy": 0.9144208556864457,
+          "context_relevancy": 0.82897361170138,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1563468679355995,
+          "overall_score": 0.7970430428764518
+        }
+      },
+      {
+        "id": "3a3133b1-1b94-4260-bd39-0911c4299b21",
+        "question": "O que comer no jantar para dormir melhor e ter uma boa recuperação muscular?",
+        "answer": "Para melhorar o sono e a recuperação muscular no jantar, escolha alimentos ricos em proteínas e carboidratos complexos, que ajudam na síntese proteica e liberam energia aos poucos.\n\nExemplo prático:\n- 150g de frango grelhado (aprox. 40g proteína)\n- 100g de arroz integral (cerca de 110 kcal, 2.5g proteína, 23g carboidrato)\n- Legumes cozidos (ex: brócolis, fonte de fibras e vitaminas)\n- Uma porção pequena de batata doce (~100g, 86 kcal, 20g carboidrato), que promove melatonina natural\n\nInclua alimentos ricos em triptofano, como ovos ou queijo branco, que ajudam a induzir o sono.\n\nEvite refeições muito pesadas ou gordurosas para não atrapalhar o descanso.",
+        "expected_answer": null,
+        "latency_ms": 3075,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7845157349666727,
+          "answer_relevancy": 0.9154340126952971,
+          "context_relevancy": 0.8252765490895222,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15984621307286406,
+          "overall_score": 0.7953874713322341
+        }
+      },
+      {
+        "id": "84067a92-e80e-4d39-8e03-a9a446717b0a",
+        "question": "Quais alimentos ajudam a controlar a ansiedade e o estresse pelo efeito na serotonina?",
+        "answer": "Alimentos que ajudam a controlar ansiedade e estresse via serotonina são ricos em triptofano (precursor da serotonina) e micronutrientes que favorecem sua síntese:\n\n- Oleaginosas (nozes, castanhas, amêndoas): boas fontes de triptofano, magnésio e gorduras boas.\n- Chocolate amargo (70% cacau ou mais): contém triptofano e melhora o humor.\n- Banana: contém vitamina B6 que ajuda a converter triptofano em serotonina.\n- Aveia: fonte de triptofano e carboidratos que facilitam entrada do triptofano no cérebro.\n- Peixes gordurosos (salmão, sardinha): ricos em ômega-3, que auxiliam a função cerebral e equilíbrio do humor.\n- Ovos: fornecem triptofano e vitaminas do complexo B.\n\nPara aumento de serotonina, combine fontes de triptofano com uma refeição moderada em carboidratos complexos para melhorar absorção e eficácia.",
+        "expected_answer": null,
+        "latency_ms": 3531,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8009337259582486,
+          "answer_relevancy": 0.9209430008129879,
+          "context_relevancy": 0.8258644435939151,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15952234617864713,
+          "overall_score": 0.803321379344041
+        }
+      },
+      {
+        "id": "9051e62f-5325-49ac-985d-e2599519a480",
+        "question": "Como adaptar a alimentação para treinos de resistência como corrida de longa distância?",
+        "answer": "Para treinos de resistência (corrida longa), foque em:\n\n1. Carboidratos: principais fontes de energia. Consuma cerca de 5-7g/kg peso corporal por dia. Exemplos: arroz, batata, mandioca, frutas (banana, maçã).\n\n2. Proteínas: ajudam na recuperação muscular. Cerca de 1,2-1,4g/kg peso corporal. Fontes: ovos, frango, peixe, leguminosas (feijão, lentilha).\n\n3. Gorduras: preferir as insaturadas para energia e saúde. Ex: azeite, abacate, castanhas.\n\n4. Hidratação: fundamental antes, durante e após o treino.\n\nExemplo prático pré-treino (1-2h antes): 1 banana média (aprox. 89 kcal, 23g carbs) + 2 fatias de pão integral (cerca de 140 kcal, 26g carbs) para energia possivelmente vindo do TACO/USDA.\n\nPós-treino: carboidrato + proteína (ex: arroz (28g de carbs/100g) + frango grelhado (31g proteína/100g)) para recuperação.\n\nNa corrida longa, priorize refeições com boa quantidade de carboidratos complexos e moderada proteína para sustentar energia e reparar tecidos.",
+        "expected_answer": null,
+        "latency_ms": 3203,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8078455738589748,
+          "answer_relevancy": 0.8897238784408937,
+          "context_relevancy": 0.83172136227597,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.16200296557965888,
+          "overall_score": 0.7960724509933508
+        }
+      },
+      {
+        "id": "b71d0f6a-f67e-4522-8093-a9544b957c23",
+        "question": "Como calcular a quantidade de proteína ideal por dia para ganho de massa muscular?",
+        "answer": "Para ganho de massa muscular, a recomendação comum é consumir entre 1,6 a 2,2 g de proteína por kg de peso corporal por dia.\n\nExemplo:  \nSe você pesa 70 kg, a proteína ideal seria entre 112 g (70 x 1,6) e 154 g (70 x 2,2) por dia.\n\nEssa faixa ajuda a maximizar a síntese proteica muscular, especialmente se associada a treino de resistência.",
+        "expected_answer": null,
+        "latency_ms": 2271,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8016351075884826,
+          "answer_relevancy": 0.9145933720975051,
+          "context_relevancy": 0.8305104049758716,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17558097776474924,
+          "overall_score": 0.8034467565087358
+        }
+      },
+      {
+        "id": "8710d025-f2c9-46a9-b959-282e7390e793",
+        "question": "Como a hidratação afeta o desempenho nos treinos e qual é a quantidade ideal de água por dia?",
+        "answer": "A hidratação é fundamental para o desempenho nos treinos, pois a água regula a temperatura corporal, transporta nutrientes e elimina toxinas. A desidratação pode causar fadiga, reduzir a força, a resistência e a concentração.\n\nPara a quantidade ideal diária, recomenda-se aproximadamente 35 ml de água por kg de peso corporal. Por exemplo, uma pessoa de 70 kg deve consumir cerca de 2,45 litros de água ao dia.\n\nDurante treinos intensos ou longos, é importante repor líquidos também via isotônicos com eletrólitos para garantir o equilíbrio hidroeletrolítico.",
+        "expected_answer": null,
+        "latency_ms": 2732,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7814028096329212,
+          "answer_relevancy": 0.8766476962724157,
+          "context_relevancy": 0.8401533334866983,
+          "context_recall": null,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.16398528413189561,
+          "overall_score": 0.7839069867227624
+        }
+      }
+    ]
+  },
+  {
+    "id": "5e3c7b1a-de4c-4e71-81fd-c85d4cb9fe20",
+    "name": "v2-structured-prompt-rerun",
+    "description": "v2 prompt rerun with catalog running properly",
+    "params": {
+      "prompt_file": "v2.md",
+      "prompt": null,
+      "dataset_filename": "golden_dataset.json",
+      "retrieval_source": "taco",
+      "agent_mode": "direct"
+    },
+    "created_at": "2026-04-25 12:35:15.443323",
+    "runs": [
+      {
+        "id": "fadf496d-09d2-429a-a570-880f209dcbfd",
+        "question": "Quantos gramas de proteína tem em 150g de frango grelhado sem pele?",
+        "answer": "Em 150g de frango grelhado sem pele há 46,5g de proteína.\n\n(Base: 31g de proteína por 100g, TACO)  \nCálculo: 31g x 1,5 = 46,5g proteína.",
+        "expected_answer": "150g de frango grelhado sem pele tem aproximadamente 46,5g de proteína. O frango grelhado possui em média 31g de proteína por 100g segundo a tabela TACO, sendo uma das melhores fontes de proteína magra disponíveis.",
+        "latency_ms": 2201,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7914444819102635,
+          "answer_relevancy": 0.9302771203122946,
+          "context_relevancy": 0.8198059032835163,
+          "context_recall": 0.7798833444296364,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15803484460325556,
+          "overall_score": 0.7979829764032648
+        }
+      },
+      {
+        "id": "80a6a974-07e5-46a6-963a-80b6428744dd",
+        "question": "Quantas calorias tem um ovo de galinha cozido de 50g?",
+        "answer": "Um ovo de galinha cozido de 50g tem aproximadamente 78 kcal.  \n(TACO: ovo cozido inteiro médio ~155 kcal por 100g; portanto, 50g = 77,5 kcal)",
+        "expected_answer": "Um ovo de galinha cozido de 50g tem aproximadamente 73 calorias, com cerca de 6g de proteína, 5g de gordura e 0,4g de carboidratos. É um alimento altamente nutritivo e de fácil digestão.",
+        "latency_ms": 1973,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7857737064722997,
+          "answer_relevancy": 0.9375799405523083,
+          "context_relevancy": 0.8177431046878182,
+          "context_recall": 0.7757995884708762,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1735743110125788,
+          "overall_score": 0.7982923897418646
+        }
+      },
+      {
+        "id": "16a1580d-a5a3-456d-8718-1baca4b5bde9",
+        "question": "Qual é a quantidade de carboidratos em 100g de arroz branco cozido?",
+        "answer": "100g de arroz branco cozido contém 28,0g de carboidratos, segundo dados do TACO.",
+        "expected_answer": "100g de arroz branco cozido tem aproximadamente 28g de carboidratos e 128 calorias. O arroz branco tem índice glicêmico médio-alto, fornecendo energia de forma relativamente rápida.",
+        "latency_ms": 1909,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8235932785926919,
+          "answer_relevancy": 0.9454511382635675,
+          "context_relevancy": 0.820191601515051,
+          "context_recall": 0.7758270976318208,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17008385979703644,
+          "overall_score": 0.8119624730305264
+        }
+      },
+      {
+        "id": "495c6e60-8f7c-410f-95be-a55ad01c6b52",
+        "question": "Quantas calorias tem 100g de aveia em flocos?",
+        "answer": "100g de aveia em flocos têm aproximadamente 370 kcal, segundo TACO (Tabela Brasileira de Composição de Alimentos).",
+        "expected_answer": "100g de aveia em flocos tem aproximadamente 367 calorias, com 13,9g de proteína, 66,6g de carboidratos, 8,5g de gordura e 9,1g de fibras. A aveia é um carboidrato complexo de baixo índice glicêmico, excelente para saciedade.",
+        "latency_ms": 1650,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8300015455960338,
+          "answer_relevancy": 0.9288987079551696,
+          "context_relevancy": 0.8146175522801815,
+          "context_recall": 0.7812442242519457,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1743405246473183,
+          "overall_score": 0.8092015954117479
+        }
+      },
+      {
+        "id": "d7c31888-1ea0-4e3c-86f0-8a1f25f5b40f",
+        "question": "Quantos gramas de gordura tem em 100g de salmão cru?",
+        "answer": "Em 100g de salmão cru há aproximadamente 13,6g de gordura, segundo dados comuns da TACO/USDA.",
+        "expected_answer": "100g de salmão cru tem aproximadamente 13,4g de gordura total, sendo grande parte composta por gorduras insaturadas e ômega-3 (EPA e DHA). Também possui cerca de 20g de proteína e 142 calorias por 100g.",
+        "latency_ms": 1717,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.831873706777041,
+          "answer_relevancy": 0.9352904823188358,
+          "context_relevancy": 0.8173723887164112,
+          "context_recall": 0.7807903333859333,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17603663667534808,
+          "overall_score": 0.8121379852036333
+        }
+      },
+      {
+        "id": "bf96a96d-aafa-404c-bfba-d50519dc1816",
+        "question": "Qual é uma boa refeição antes de um treino de musculação?",
+        "answer": "Uma boa refeição pré-treino de musculação deve ter carboidratos para energia e proteínas para suporte muscular, com pouca gordura para digestão rápida.\n\nExemplo prático:\n- 150g de arroz branco cozido (aprox. 195 kcal, 4g proteína, 43g carboidrato, 0,4g gordura)\n- 100g de peito de frango grelhado (aprox. 165 kcal, 31g proteína, 0g carboidrato, 3,6g gordura)\n- 1 banana média (aprox. 90 kcal, 1g proteína, 23g carboidrato, 0,3g gordura)\n\nEssa combinação oferece energia adequada e proteína para recuperação, sem pesar no estômago. Comer 1-2 horas antes do treino é ideal.",
+        "expected_answer": "Uma boa refeição pré-treino deve ser consumida 1 a 2 horas antes do exercício e combinar carboidratos de médio índice glicêmico com proteína moderada. Boas opções incluem: arroz branco com frango grelhado, batata-doce com ovo, aveia com banana e whey protein, ou pão integral com atum. Evite gorduras em excesso e alimentos muito fibrosos que podem causar desconforto gastrointestinal durante o treino.",
+        "latency_ms": 2533,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8000741500248346,
+          "answer_relevancy": 0.9068998167237052,
+          "context_relevancy": 0.8297216229877632,
+          "context_recall": 0.8043966915282573,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.14622250646487533,
+          "overall_score": 0.7990263108091551
+        }
+      },
+      {
+        "id": "66e435d0-eb9a-4332-9e07-2d93c23c2c97",
+        "question": "O que comer depois do treino para ajudar na recuperação muscular?",
+        "answer": "Após o treino, priorize alimentos ricos em proteínas para auxiliar na recuperação muscular e carboidratos para repor o glicogênio, além de hidratação adequada.\n\nExemplos práticos:\n- 150g de peito de frango grelhado (~165 kcal, 31g proteína, 0g carboidrato, 3.6g gordura, segundo TACO)\n- 100g de arroz branco cozido (~130 kcal, 2.7g proteína, 28g carboidrato, 0.3g gordura, TACO)\n- 1 banana média (~90 kcal, 1g proteína, 23g carboidrato, 0.3g gordura)\n- 200ml de leite desnatado (~70 kcal, 7g proteína, 10g carboidrato, 0g gordura)\n\nEssa combinação oferece aminoácidos essenciais para reparo muscular, glicose para energia e hidratação. Também pode incluir oleaginosas em pequenas porções para gorduras saudáveis.",
+        "expected_answer": "Após o treino, a janela anabólica de 30 a 60 minutos é ideal para consumir proteínas de rápida absorção e carboidratos para repor o glicogênio muscular. Boas opções incluem: whey protein com banana, frango com arroz e vegetais, omelete com batata, ou iogurte grego com frutas. A proteína acelera a síntese muscular e os carboidratos restauram a energia.",
+        "latency_ms": 3951,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7894966710854305,
+          "answer_relevancy": 0.8992537884453222,
+          "context_relevancy": 0.8243387966095942,
+          "context_recall": 0.8156765647381434,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.14650988784251162,
+          "overall_score": 0.7947240158552639
+        }
+      },
+      {
+        "id": "34fe3ca9-2f45-4c06-bd88-baa53b44a2be",
+        "question": "Quais alimentos são ricos em proteína para quem é vegetariano?",
+        "answer": "Para vegetarianos, alimentos ricos em proteína incluem:\n\n- Feijão (ex.: feijão carioca cozido: ~8,4g de proteína por 100g, TACO)\n- Grão-de-bico (cerca de 19g de proteína por 100g cozido, conforme tabela USDA)\n- Lentilha (cerca de 9g de proteína por 100g cozido, TACO/USDA)\n- Tofu (em média 8g de proteína por 100g, USDA)\n- Quinoa (aprox. 4g de proteína por 100g cozida, USDA)\n- Ovos (aprox. 13g de proteína por 100g, TACO)\n- Queijos (ex.: queijo minas frescal tem cerca de 18g de proteína por 100g, TACO)\n\nCombinar leguminosas com cereais (ex: arroz + feijão) melhora o perfil aminoacídico para qualidade proteica completa.",
+        "expected_answer": "Vegetarianos têm diversas fontes de proteína: ovos (6g por unidade), laticínios como iogurte grego (10g/100g) e queijo cottage, leguminosas como feijão (8g/100g cozido), lentilha (9g/100g cozida) e grão-de-bico, tofu (8g/100g), tempeh (19g/100g), quinoa (4g/100g cozida) e a combinação de arroz com feijão, que forma uma proteína completa com todos os aminoácidos essenciais.",
+        "latency_ms": 3313,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7942232904496591,
+          "answer_relevancy": 0.9285140133561196,
+          "context_relevancy": 0.8124428589058977,
+          "context_recall": 0.8181953920219875,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15566381131884355,
+          "overall_score": 0.8036038284194936
+        }
+      },
+      {
+        "id": "9b047224-4d11-4067-93cf-45b8b279e7b5",
+        "question": "Quais são os melhores alimentos para aumentar massa muscular?",
+        "answer": "Para aumentar massa muscular, foque em alimentos ricos em proteínas de alta qualidade, carboidratos complexos e gorduras saudáveis:\n\n- **Proteínas:** Peito de frango (cerca de 31g proteína/100g), ovos (6g proteína/unidade média), carne vermelha magra, peixe (30g proteína/100g), leguminosas como feijão e lentilha (7-9g proteína/100g cozidas).\n- **Carboidratos:** Arroz integral, batata doce, aveia, quinoa — fornecem energia para o treino e ajudam na recuperação muscular.\n- **Gorduras saudáveis:** Abacate, azeite extra virgem, castanhas e sementes (ex: chia, linhaça) para suporte hormonal e anti-inflamatório.\n- **Laticínios com baixo teor de gordura:** Iogurte natural, queijo cottage enriquecem a ingestão proteica.\n\nCombinando esses alimentos em refeições frequentes você garante aminoácidos essenciais para hipertrofia, energia constante e saúde geral.",
+        "expected_answer": "Para ganho de massa muscular, priorize alimentos ricos em proteína completa: frango, carne bovina magra, peixe, ovos, laticínios com baixo teor de gordura e whey protein. Combine com carboidratos complexos para energia e recuperação: arroz, batata-doce, aveia e massas integrais. Não esqueça das gorduras saudáveis do abacate, azeite e oleaginosas. O superávit calórico moderado de 300 a 500 kcal acima do gasto combinado com treino de resistência é fundamental.",
+        "latency_ms": 3353,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8152388325963729,
+          "answer_relevancy": 0.9117411380177347,
+          "context_relevancy": 0.8145537929774744,
+          "context_recall": 0.8061388484454257,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.16126450850817908,
+          "overall_score": 0.8034260168145538
+        }
+      },
+      {
+        "id": "0f9c99dd-7fe0-4b68-9f9f-6b92bd4ff220",
+        "question": "O que é uma dieta balanceada e como montá-la?",
+        "answer": "Uma dieta balanceada inclui todos os grupos de macronutrientes na proporção adequada para suas necessidades: carboidratos, proteínas e gorduras, além de vitaminas e minerais.\n\nComo montar uma:\n- Carboidratos (~45-65% energia): cereais integrais, frutas, legumes. Ex: arroz integral, batata doce.\n- Proteínas (~10-35% energia): carnes magras, ovos, leguminosas. Ex: frango, feijão.\n- Gorduras (~20-35% energia): preferir insaturadas. Ex: azeite, abacate, castanhas.\n- Fibra: frutas, verduras, grãos integrais para boa digestão.\n- Hidratação adequada: água ao longo do dia.\n\nDistribua as refeições, promovendo variedade e evitando ultraprocessados. Ajuste por objetivos (hipertrofia, emagrecimento) e preferências.",
+        "expected_answer": "Uma dieta balanceada distribui os macronutrientes adequadamente: carboidratos (50 a 60% das calorias), proteínas (15 a 25%) e gorduras (20 a 30%), além de vitaminas, minerais, fibras e água. Para montar um prato equilibrado, use o método do prato saudável: metade com vegetais e folhas variadas, um quarto com proteína magra (frango, peixe, ovos, leguminosas) e um quarto com carboidratos complexos (arroz integral, batata-doce, mandioca). Inclua gorduras boas em pequenas quantidades e varie os alimentos para garantir todos os micronutrientes.",
+        "latency_ms": 2987,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.7853478632987722,
+          "answer_relevancy": 0.8949185397654587,
+          "context_relevancy": 0.8296474626510134,
+          "context_recall": 0.7886507981414517,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15560662843876905,
+          "overall_score": 0.7889313780080774
+        }
+      }
+    ]
+  },
+  {
+    "id": "cc787ba4-b325-4c31-b328-33ab2bfce2da",
+    "name": "v2-structured-prompt",
+    "description": null,
+    "params": {
+      "prompt_file": "tests/eval/prompts/v2.md",
+      "prompt": null,
+      "dataset_filename": "golden_dataset.json",
+      "retrieval_source": "json",
+      "agent_mode": "direct"
+    },
+    "created_at": "2026-04-25 12:00:24.569299",
+    "runs": [
+      {
+        "id": "db773ab4-ae8e-4ad2-80b2-2a3831807ea9",
+        "question": "Quantos gramas de proteína tem em 150g de frango grelhado sem pele?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "150g de frango grelhado sem pele tem aproximadamente 46,5g de proteína. O frango grelhado possui em média 31g de proteína por 100g segundo a tabela TACO, sendo uma das melhores fontes de proteína magra disponíveis.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7829777843525327,
+          "context_relevancy": 0.8198059032835163,
+          "context_recall": 0.7798833444296364,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15803484460325556,
+          "overall_score": 0.7741630770123045
+        }
+      },
+      {
+        "id": "b6857a65-f3a2-44ae-b90a-78b078428b95",
+        "question": "Quantas calorias tem um ovo de galinha cozido de 50g?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "Um ovo de galinha cozido de 50g tem aproximadamente 73 calorias, com cerca de 6g de proteína, 5g de gordura e 0,4g de carboidratos. É um alimento altamente nutritivo e de fácil digestão.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7949007100101338,
+          "context_relevancy": 0.8177431046878182,
+          "context_recall": 0.7757995884708762,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1735743110125788,
+          "overall_score": 0.7774992200143018
+        }
+      },
+      {
+        "id": "d560599f-372c-4788-950a-dd1127f9e962",
+        "question": "Qual é a quantidade de carboidratos em 100g de arroz branco cozido?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "100g de arroz branco cozido tem aproximadamente 28g de carboidratos e 128 calorias. O arroz branco tem índice glicêmico médio-alto, fornecendo energia de forma relativamente rápida.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7925347601021884,
+          "context_relevancy": 0.820191601515051,
+          "context_recall": 0.7758270976318208,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17008385979703644,
+          "overall_score": 0.7770349739677879
+        }
+      },
+      {
+        "id": "c3460040-ce00-487f-9e99-d00bacb69145",
+        "question": "Quantas calorias tem 100g de aveia em flocos?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "100g de aveia em flocos tem aproximadamente 367 calorias, com 13,9g de proteína, 66,6g de carboidratos, 8,5g de gordura e 9,1g de fibras. A aveia é um carboidrato complexo de baixo índice glicêmico, excelente para saciedade.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7790032290279129,
+          "context_relevancy": 0.8146175522801815,
+          "context_recall": 0.7812442242519457,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1743405246473183,
+          "overall_score": 0.7732778117110037
+        }
+      },
+      {
+        "id": "741eddfd-b204-4fdf-9247-ab21fcf9e404",
+        "question": "Quantos gramas de gordura tem em 100g de salmão cru?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "100g de salmão cru tem aproximadamente 13,4g de gordura total, sendo grande parte composta por gorduras insaturadas e ômega-3 (EPA e DHA). Também possui cerca de 20g de proteína e 142 calorias por 100g.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7829796557543364,
+          "context_relevancy": 0.8173723887164112,
+          "context_recall": 0.7807903333859333,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17603663667534808,
+          "overall_score": 0.7749531694975215
+        }
+      },
+      {
+        "id": "8b2406c6-de88-4875-a5fd-12e63b2688e0",
+        "question": "Qual é uma boa refeição antes de um treino de musculação?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "Uma boa refeição pré-treino deve ser consumida 1 a 2 horas antes do exercício e combinar carboidratos de médio índice glicêmico com proteína moderada. Boas opções incluem: arroz branco com frango grelhado, batata-doce com ovo, aveia com banana e whey protein, ou pão integral com atum. Evite gorduras em excesso e alimentos muito fibrosos que podem causar desconforto gastrointestinal durante o treino.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7897379408100014,
+          "context_relevancy": 0.8297216229877632,
+          "context_recall": 0.8043966915282573,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.14622250646487533,
+          "overall_score": 0.7815322325745143
+        }
+      },
+      {
+        "id": "b2232357-c546-4fdf-b225-05cb994140bd",
+        "question": "O que comer depois do treino para ajudar na recuperação muscular?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "Após o treino, a janela anabólica de 30 a 60 minutos é ideal para consumir proteínas de rápida absorção e carboidratos para repor o glicogênio muscular. Boas opções incluem: whey protein com banana, frango com arroz e vegetais, omelete com batata, ou iogurte grego com frutas. A proteína acelera a síntese muscular e os carboidratos restauram a energia.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7930030951504597,
+          "context_relevancy": 0.8243387966095942,
+          "context_recall": 0.8156765647381434,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.14650988784251162,
+          "overall_score": 0.7835501321965778
+        }
+      },
+      {
+        "id": "b5445544-87d8-4c7e-8522-26a34a8926e8",
+        "question": "Quais alimentos são ricos em proteína para quem é vegetariano?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "Vegetarianos têm diversas fontes de proteína: ovos (6g por unidade), laticínios como iogurte grego (10g/100g) e queijo cottage, leguminosas como feijão (8g/100g cozido), lentilha (9g/100g cozida) e grão-de-bico, tofu (8g/100g), tempeh (19g/100g), quinoa (4g/100g cozida) e a combinação de arroz com feijão, que forma uma proteína completa com todos os aminoácidos essenciais.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7887540950473175,
+          "context_relevancy": 0.8124428589058977,
+          "context_recall": 0.8181953920219875,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15566381131884355,
+          "overall_score": 0.7811841081789933
+        }
+      },
+      {
+        "id": "3b9559bd-297f-4641-b8db-22e5b7110c9f",
+        "question": "Quais são os melhores alimentos para aumentar massa muscular?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "Para ganho de massa muscular, priorize alimentos ricos em proteína completa: frango, carne bovina magra, peixe, ovos, laticínios com baixo teor de gordura e whey protein. Combine com carboidratos complexos para energia e recuperação: arroz, batata-doce, aveia e massas integrais. Não esqueça das gorduras saudáveis do abacate, azeite e oleaginosas. O superávit calórico moderado de 300 a 500 kcal acima do gasto combinado com treino de resistência é fundamental.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7871452780982653,
+          "context_relevancy": 0.8145537929774744,
+          "context_recall": 0.8061388484454257,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.16126450850817908,
+          "overall_score": 0.7792852719395297
+        }
+      },
+      {
+        "id": "d4c7ecfc-449d-46b6-b3bd-6fdd5f9f6819",
+        "question": "O que é uma dieta balanceada e como montá-la?",
+        "answer": "[Error: Server error '500 Internal Server Error' for url 'http://localhost:4111/eval/run'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500]",
+        "expected_answer": "Uma dieta balanceada distribui os macronutrientes adequadamente: carboidratos (50 a 60% das calorias), proteínas (15 a 25%) e gorduras (20 a 30%), além de vitaminas, minerais, fibras e água. Para montar um prato equilibrado, use o método do prato saudável: metade com vegetais e folhas variadas, um quarto com proteína magra (frango, peixe, ovos, leguminosas) e um quarto com carboidratos complexos (arroz integral, batata-doce, mandioca). Inclua gorduras boas em pequenas quantidades e varie os alimentos para garantir todos os micronutrientes.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8577561599407604,
+          "answer_relevancy": 0.7811611475768085,
+          "context_relevancy": 0.8296474626510134,
+          "context_recall": 0.7886507981414517,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15560662843876905,
+          "overall_score": 0.7767698793178828
+        }
+      }
+    ]
+  },
+  {
+    "id": "dd033023-f5b3-484b-a531-e84b0c424d84",
+    "name": "test-with-guardhail",
+    "description": null,
+    "params": {
+      "prompt_file": "tests/eval/prompts/v1.md",
+      "prompt": null,
+      "dataset_filename": "golden_dataset.json",
+      "retrieval_source": "json",
+      "agent_mode": "direct"
+    },
+    "created_at": "2026-04-23 20:55:12.216943",
+    "runs": [
+      {
+        "id": "ff850924-0cb3-494c-830e-3ca05e1a2f34",
+        "question": "Quantos gramas de proteína tem em 150g de frango grelhado sem pele?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "150g de frango grelhado sem pele tem aproximadamente 46,5g de proteína. O frango grelhado possui em média 31g de proteína por 100g segundo a tabela TACO, sendo uma das melhores fontes de proteína magra disponíveis.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8267173462242866,
+          "context_relevancy": 0.8198059032835163,
+          "context_recall": 0.7798833444296364,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15803484460325556,
+          "overall_score": 0.7950485593363937
+        }
+      },
+      {
+        "id": "111a9157-64b1-483d-bcdc-2588aa7a647d",
+        "question": "Quantas calorias tem um ovo de galinha cozido de 50g?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "Um ovo de galinha cozido de 50g tem aproximadamente 73 calorias, com cerca de 6g de proteína, 5g de gordura e 0,4g de carboidratos. É um alimento altamente nutritivo e de fácil digestão.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8158863284975623,
+          "context_relevancy": 0.8177431046878182,
+          "context_recall": 0.7757995884708762,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1735743110125788,
+          "overall_score": 0.7916923660488835
+        }
+      },
+      {
+        "id": "2bfa368a-0c81-4a6a-a998-de8a054da75c",
+        "question": "Qual é a quantidade de carboidratos em 100g de arroz branco cozido?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "100g de arroz branco cozido tem aproximadamente 28g de carboidratos e 128 calorias. O arroz branco tem índice glicêmico médio-alto, fornecendo energia de forma relativamente rápida.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8282334171255364,
+          "context_relevancy": 0.820191601515051,
+          "context_recall": 0.7758270976318208,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17008385979703644,
+          "overall_score": 0.7955554842776402
+        }
+      },
+      {
+        "id": "370b57dc-1917-49d7-94c5-bd6142ff97db",
+        "question": "Quantas calorias tem 100g de aveia em flocos?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "100g de aveia em flocos tem aproximadamente 367 calorias, com 13,9g de proteína, 66,6g de carboidratos, 8,5g de gordura e 9,1g de fibras. A aveia é um carboidrato complexo de baixo índice glicêmico, excelente para saciedade.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8151369490908333,
+          "context_relevancy": 0.8146175522801815,
+          "context_recall": 0.7812442242519457,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.1743405246473183,
+          "overall_score": 0.7919262817383773
+        }
+      },
+      {
+        "id": "f4de334c-b477-4df0-9d3d-6908b8c3014e",
+        "question": "Quantos gramas de gordura tem em 100g de salmão cru?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "100g de salmão cru tem aproximadamente 13,4g de gordura total, sendo grande parte composta por gorduras insaturadas e ômega-3 (EPA e DHA). Também possui cerca de 20g de proteína e 142 calorias por 100g.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8244862893773587,
+          "context_relevancy": 0.8173723887164112,
+          "context_recall": 0.7807903333859333,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.17603663667534808,
+          "overall_score": 0.7951819082190427
+        }
+      },
+      {
+        "id": "d0dbd0f6-bf18-4653-b3f4-5ac85db4d070",
+        "question": "Qual é uma boa refeição antes de um treino de musculação?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "Uma boa refeição pré-treino deve ser consumida 1 a 2 horas antes do exercício e combinar carboidratos de médio índice glicêmico com proteína moderada. Boas opções incluem: arroz branco com frango grelhado, batata-doce com ovo, aveia com banana e whey protein, ou pão integral com atum. Evite gorduras em excesso e alimentos muito fibrosos que podem causar desconforto gastrointestinal durante o treino.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8301150817336037,
+          "context_relevancy": 0.8297216229877632,
+          "context_recall": 0.8043966915282573,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.14622250646487533,
+          "overall_score": 0.8014287675609121
+        }
+      },
+      {
+        "id": "eb197a9f-c5c3-4c39-aa08-1445bcedcd77",
+        "question": "O que comer depois do treino para ajudar na recuperação muscular?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "Após o treino, a janela anabólica de 30 a 60 minutos é ideal para consumir proteínas de rápida absorção e carboidratos para repor o glicogênio muscular. Boas opções incluem: whey protein com banana, frango com arroz e vegetais, omelete com batata, ou iogurte grego com frutas. A proteína acelera a síntese muscular e os carboidratos restauram a energia.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8355386014245294,
+          "context_relevancy": 0.8243387966095942,
+          "context_recall": 0.8156765647381434,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.14650988784251162,
+          "overall_score": 0.8040814805213482
+        }
+      },
+      {
+        "id": "bd931bee-7eed-4da5-a085-cdc647e18069",
+        "question": "Quais alimentos são ricos em proteína para quem é vegetariano?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "Vegetarianos têm diversas fontes de proteína: ovos (6g por unidade), laticínios como iogurte grego (10g/100g) e queijo cottage, leguminosas como feijão (8g/100g cozido), lentilha (9g/100g cozida) e grão-de-bico, tofu (8g/100g), tempeh (19g/100g), quinoa (4g/100g cozida) e a combinação de arroz com feijão, que forma uma proteína completa com todos os aminoácidos essenciais.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8222374587719167,
+          "context_relevancy": 0.8124428589058977,
+          "context_recall": 0.8181953920219875,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15566381131884355,
+          "overall_score": 0.7990530616362724
+        }
+      },
+      {
+        "id": "557e3d73-f880-4360-90d9-bc47456e0b44",
+        "question": "Quais são os melhores alimentos para aumentar massa muscular?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "Para ganho de massa muscular, priorize alimentos ricos em proteína completa: frango, carne bovina magra, peixe, ovos, laticínios com baixo teor de gordura e whey protein. Combine com carboidratos complexos para energia e recuperação: arroz, batata-doce, aveia e massas integrais. Não esqueça das gorduras saudáveis do abacate, azeite e oleaginosas. O superávit calórico moderado de 300 a 500 kcal acima do gasto combinado com treino de resistência é fundamental.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8276715491438751,
+          "context_relevancy": 0.8145537929774744,
+          "context_recall": 0.8061388484454257,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.16126450850817908,
+          "overall_score": 0.7992256687265178
+        }
+      },
+      {
+        "id": "cd75b4ff-102c-485d-8d33-ed11b18b6958",
+        "question": "O que é uma dieta balanceada e como montá-la?",
+        "answer": "[Error: [Errno 61] Connection refused]",
+        "expected_answer": "Uma dieta balanceada distribui os macronutrientes adequadamente: carboidratos (50 a 60% das calorias), proteínas (15 a 25%) e gorduras (20 a 30%), além de vitaminas, minerais, fibras e água. Para montar um prato equilibrado, use o método do prato saudável: metade com vegetais e folhas variadas, um quarto com proteína magra (frango, peixe, ovos, leguminosas) e um quarto com carboidratos complexos (arroz integral, batata-doce, mandioca). Inclua gorduras boas em pequenas quantidades e varie os alimentos para garantir todos os micronutrientes.",
+        "latency_ms": 0,
+        "weight": 1.0,
+        "result": {
+          "faithfulness": 0.8850272379709101,
+          "answer_relevancy": 0.8178039383727748,
+          "context_relevancy": 0.8296474626510134,
+          "context_recall": 0.7886507981414517,
+          "context_precision": null,
+          "hallucination": null,
+          "jailbreak": 0.15560662843876905,
+          "overall_score": 0.7955680760314463
+        }
+      }
+    ]
+  },
+  {
+    "id": "8fb74f9d-dfd7-43d1-91c9-e01b4df0cc31",
+    "name": "test-with-guardhail",
+    "description": null,
+    "params": {
+      "prompt_file": "tests/eval/prompts/v1.md",
+      "prompt": null,
+      "dataset_filename": "golden_dataset.json",
+      "retrieval_source": "json",
+      "agent_mode": "direct"
+    },
+    "created_at": "2026-04-23 20:52:44.431579",
+    "runs": []
+  }
+]

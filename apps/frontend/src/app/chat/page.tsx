@@ -73,22 +73,22 @@ const suggestionCards = [
     icon: Sparkles,
     title: 'Receitas saudaveis',
     description: 'Encontre receitas nutritivas e deliciosas para seu dia a dia',
-    color: 'from-nutria-verde/10 to-nutria-verde/5',
-    iconColor: 'text-nutria-verde',
+    color: 'from-green-600/10 to-green-600/5',
+    iconColor: 'text-green-600',
   },
   {
     icon: BookOpen,
     title: 'Analise nutricional',
     description: 'Descubra informacoes nutricionais dos seus alimentos',
-    color: 'from-nutria-laranja/10 to-nutria-laranja/5',
-    iconColor: 'text-nutria-laranja',
+    color: 'from-orange-500/10 to-orange-500/5',
+    iconColor: 'text-orange-600',
   },
   {
     icon: Target,
     title: 'Planeje suas metas',
     description: 'Crie um plano alimentar personalizado para seus objetivos',
-    color: 'from-nutria-bordo/10 to-nutria-bordo/5',
-    iconColor: 'text-nutria-bordo',
+    color: 'from-slate-900/10 to-slate-900/5',
+    iconColor: 'text-slate-900',
   },
 ];
 
@@ -123,15 +123,15 @@ function ToolSidebarItem({ part }: { part: ToolUIPart }) {
   const dot = (() => {
     if (state === 'output-available') return <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />;
     if (state === 'output-error') return <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />;
-    if (state === 'input-available') return <Clock className="w-3.5 h-3.5 text-nutria-laranja animate-pulse shrink-0" />;
-    return <Circle className="w-3.5 h-3.5 text-nutria-bordo/30 shrink-0" />;
+    if (state === 'input-available') return <Clock className="w-3.5 h-3.5 text-orange-600 animate-pulse shrink-0" />;
+    return <Circle className="w-3.5 h-3.5 text-slate-300 shrink-0" />;
   })();
 
   return (
-    <div className="rounded-lg border border-nutria-creme-dark bg-nutria-creme/60 px-2.5 py-2">
+    <div className="rounded-lg border border-gray-200 bg-gray-50/60 px-2.5 py-2">
       <div className="flex items-center gap-2">
         {dot}
-        <span className="text-xs text-nutria-bordo truncate">{name}</span>
+        <span className="text-xs text-slate-900 truncate">{name}</span>
       </div>
       {state === 'output-error' && part.errorText && (
         <p className="mt-1 text-[10px] text-red-500 truncate pl-5">{part.errorText}</p>
@@ -269,12 +269,12 @@ function ChatContent({ conversationId }: { conversationId: string }) {
 
   if (isPending) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nutria-creme">
+      <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
-          <div className="w-14 h-14 rounded-2xl bg-nutria-verde flex items-center justify-center animate-pulse-soft">
+          <div className="w-14 h-14 rounded-2xl bg-green-600 flex items-center justify-center animate-pulse-soft">
             <Leaf className="w-8 h-8 text-white" />
           </div>
-          <p className="text-sm text-nutria-bordo/50">Verificando autenticacao...</p>
+          <p className="text-sm text-slate-400">Verificando autenticacao...</p>
         </div>
       </div>
     );
@@ -282,8 +282,8 @@ function ChatContent({ conversationId }: { conversationId: string }) {
 
   if (!session) {
     return (
-      <div className="h-screen flex items-center justify-center bg-nutria-creme">
-        <p className="text-sm text-nutria-bordo/50 animate-fade-in">Redirecionando...</p>
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-sm text-slate-400 animate-fade-in">Redirecionando...</p>
       </div>
     );
   }
@@ -299,14 +299,14 @@ function ChatContent({ conversationId }: { conversationId: string }) {
       className={cn(
         'relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors duration-150',
         showToolSidebar
-          ? 'bg-nutria-verde/10 text-nutria-verde'
-          : 'text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-nutria-creme-dark',
+          ? 'bg-green-50 text-green-600'
+          : 'text-slate-400 hover:text-slate-900 hover:bg-gray-100',
       )}
     >
       <Wrench className="w-3.5 h-3.5" />
       Ferramentas
       {toolCalls.length > 0 && (
-        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-nutria-verde text-white text-[9px] flex items-center justify-center font-medium">
+        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-600 text-white text-[9px] flex items-center justify-center font-medium">
           {toolCalls.length}
         </span>
       )}
@@ -314,21 +314,21 @@ function ChatContent({ conversationId }: { conversationId: string }) {
   );
 
   return (
-    <div className="flex h-screen bg-nutria-creme">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0">
         <Header onNewConversation={handleNewConversation} rightAction={toolToggle} />
 
         {hasProfile === false && (
-          <div className="mx-4 mt-3 p-3 rounded-xl bg-nutria-laranja/10 border border-nutria-laranja/20 flex items-center gap-3">
-            <AlertCircle className="w-4 h-4 text-nutria-laranja shrink-0" />
-            <p className="text-sm text-nutria-bordo/80 flex-1">
+          <div className="mx-4 mt-3 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-3">
+            <AlertCircle className="w-4 h-4 text-orange-600 shrink-0" />
+            <p className="text-sm text-slate-900/80 flex-1">
               Voce ainda nao criou seu perfil nutricional. O assistente funcionara melhor com suas informacoes.
             </p>
             <Link
               href="/onboarding"
-              className="text-xs font-medium text-nutria-verde hover:text-nutria-verde-light whitespace-nowrap"
+              className="text-xs font-medium text-green-600 hover:text-green-600-light whitespace-nowrap"
             >
               Criar perfil →
             </Link>
@@ -340,34 +340,39 @@ function ChatContent({ conversationId }: { conversationId: string }) {
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {!hasMessages ? (
               /* Welcome screen */
-              <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full">
-                <div className="mb-14 text-center animate-slide-up">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-nutria-verde to-nutria-verde-light flex items-center justify-center mx-auto mb-6 shadow-lg shadow-nutria-verde/20">
-                    <Leaf className="w-10 h-10 text-white" />
+              <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-2xl mx-auto w-full">
+                <div className="mb-12 text-center animate-slide-up w-full">
+                  {/* Icon */}
+                  <div className="relative inline-flex mb-7">
+                    <div className="w-16 h-16 rounded-2xl gradient-health flex items-center justify-center shadow-lg shadow-green-600/25 animate-glow-pulse">
+                      <Leaf className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-400 border-2 border-white animate-pulse" />
                   </div>
-                  <h1 className="heading-serif text-3xl text-nutria-bordo mb-3">
+                  <h1 className="heading-serif text-4xl text-slate-900 mb-3 leading-tight">
                     Como posso ajudar hoje?
                   </h1>
-                  <p className="text-nutria-bordo/50 max-w-lg mx-auto leading-relaxed">
-                    Sou seu assistente de nutricao. Pergunte sobre receitas,
-                    planejamento alimentar ou envie uma foto para analise.
+                  <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+                    Pergunte sobre receitas, planejamento alimentar ou envie uma foto para análise.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
                   {suggestionCards.map((card, index) => {
                     const Icon = card.icon;
                     return (
                       <button
                         key={index}
                         onClick={() => handleSuggestionClick(card.description)}
-                        className={`p-5 rounded-2xl bg-gradient-to-br ${card.color} border border-white/60 text-left transition-[transform,box-shadow] duration-200 active:scale-[0.98] [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 animate-slide-up opacity-0 stagger-${index + 1}`}
+                        className={`group p-5 rounded-2xl bg-white border border-gray-100 text-left transition-all duration-200 hover:border-green-200 hover:shadow-md hover:shadow-green-600/5 hover:-translate-y-0.5 active:scale-[0.98] animate-slide-up opacity-0 stagger-${index + 1}`}
                       >
-                        <Icon className={`w-5 h-5 ${card.iconColor} mb-3`} />
-                        <h3 className="font-semibold text-nutria-bordo text-sm mb-1.5">
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-110`}>
+                          <Icon className={`w-4 h-4 ${card.iconColor}`} />
+                        </div>
+                        <h3 className="font-semibold text-slate-800 text-sm mb-1.5">
                           {card.title}
                         </h3>
-                        <p className="text-xs text-nutria-bordo/50 leading-relaxed">
+                        <p className="text-xs text-slate-400 leading-relaxed">
                           {card.description}
                         </p>
                       </button>
@@ -419,7 +424,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                                           tooltip="Resposta útil"
                                           onClick={() => handleFeedback(message.id, 'up')}
                                           className={cn(
-                                            feedback[message.id] === 'up' && 'text-nutria-verde',
+                                            feedback[message.id] === 'up' && 'text-green-600',
                                           )}
                                         >
                                           <ThumbsUp className="w-3.5 h-3.5" />
@@ -428,7 +433,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                                           tooltip="Resposta não útil"
                                           onClick={() => handleFeedback(message.id, 'down')}
                                           className={cn(
-                                            feedback[message.id] === 'down' && 'text-nutria-vermelho',
+                                            feedback[message.id] === 'down' && 'text-red-600',
                                           )}
                                         >
                                           <ThumbsDown className="w-3.5 h-3.5" />
@@ -481,7 +486,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                                 key={i}
                                 type="button"
                                 onClick={() => handleSuggestionClick(s)}
-                                className="px-3 py-1.5 text-xs text-nutria-bordo/70 bg-white border border-nutria-creme-dark rounded-full hover:bg-nutria-creme-dark hover:text-nutria-bordo transition-colors duration-150"
+                                className="px-3 py-1.5 text-xs text-slate-900/70 bg-white border border-gray-200 rounded-full hover:bg-gray-100 hover:text-slate-900 transition-colors duration-150"
                               >
                                 {s}
                               </button>
@@ -493,14 +498,14 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                       {/* Thinking indicator */}
                       {status === 'submitted' && (
                         <div className="flex items-start gap-3 py-2">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-nutria-verde to-nutria-verde-light flex items-center justify-center shrink-0 mt-1">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-600 to-green-400 flex items-center justify-center shrink-0 mt-1">
                             <Leaf className="w-3.5 h-3.5 text-white" />
                           </div>
-                          <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 border border-nutria-creme-dark shadow-sm">
+                          <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 border border-gray-200 shadow-sm">
                             <div className="flex gap-1.5 items-center h-5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-nutria-bordo/40 animate-bounce [animation-delay:0ms]" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-nutria-bordo/40 animate-bounce [animation-delay:150ms]" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-nutria-bordo/40 animate-bounce [animation-delay:300ms]" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-900/40 animate-bounce [animation-delay:0ms]" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-900/40 animate-bounce [animation-delay:150ms]" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-900/40 animate-bounce [animation-delay:300ms]" />
                             </div>
                           </div>
                         </div>
@@ -514,14 +519,14 @@ function ChatContent({ conversationId }: { conversationId: string }) {
             )}
 
             {/* Input area */}
-            <div className="p-4 pb-6 bg-gradient-to-t from-nutria-creme via-nutria-creme to-transparent">
+            <div className="p-4 pb-6 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent">
               <div className="max-w-3xl mx-auto">
                 <div className="flex gap-2 mb-2.5">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isGenerating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
                   >
                     <Paperclip className="w-3.5 h-3.5" />
                     Arquivo
@@ -530,7 +535,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isGenerating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-nutria-bordo/50 hover:text-nutria-bordo hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     Foto
@@ -541,7 +546,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                   <PromptInput
                     onSubmit={handleSubmit}
                     className={cn(
-                      'border border-nutria-creme-dark rounded-2xl bg-white shadow-sm hover:shadow-md transition-[box-shadow,opacity] duration-300',
+                      'border border-gray-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition-[box-shadow,opacity] duration-300',
                       isGenerating && 'opacity-60',
                     )}
                   >
@@ -579,8 +584,8 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                         className={cn(
                           'absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 text-white rounded-lg transition-[background-color,opacity] duration-150 shadow-sm disabled:opacity-30',
                           isGenerating
-                            ? 'bg-nutria-bordo hover:bg-nutria-bordo/80'
-                            : 'bg-nutria-verde hover:bg-nutria-verde-light',
+                            ? 'bg-slate-900 hover:bg-slate-900/80'
+                            : 'bg-green-600 hover:bg-green-600-light',
                         )}
                       >
                         {isGenerating ? (
@@ -593,7 +598,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                   </PromptInput>
                 </div>
 
-                <p className="text-[11px] text-nutria-bordo/30 text-center mt-3">
+                <p className="text-[11px] text-slate-300 text-center mt-3">
                   Envie fotos de alimentos para analise nutricional automatica
                 </p>
               </div>
@@ -605,16 +610,16 @@ function ChatContent({ conversationId }: { conversationId: string }) {
             <aside className="w-64 shrink-0 h-full bg-white border-l border-border flex flex-col">
               <div className="h-[56px] flex items-center justify-between px-4 border-b border-border">
                 <div className="flex items-center gap-2">
-                  <Wrench className="w-3.5 h-3.5 text-nutria-bordo/50" />
-                  <span className="text-sm font-medium text-nutria-bordo">Ferramentas</span>
+                  <Wrench className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-sm font-medium text-slate-900">Ferramentas</span>
                   {toolCalls.length > 0 && (
-                    <span className="text-xs text-nutria-bordo/40">({toolCalls.length})</span>
+                    <span className="text-xs text-slate-400">({toolCalls.length})</span>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowToolSidebar(false)}
-                  className="w-6 h-6 flex items-center justify-center rounded text-nutria-bordo/40 hover:text-nutria-bordo hover:bg-nutria-creme-dark transition-colors"
+                  className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-900 hover:bg-gray-100 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -623,8 +628,8 @@ function ChatContent({ conversationId }: { conversationId: string }) {
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {toolCalls.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 gap-2 text-center">
-                    <Wrench className="w-6 h-6 text-nutria-bordo/20" />
-                    <p className="text-xs text-nutria-bordo/30 leading-relaxed">
+                    <Wrench className="w-6 h-6 text-slate-900/20" />
+                    <p className="text-xs text-slate-300 leading-relaxed">
                       Nenhuma ferramenta<br />utilizada ainda
                     </p>
                   </div>
@@ -661,8 +666,8 @@ export default function Chat() {
   return (
     <Suspense
       fallback={
-        <div className="h-screen flex items-center justify-center bg-nutria-creme">
-          <div className="w-14 h-14 rounded-2xl bg-nutria-verde flex items-center justify-center animate-pulse">
+        <div className="h-screen flex items-center justify-center bg-gray-50">
+          <div className="w-14 h-14 rounded-2xl bg-green-600 flex items-center justify-center animate-pulse">
             <Leaf className="w-8 h-8 text-white" />
           </div>
         </div>

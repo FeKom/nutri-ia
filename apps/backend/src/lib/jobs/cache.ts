@@ -1,3 +1,0 @@
-import IORedis from "ioredis"
-
-

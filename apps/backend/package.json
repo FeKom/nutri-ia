@@ -5,9 +5,9 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "NODE_OPTIONS=\"--env-file=.env.development\" mastra dev",
+    "dev": "sh -c 'set -a && . ./.env.development && set +a && mastra dev'",
     "build": "mastra build",
-    "start": "NODE_OPTIONS=\"--env-file=.env.production\" mastra start",
+    "start": "sh -c 'set -a && . ./.env.production && set +a && mastra start'",
     "seed": "tsx src/lib/seed"
   },
   "keywords": [],
@@ -31,8 +31,6 @@
     "@mastra/pg": "^1.1.0",
     "@types/pg": "^8.18.0",
     "ai": "^6.0.86",
-    "bullmq": "^5.73.5",
-    "ioredis": "^5.10.1",
     "jose": "^6.1.3",
     "pg": "^8.20.0",
     "pino": "^10.2.0",

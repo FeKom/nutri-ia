@@ -18,7 +18,7 @@ function createGuardrailModel() {
     apiKey: process.env.GITHUB_TOKEN || "",
     baseURL: "https://models.inference.ai.azure.com",
   });
-  return github(process.env.INTENT_MODEL || "Phi-4-mini");
+  return github(process.env.INTENT_MODEL || "Phi-4-mini-instruct");
 }
 
 const GUARDRAIL_MODEL = createGuardrailModel();

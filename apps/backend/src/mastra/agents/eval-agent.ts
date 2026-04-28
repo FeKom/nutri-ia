@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { env } from "../config/env";
-import { NutriaProcessor } from "../config/NutriaProcessor";
+import { NutriaProcessor } from "../processors/NutriaProcessor";
 
 /**
  * Creates a stateless eval agent with custom instructions.

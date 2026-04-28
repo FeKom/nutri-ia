@@ -2,7 +2,7 @@ import { Agent } from "@mastra/core/agent";
 import { env } from "../config/env";
 import { loadNutritionAnalystInstructions } from "../utils/context-loader";
 import { createNutritionMemory } from "../config/memory";
-import { NutriaProcessor } from "../config/NutriaProcessor";
+import { NutriaProcessor } from "../processors/NutriaProcessor";
 import {
   promptInjectionDetector,
   inputModerationProcessor,

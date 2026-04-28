@@ -1,7 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
-import { saveRecipe } from "../api/recipes";
-import { unwrap } from "../clients/catalog-client";
+import { saveRecipe, unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
 
 export const suggestRecipeTool = createTool({

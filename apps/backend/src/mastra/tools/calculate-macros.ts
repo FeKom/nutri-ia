@@ -1,7 +1,6 @@
 import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
-import { calculateMacros } from "../api/nutrition";
-import { unwrap } from "../clients/catalog-client";
+import { calculateMacros, unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
 
 const calculateMacrosToolInput = z.object({

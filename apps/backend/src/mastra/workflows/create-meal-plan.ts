@@ -12,7 +12,7 @@
 
 import { createStep, Workflow } from "@mastra/core/workflows";
 import { z } from "zod";
-import { calculateMacros } from "../api/nutrition";
+import { calculateMacros } from "../clients/catalog-client";
 import { createMealPlan, unwrap } from "../clients/catalog-client";
 import type { MealPlan } from "../schemas/meal_plan";
 import { logger } from "../../utils/logger";

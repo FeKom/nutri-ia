@@ -1,7 +1,6 @@
 import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
-import { addGoal } from "../api/goals";
-import { unwrap } from "../clients/catalog-client";
+import { addGoal, unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
 
 export const addGoalTool = withAuth({

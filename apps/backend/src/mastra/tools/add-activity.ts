@@ -1,7 +1,6 @@
 import { withAuth } from "../utils/with-auth";
 import { z } from "zod";
-import { addActivity } from "../api/activities";
-import { unwrap } from "../clients/catalog-client";
+import { addActivity, unwrap } from "../clients/catalog-client";
 import { logger } from "../../utils/logger";
 
 export const addActivityTool = withAuth({

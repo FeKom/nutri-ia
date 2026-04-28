@@ -31,7 +31,6 @@ import type {
   WeeklyStatsResponse,
 } from "../schemas/tracking";
 
-import { searchFoods } from "../api/foods";
 import { logger } from "../../utils/logger";
 
 export type {
@@ -231,32 +230,6 @@ export const defaultConfig = createConfig();
 // ============================================
 
 /**
- * Verifica se status HTTP é retryable
- */
-const isRetryableStatus = (status: number): boolean =>
-  [429, 500, 502, 503, 504].includes(status);
-
-/**
- * Verifica se erro é retryable
- */
-const isRetryableError = (error: unknown): boolean => {
-  if (!(error instanceof Error)) return false;
-
-  const retryablePatterns = [
-    "AbortError",
-    "TimeoutError",
-    "fetch failed",
-    "network",
-    "ECONNREFUSED",
-  ];
-
-  return retryablePatterns.some(
-    (pattern) =>
-      error.name.includes(pattern) || error.message.includes(pattern),
-  );
-};
-
-/**
  * Cria erro de API padronizado
  */
 const createApiError = (message: string, statusCode?: number, isRetryable?: boolean, rawError?: unknown) => ({ message, statusCode, isRetryable, rawError });
@@ -449,35 +422,24 @@ export const api = {
 // API PÚBLICA - Funções principais
 // ============================================
 
-/**
- * Busca alimentos no catálogo
- *
- * @example
- * const result = await searchFoods({ query: 'frango', limit: 5 });
- */
+export const searchFoods = async (
+  request: SearchFoodsRequest,
+  config: ClientConfig = defaultConfig,
+  authToken?: string,
+): Promise<NutriaResponse<SearchFoodsResponse>> => {
+  logger.info(`[CatalogClient] Buscando alimentos: "${request.query}"`);
 
-//export const searchFoods = async (
-//  request: SearchFoodsRequest,
-//  config = defaultConfig,
-//  authToken?: string,
-//): Promise<SearchFoodsResponse> => {
-//  console.log(`🔍 [CatalogClient] Buscando alimentos: "${request.query}"`);
-//
-//  const response = await postRequest<SearchFoodsResponse>(
-//    "/api/v1/foods/search",
-//    {
-//      query: request.query,
-//      limit: request.limit ?? 10,
-//      filters: request.filters ?? {},
-//    },
-//    config,
-//    authToken,
-//  );
-//
-//  console.log(`✅ [CatalogClient] Encontrados ${response.count} alimentos`);
-//
-//  return response;
-//};
+  return await postRequest<SearchFoodsResponse>(
+    "/api/v1/foods/search",
+    {
+      query: request.query,
+      limit: request.limit ?? 10,
+      filters: request.filters ?? {},
+    },
+    config,
+    authToken,
+  );
+};
 
 /**
  * Busca alimentos usando similaridade de embeddings (busca semântica)
@@ -1080,50 +1042,124 @@ export const healthCheck = async (config = defaultConfig): Promise<boolean> => {
   }
 };
 
-/**
- * Cria funções do client com configuração customizada
- * (currying para injeção de dependência)
- *
- * @example
- * const client = createClient({ baseUrl: 'http://api.example.com' });
- * const result = await client.searchFoods({ query: 'banana' });
- */
-export const createClient = (customConfig?: Partial<ClientConfig>) => {
-  const config = createConfig(customConfig);
+// ============================================
+// ACTIVITIES
+// ============================================
 
-  return {
-    searchFoods: (request: SearchFoodsRequest) => searchFoods(request, config),
-    searchFoodsByEmbedding: (request: SearchFoodsRequest) =>
-      searchFoodsByEmbedding(request, config),
-    calculateNutrition: (foods: NutritionItem[]) =>
-      calculateNutrition(foods, config),
-    findSimilarFoods: (request: SimilarFoodRequest) =>
-      findSimilarFoods(request, config),
-    getRecommendations: (request: RecommendationRequest) =>
-      getRecommendations(request, config),
-    logMeal: (request: LogMealRequest) => logMeal(request, config),
-    getDailySummary: (userId: string, date?: string) =>
-      getDailySummary(userId, date, config),
-    getWeeklyStats: (userId: string, days?: number) =>
-      getWeeklyStats(userId, days, config),
-    createMealPlan: (request: CreateMealPlanRequest) =>
-      createMealPlan(request, config),
-    listMealPlans: (userId: string, page?: number, pageSize?: number) =>
-      listMealPlans(userId, page, pageSize, config),
-    getMealPlan: (planId: string, userId: string) =>
-      getMealPlan(planId, userId, config),
-    updateMealPlan: (
-      planId: string,
-      userId: string,
-      updates: UpdateMealPlanRequest,
-    ) => updateMealPlan(planId, userId, updates, config),
-    deleteMealPlan: (planId: string, userId: string) =>
-      deleteMealPlan(planId, userId, config),
-    searchRecipes: (request: SearchRecipesRequest) =>
-      searchRecipes(request, config),
-    getRecipe: (recipeId: string) => getRecipe(recipeId, config),
-    healthCheck: () => healthCheck(config),
-    config,
+export interface AddActivityRequest {
+  type: string;
+  duration_minutes: number;
+  calories_burned: number;
+  date: string;
+  notes?: string;
+}
+
+export interface ActivityResponse {
+  id: string;
+  type: string;
+  duration_minutes: number;
+  calories_burned: number;
+  date: string;
+}
+
+export const addActivity = (
+  request: AddActivityRequest,
+  config: ClientConfig = defaultConfig,
+  authToken?: string,
+): Promise<NutriaResponse<ActivityResponse>> =>
+  api.post<ActivityResponse>("/api/v1/activities", request, config, authToken);
+
+// ============================================
+// GOALS
+// ============================================
+
+export interface AddGoalRequest {
+  title: string;
+  description?: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  category: string;
+  deadline?: string;
+}
+
+export interface GoalResponse {
+  id: string;
+  title: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+}
+
+export const addGoal = (
+  request: AddGoalRequest,
+  config: ClientConfig = defaultConfig,
+  authToken?: string,
+): Promise<NutriaResponse<GoalResponse>> =>
+  api.post<GoalResponse>("/api/v1/goals", request, config, authToken);
+
+// ============================================
+// NUTRITION / MACROS
+// ============================================
+
+export interface MacrosRequest {
+  weight_kg: number;
+  height_cm: number;
+  age: number;
+  gender: string;
+  activity_level: string;
+  diet_goal: string;
+}
+
+export interface MacrosResponse {
+  tmb: number;
+  tdee: number;
+  daily_calories: number;
+  daily_protein_g: number;
+  daily_carbs_g: number;
+  daily_fat_g: number;
+  calorie_adjustment: number;
+  diet_goal: string;
+  profile_used: {
+    weight_kg: number;
+    height_cm: number;
+    age: number;
+    gender: string;
+    activity_level: string;
+    diet_goal: string;
   };
-};
+  explanation: string;
+}
+
+export const calculateMacros = (
+  request: MacrosRequest,
+  config: ClientConfig = defaultConfig,
+  authToken?: string,
+): Promise<NutriaResponse<MacrosResponse>> =>
+  api.post<MacrosResponse>("/api/v1/nutrition/macros", request, config, authToken);
+
+// ============================================
+// RECIPES (save)
+// ============================================
+
+export interface SaveRecipeRequest {
+  name: string;
+  description: string;
+  category: string;
+  prep_time_minutes: number;
+  difficulty: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  ingredients: string[];
+  instructions?: string;
+}
+
+export const saveRecipe = (
+  request: SaveRecipeRequest,
+  config: ClientConfig = defaultConfig,
+  authToken?: string,
+): Promise<NutriaResponse<Recipe>> =>
+  api.post<Recipe>("/api/v1/recipes", request, config, authToken);
 

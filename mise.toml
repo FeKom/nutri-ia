@@ -2,6 +2,7 @@
 node    = "22"
 python  = "3.11.7"
 pnpm    = "latest"
+uv      = "latest"
 
 [env]
 # Podman socket — confirme o caminho com: podman machine inspect | grep Socket
@@ -20,9 +21,9 @@ dir = "apps/backend"
 run = "pnpm install"
 
 [tasks.catalog-install]
-description = "Create Python venv and install catalog dependencies"
+description = "Install catalog Python dependencies via uv"
 dir = "apps/catalog"
-run = "python -m venv .venv && .venv/bin/pip install -r requirements.txt"
+run = "uv sync"
 
 [tasks.install]
 description = "Install all dependencies"
@@ -33,22 +34,22 @@ depends = ["frontend-install", "backend-install", "catalog-install"]
 [tasks.migrate]
 description = "Run Alembic migrations (create/update tables)"
 dir = "apps/catalog"
-run = ".venv/bin/alembic upgrade head"
+run = "uv run alembic upgrade head"
 
 [tasks.db-reset]
 description = "Drop everything and re-run migrations (DANGER)"
 dir = "apps/catalog"
-run = ".venv/bin/alembic downgrade base && .venv/bin/alembic upgrade head"
+run = "uv run alembic downgrade base && uv run alembic upgrade head"
 
 [tasks.seed-taco]
 description = "Import ~600 TACO Brazilian foods into the DB"
 dir = "apps/catalog"
-run = ".venv/bin/python scripts/import_taco.py"
+run = "uv run python scripts/import_taco.py"
 
 [tasks.seed-taco-dry]
 description = "Dry-run TACO import — validate without writing to DB"
 dir = "apps/catalog"
-run = ".venv/bin/python scripts/import_taco.py --dry-run"
+run = "uv run python scripts/import_taco.py --dry-run"
 
 # ── Dev servers ──────────────────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ run = "pnpm dev"
 description = "Run migrations then start catalog API → http://localhost:8004"
 depends = ["migrate"]
 dir = "apps/catalog"
-run = ".venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8004"
+run = "uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8004"
 
 # ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ run = "pnpm test"
 [tasks.test-catalog]
 description = "Run catalog tests (pytest)"
 dir = "apps/catalog"
-run = ".venv/bin/pytest tests/ -v --tb=short"
+run = "uv run pytest tests/ -v --tb=short"
 
 [tasks.test]
 description = "Run all tests"

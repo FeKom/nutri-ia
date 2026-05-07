@@ -12,7 +12,7 @@ help:
 	@echo "  make reset-db    - Reset database (WARNING: deletes all data)"
 
 install:
-	pip install -r requirements.txt
+	uv sync
 
 docker-up:
 	docker-compose up -d

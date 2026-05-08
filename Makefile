@@ -65,9 +65,9 @@ help:
 	@echo "  make catalog-install    - pip install in apps/catalog venv"
 	@echo ""
 	@echo "$(GREEN)Docker (full stack):$(RESET)"
-	@echo "  make dev                - docker compose up -d"
-	@echo "  make build              - docker compose build --no-cache"
-	@echo "  make stop               - docker compose down"
+	@echo "  make dev                - docker-compose up -d"
+	@echo "  make build              - docker-compose build --no-cache"
+	@echo "  make stop               - docker-compose down"
 	@echo "  make restart            - stop + dev"
 	@echo "  make logs               - last 100 lines of all services"
 	@echo "  make logs-f             - follow logs"
@@ -94,7 +94,7 @@ start: migrate
 	@trap 'kill 0' INT; \
 	($(NVM_INIT) && cd apps/frontend && pnpm dev 2>&1 | sed 's/^/\033[0;36m[frontend]\033[0m /') & \
 	($(NVM_INIT) && cd apps/backend  && pnpm dev 2>&1 | sed 's/^/\033[0;33m[backend ]\033[0m /') & \
-	(cd apps/catalog  && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 2>&1 | sed 's/^/\033[0;32m[catalog ]\033[0m /') & \
+	(cd apps/catalog  && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 2>&1 | sed 's/^/\033[0;32m[catalog ]\033[0m /') & \
 	wait
 
 frontend-start:
@@ -104,7 +104,7 @@ backend-start:
 	@$(NVM_INIT) && cd apps/backend && pnpm dev
 
 catalog-start: migrate
-	cd apps/catalog && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd apps/catalog && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # ── Install ─────────────────────────────────────────────────────────────────
 
@@ -112,16 +112,16 @@ install: frontend-install backend-install catalog-install
 
 migrate:
 	@echo "Ensuring postgres is running..."
-	docker compose up -d postgres
+	docker-compose up -d postgres
 	@echo "Running Alembic migrations..."
-	cd apps/catalog && .venv/bin/alembic upgrade head
+	cd apps/catalog && uv run alembic upgrade head
 	@echo "Migrations done."
 
 db-reset:
 	@echo "This will drop all tables and re-run migrations. Continue? [y/N] "; \
 	read REPLY; \
 	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
-		cd apps/catalog && .venv/bin/alembic downgrade base && .venv/bin/alembic upgrade head; \
+		cd apps/catalog && uv run alembic downgrade base && uv run alembic upgrade head; \
 		echo "Database reset complete."; \
 	else \
 		echo "Cancelled."; \
@@ -135,7 +135,7 @@ test-backend:
 	@$(NVM_INIT) && cd apps/backend && pnpm test
 
 test-catalog:
-	cd apps/catalog && .venv/bin/pytest tests/ -v --tb=short
+	cd apps/catalog && uv run pytest tests/ -v --tb=short
 
 # ── Lint ─────────────────────────────────────────────────────────────────────
 
@@ -167,10 +167,10 @@ generate-types:
 	@$(NVM_INIT) && cd apps/frontend && pnpm run generate:catalog-types
 
 seed-taco:
-	cd apps/catalog && .venv/bin/python scripts/import_taco.py
+	cd apps/catalog && uv run python scripts/import_taco.py
 
 seed-taco-dry:
-	cd apps/catalog && .venv/bin/python scripts/import_taco.py --dry-run
+	cd apps/catalog && uv run python scripts/import_taco.py --dry-run
 
 frontend-install:
 	@$(NVM_INIT) && cd apps/frontend && pnpm install
@@ -179,7 +179,7 @@ backend-install:
 	@$(NVM_INIT) && cd apps/backend && pnpm install
 
 catalog-install:
-	cd apps/catalog && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+	cd apps/catalog && uv sync
 
 # ── Docker ──────────────────────────────────────────────────────────────────
 
@@ -191,7 +191,7 @@ dev:
 		echo "Configure .env before continuing."; \
 		exit 1; \
 	fi
-	docker compose up -d
+	docker-compose up -d
 	@echo ""
 	@echo "Services available:"
 	@echo "  Frontend:  http://localhost:3000"
@@ -200,33 +200,33 @@ dev:
 	@echo "  Postgres:  localhost:5432"
 
 build:
-	docker compose build --no-cache
+	docker-compose build --no-cache
 
 stop:
-	docker compose down
+	docker-compose down
 
 restart: stop dev
 
 logs:
-	docker compose logs --tail=100
+	docker-compose logs --tail=100
 
 logs-f:
-	docker compose logs -f
+	docker-compose logs -f
 
 logs-frontend:
-	docker compose logs -f frontend
+	docker-compose logs -f frontend
 
 logs-backend:
-	docker compose logs -f backend
+	docker-compose logs -f backend
 
 logs-catalog:
-	docker compose logs -f catalog
+	docker-compose logs -f catalog
 
 logs-postgres:
-	docker compose logs -f postgres
+	docker-compose logs -f postgres
 
 ps:
-	@docker compose ps
+	@docker-compose ps
 
 # ── Production images (GHCR) ─────────────────────────────────────────────────
 
@@ -252,7 +252,7 @@ clean:
 	@echo "This will delete all container data. Continue? [y/N] "; \
 	read REPLY; \
 	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
-		docker compose down -v --rmi local; \
+		docker-compose down -v --rmi local; \
 		rm -rf apps/frontend/node_modules apps/backend/node_modules; \
 		rm -rf apps/frontend/.next apps/backend/dist apps/backend/.mastra; \
 		echo "Done."; \

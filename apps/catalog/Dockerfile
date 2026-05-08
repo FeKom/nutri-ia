@@ -25,16 +25,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Copy the virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
 COPY . .
 
-# Non-root user
+# Non-root user; /cache is owned by appuser so sentence-transformers can write its model cache
 RUN addgroup --system --gid 1001 appuser && \
-    adduser --system --uid 1001 --gid 1001 appuser
+    adduser --system --uid 1001 --gid 1001 --home /home/appuser appuser && \
+    mkdir -p /home/appuser /cache/huggingface && \
+    chown -R appuser:appuser /home/appuser /cache
 USER appuser
+
+ENV HF_HOME=/cache/huggingface
 
 EXPOSE 8000
 

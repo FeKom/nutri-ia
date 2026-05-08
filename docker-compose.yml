@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
     ports:
-      - "5432:5432"
+      - "5436:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./apps/catalog/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -38,12 +38,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      JWKS_URL: http://backend:4111/auth/jwks
       JWT_ISSUER: http://backend:4111
+      HF_HOME: /cache/huggingface
     volumes:
       - ./apps/catalog:/app
+      - /app/.venv
       - /app/__pycache__
       - /app/.pytest_cache
+      - hf_cache:/cache/huggingface
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8004/health')\" || exit 1"]
       interval: 10s
@@ -70,16 +72,13 @@ services:
     ports:
       - "4111:4111"
     environment:
-      CATALOG_API_URL: http://catalog:8004
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
       NODE_ENV: development
     volumes:
       - ./apps/backend:/app
       - /app/node_modules
       - /app/.mastra
+      - mastra_data:/data
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:4111/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
       interval: 10s
@@ -106,7 +105,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      CATALOG_API_URL: http://catalog:8000
+      CATALOG_API_URL: http://catalog:8004
       NEXT_PUBLIC_BACKEND_URL: http://localhost:4111
       NODE_ENV: development
     volumes:
@@ -123,6 +122,10 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  hf_cache:
+    driver: local
+  mastra_data:
     driver: local
 
 networks:

@@ -23,10 +23,10 @@ docker-down:
 	docker-compose down
 
 migrate:
-	alembic upgrade head
+	uv run alembic upgrade head
 
 run:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 dev: docker-up
 	@echo "Waiting for PostgreSQL to initialize..."

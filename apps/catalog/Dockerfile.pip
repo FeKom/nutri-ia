@@ -1,0 +1,55 @@
+# --- Builder (compile native deps) ---
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml ./
+
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir \
+        "fastapi>=0.104.0" \
+        "uvicorn[standard]>=0.24.0" \
+        "sqlmodel>=0.0.14" \
+        "psycopg2-binary>=2.9.9" \
+        "alembic>=1.12.0" \
+        "pgvector>=0.2.4" \
+        "python-dotenv>=1.0.0" \
+        "pydantic>=2.5.0" \
+        "pydantic-settings>=2.1.0" \
+        "PyJWT[crypto]>=2.8.0" \
+        "passlib[argon2]>=1.7.4" \
+        "argon2-cffi>=23.1.0" \
+        "python-multipart>=0.0.6" \
+        "pandas>=2.0.0" \
+        "openpyxl>=3.1.0" \
+        "reportlab>=4.0.0" \
+        "pdfplumber>=0.10.0" \
+        "sentence-transformers>=3.0.0" \
+        "typer>=0.12.0"
+
+# --- Production ---
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+COPY . .
+
+RUN addgroup --system --gid 1001 appuser && \
+    adduser --system --uid 1001 --gid 1001 appuser
+USER appuser
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

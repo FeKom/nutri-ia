@@ -23,7 +23,7 @@ Uma API completa de banco de dados de alimentos e nutrição construída com Fas
 
 ## Stack Tecnológica
 
-- **Python 3.11** (gerenciado via asdf ou pyenv)
+- **Python 3.11** com **uv** para gerenciamento de dependências e ambiente virtual
 - **FastAPI** - Framework web moderno e rápido
 - **SQLModel** - ORM de banco de dados SQL com integração Pydantic
 - **PostgreSQL 15+** com extensão **pgvector**
@@ -117,55 +117,20 @@ nutria-catalog/
 
 ### Pré-requisitos
 
-- Python 3.11
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) — gerenciador de pacotes e ambientes Python
 - Docker e Docker Compose
-- asdf ou pyenv (recomendado para gerenciamento de versão do Python)
 
-### Opção 1: Instalação com asdf (Recomendado)
+```bash
+# Instalar uv (macOS/Linux)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-1. **Instalar asdf** (se ainda não estiver instalado):
-   ```bash
-   git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
-   echo '. "$HOME/.asdf/asdf.sh"' >> ~/.bashrc
-   source ~/.bashrc
-   ```
-
-2. **Instalar Python 3.11 com asdf**:
-   ```bash
-   asdf plugin add python
-   asdf install python 3.11.7
-   asdf local python 3.11.7
-   ```
-
-3. **Verificar versão do Python**:
-   ```bash
-   python --version  # Deve mostrar Python 3.11.7
-   ```
-
-### Opção 2: Instalação com pyenv
-
-1. **Instalar pyenv** (se ainda não estiver instalado):
-   ```bash
-   curl https://pyenv.run | bash
-   ```
-
-2. **Instalar Python 3.11**:
-   ```bash
-   pyenv install 3.11.7
-   pyenv local 3.11.7
-   ```
-
-3. **Verificar versão do Python**:
-   ```bash
-   python --version  # Deve mostrar Python 3.11.7
-   ```
+> uv instala e gerencia o Python 3.11 automaticamente — não é necessário instalar Python separadamente.
 
 ### Instalação Rápida com Makefile
 
-Se você já tem Python 3.11 e Docker instalados, use estes comandos:
-
 ```bash
-# 1. Instalar dependências Python
+# 1. Instalar dependências (cria .venv automaticamente)
 make install
 
 # 2. Iniciar tudo (Docker + Migrações + Servidor)
@@ -181,58 +146,51 @@ Pronto! A API estará rodando em http://localhost:8000
    cd nutria-catalog
    ```
 
-2. **Criar e ativar ambiente virtual**:
+2. **Instalar dependências** (cria `.venv` automaticamente):
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # No Windows: venv\Scripts\activate
+   uv sync
    ```
 
-3. **Instalar dependências**:
-   ```bash
-   pip install -r requirements.txt
-   # OU use: make install
-   ```
-
-4. **Configurar variáveis de ambiente**:
+3. **Configurar variáveis de ambiente**:
    ```bash
    cp .env.example .env
    # Edite .env se precisar alterar as credenciais do banco
    ```
 
-5. **Iniciar PostgreSQL com Docker**:
+4. **Iniciar PostgreSQL com Docker**:
    ```bash
    docker-compose up -d
    # OU use: make docker-up
    ```
 
-6. **Aguardar PostgreSQL estar pronto**:
+5. **Aguardar PostgreSQL estar pronto**:
    ```bash
    docker-compose logs -f postgres
    # Aguarde até ver "database system is ready to accept connections"
    # Pressione Ctrl+C para sair dos logs
    ```
 
-7. **Executar migrações do banco de dados**:
+6. **Executar migrações do banco de dados**:
    ```bash
-   alembic upgrade head
+   uv run alembic upgrade head
    # OU use: make migrate
    ```
 
-8. **(Opcional) Adicionar dados de exemplo**:
+7. **(Opcional) Adicionar dados de exemplo**:
    ```bash
-   python seed_data.py
+   uv run python seed_data.py
    ```
 
-9. **Iniciar o servidor da API**:
+8. **Iniciar o servidor da API**:
    ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    # OU use: make run
    ```
 
-10. **Acessar a API**:
-    - API: http://localhost:8000
-    - Documentação Swagger: http://localhost:8000/docs
-    - Documentação ReDoc: http://localhost:8000/redoc
+9. **Acessar a API**:
+   - API: http://localhost:8000
+   - Documentação Swagger: http://localhost:8000/docs
+   - Documentação ReDoc: http://localhost:8000/redoc
 
 ## Comandos do Makefile
 
@@ -492,7 +450,7 @@ alembic downgrade -1
 ### Ver histórico de migrações
 
 ```bash
-alembic history
+uv run alembic history
 ```
 
 ## 🧪 Testes
@@ -502,28 +460,25 @@ O projeto possui uma suite completa de testes automatizados com **53 testes** co
 ### Executar todos os testes
 
 ```bash
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 ### Executar testes específicos
 
 ```bash
 # Testes de um serviço específico
-pytest tests/test_tracking_service.py -v
-pytest tests/test_nutrition_service.py -v
+uv run pytest tests/test_tracking_service.py -v
+uv run pytest tests/test_nutrition_service.py -v
 
 # Testes de integração da API
-pytest tests/test_api_endpoints.py -v
+uv run pytest tests/test_api_endpoints.py -v
 ```
 
 ### Cobertura de testes
 
 ```bash
-# Instalar pytest-cov
-pip install pytest-cov
-
-# Executar com cobertura
-pytest tests/ --cov=app --cov-report=html --cov-report=term
+# Executar com cobertura (pytest-cov está nas dev dependencies)
+uv run pytest tests/ --cov=app --cov-report=html --cov-report=term
 
 # Ver relatório HTML
 open htmlcov/index.html
@@ -545,22 +500,15 @@ Ver [guia completo de testes](tests/README.md) para mais informações.
 ### Formatação de código
 
 ```bash
-# Instalar ferramentas de formatação
-pip install black isort
-
 # Formatar código
-black app/
-isort app/
+uv run black app/
+uv run isort app/
 ```
 
 ### Verificação de tipos
 
 ```bash
-# Instalar mypy
-pip install mypy
-
-# Executar verificação de tipos
-mypy app/
+uv run mypy app/
 ```
 
 ## Comandos Docker
@@ -620,23 +568,22 @@ docker-compose exec postgres psql -U nutriauser -d nutriadb
 
 1. Verificar status atual da migração:
    ```bash
-   alembic current
+   uv run alembic current
    ```
 
 2. Resetar banco de dados (ATENÇÃO: Isso irá deletar todos os dados):
    ```bash
    docker-compose down -v
    docker-compose up -d
-   alembic upgrade head
+   uv run alembic upgrade head
    # OU use: make reset-db
    ```
 
 ### Erros de importação
 
-Certifique-se de estar no ambiente virtual e que todas as dependências estão instaladas:
+Reinstale as dependências com uv:
 ```bash
-source venv/bin/activate
-pip install -r requirements.txt
+uv sync
 # OU use: make install
 ```
 
@@ -646,18 +593,18 @@ O framework de avaliação mede a qualidade das respostas do agente Nutria ao lo
 
 ```bash
 # Criar e rodar um experimento
-python -m app.eval.cli experiment create \
+uv run python -m app.eval.cli experiment create \
   --name "v1-baseline" \
   --prompt tests/eval/prompts/v1.md \
   --dataset golden_dataset.json
 
-python -m app.eval.cli experiment run <experiment-id>
+uv run python -m app.eval.cli experiment run <experiment-id>
 
 # Ver resultados
-python -m app.eval.cli experiment show <experiment-id>
+uv run python -m app.eval.cli experiment show <experiment-id>
 
 # Exportar para o notebook
-python -m app.eval.cli experiment export --out tests/eval/analysis/results.json
+uv run python -m app.eval.cli experiment export --out tests/eval/analysis/results.json
 ```
 
 **Scorers disponíveis:** faithfulness, answer_relevancy, context_relevancy, context_recall, context_precision, hallucination, jailbreak — todos baseados em similaridade de embeddings.

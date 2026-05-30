@@ -4,6 +4,7 @@ Revision ID: 20260406_1540
 Revises: 20260402_1100
 Create Date: 2026-04-06 15:40:00
 """
+
 from alembic import op
 
 revision = "20260406_1540"

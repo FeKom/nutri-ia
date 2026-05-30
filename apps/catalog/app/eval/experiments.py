@@ -25,9 +25,11 @@ def get_experiment_by_id(session: Session, experiment_id: UUID) -> EvalExperimen
 
 
 def list_experiments(session: Session) -> list[EvalExperiment]:
-    return list(session.exec(
-        select(EvalExperiment).order_by(EvalExperiment.created_at.desc())
-    ).all())
+    return list(
+        session.exec(
+            select(EvalExperiment).order_by(EvalExperiment.created_at.desc())
+        ).all()
+    )
 
 
 def create_run(
@@ -65,11 +67,13 @@ def get_run_by_id(session: Session, run_id: UUID) -> EvalRun:
 
 
 def list_runs_by_experiment(session: Session, experiment_id: UUID) -> list[EvalRun]:
-    return list(session.exec(
-        select(EvalRun)
-        .where(EvalRun.experiment_id == experiment_id)
-        .order_by(EvalRun.created_at.asc())
-    ).all())
+    return list(
+        session.exec(
+            select(EvalRun)
+            .where(EvalRun.experiment_id == experiment_id)
+            .order_by(EvalRun.created_at.asc())
+        ).all()
+    )
 
 
 def save_result(
@@ -102,6 +106,4 @@ def save_result(
 
 
 def get_result_by_run(session: Session, run_id: UUID) -> EvalResult | None:
-    return session.exec(
-        select(EvalResult).where(EvalResult.run_id == run_id)
-    ).first()
+    return session.exec(select(EvalResult).where(EvalResult.run_id == run_id)).first()

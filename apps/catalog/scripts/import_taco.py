@@ -109,7 +109,9 @@ def parse_taco_excel(file_path: Path):
     Lê o Excel do TACO e retorna lista de dicts com os dados sanitizados.
     Detecta linhas de categoria (col0=texto, col1=NaN) e linhas de alimento (col0=número).
     """
-    df = pd.read_excel(file_path, sheet_name=SHEET_NAME, header=None, skiprows=HEADER_ROWS)
+    df = pd.read_excel(
+        file_path, sheet_name=SHEET_NAME, header=None, skiprows=HEADER_ROWS
+    )
     print(f"   {len(df)} linhas após pular cabeçalho")
 
     records = []
@@ -134,19 +136,21 @@ def parse_taco_excel(file_path: Path):
         if not name or name == "nan":
             continue
 
-        records.append({
-            "name": name,
-            "category": current_category,
-            "calories": to_decimal(row.iloc[3]),
-            "protein": to_decimal(row.iloc[5]),
-            "fat": to_decimal(row.iloc[6]),
-            "carbs": to_decimal(row.iloc[8]),
-            "fiber": to_decimal(row.iloc[9]),
-            "calcium": to_decimal(row.iloc[11]),
-            "iron": to_decimal(row.iloc[16]),
-            "sodium": to_decimal(row.iloc[17]),
-            "vitamin_c": to_decimal(row.iloc[28]),
-        })
+        records.append(
+            {
+                "name": name,
+                "category": current_category,
+                "calories": to_decimal(row.iloc[3]),
+                "protein": to_decimal(row.iloc[5]),
+                "fat": to_decimal(row.iloc[6]),
+                "carbs": to_decimal(row.iloc[8]),
+                "fiber": to_decimal(row.iloc[9]),
+                "calcium": to_decimal(row.iloc[11]),
+                "iron": to_decimal(row.iloc[16]),
+                "sodium": to_decimal(row.iloc[17]),
+                "vitamin_c": to_decimal(row.iloc[28]),
+            }
+        )
 
     return records
 
@@ -159,7 +163,9 @@ def import_taco(file_path: Path, db_url: str, dry_run: bool, batch_size: int):
     if dry_run:
         print("🔍 DRY-RUN — primeiros 5 alimentos:")
         for r in records[:5]:
-            print(f"  {r['name']} | cat={r['category']} | kcal={r['calories']} | prot={r['protein']}g")
+            print(
+                f"  {r['name']} | cat={r['category']} | kcal={r['calories']} | prot={r['protein']}g"
+            )
         print("\n💡 Execute sem --dry-run para importar.")
         return
 
@@ -222,11 +228,11 @@ def import_taco(file_path: Path, db_url: str, dry_run: bool, batch_size: int):
     session.commit()
     session.close()
 
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"✅ Importados:  {imported}")
     print(f"⚠️  Pulados:     {skipped} (já existiam)")
     print(f"❌ Erros:       {errors}")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
 
 
 def main():

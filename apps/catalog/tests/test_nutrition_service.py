@@ -4,6 +4,7 @@ Tests for nutrition service
 To run these tests:
 pytest tests/test_nutrition_service.py -v
 """
+
 from decimal import Decimal
 from uuid import uuid4
 
@@ -26,7 +27,9 @@ class TestCalculateNutrition:
         ]
 
         # Act
-        totals, details = nutrition_service.calculate_nutrition(session, food_quantities)
+        totals, details = nutrition_service.calculate_nutrition(
+            session, food_quantities
+        )
 
         # Assert
         assert totals.calories == Decimal("165")
@@ -90,7 +93,9 @@ class TestCalculateNutrition:
         ]
 
         # Act
-        totals, details = nutrition_service.calculate_nutrition(session, food_quantities)
+        totals, details = nutrition_service.calculate_nutrition(
+            session, food_quantities
+        )
 
         # Assert
         # 150g rice: 130 * 1.5 = 195 cal, 2.7 * 1.5 = 4.05 protein
@@ -108,7 +113,9 @@ class TestCalculateNutrition:
         ]
 
         # Act
-        totals, details = nutrition_service.calculate_nutrition(session, food_quantities)
+        totals, details = nutrition_service.calculate_nutrition(
+            session, food_quantities
+        )
 
         # Assert - Should be double the 100g values
         assert totals.calories == Decimal("330")  # 165 * 2
@@ -118,19 +125,21 @@ class TestCalculateNutrition:
         """Test calculating nutrition for non-existent food"""
         # Arrange
         fake_id = uuid4()
-        food_quantities = [
-            FoodQuantity(food_id=fake_id, quantity=Decimal("100"))
-        ]
+        food_quantities = [FoodQuantity(food_id=fake_id, quantity=Decimal("100"))]
 
         # Act
-        totals, details = nutrition_service.calculate_nutrition(session, food_quantities)
+        totals, details = nutrition_service.calculate_nutrition(
+            session, food_quantities
+        )
 
         # Assert - Should return zeros
         assert totals.calories == 0
         assert totals.protein_g == 0
         assert len(details) == 0
 
-    def test_calculate_nutrition_includes_micronutrients(self, session: Session, sample_food):
+    def test_calculate_nutrition_includes_micronutrients(
+        self, session: Session, sample_food
+    ):
         """Test that micronutrients are calculated correctly"""
         # Arrange
         food_quantities = [
@@ -138,7 +147,9 @@ class TestCalculateNutrition:
         ]
 
         # Act
-        totals, details = nutrition_service.calculate_nutrition(session, food_quantities)
+        totals, details = nutrition_service.calculate_nutrition(
+            session, food_quantities
+        )
 
         # Assert
         assert totals.sodium_mg == Decimal("74")

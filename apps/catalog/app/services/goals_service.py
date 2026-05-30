@@ -25,11 +25,19 @@ def create_goal(session: Session, user_id: UUID, data: GoalCreate) -> Goal:
 
 
 def list_goals(session: Session, user_id: UUID) -> List[Goal]:
-    return list(session.exec(select(Goal).where(Goal.user_id == user_id).order_by(Goal.created_at.desc())).all())
+    return list(
+        session.exec(
+            select(Goal).where(Goal.user_id == user_id).order_by(Goal.created_at.desc())
+        ).all()
+    )
 
 
-def update_goal(session: Session, goal_id: UUID, user_id: UUID, data: GoalUpdate) -> Optional[Goal]:
-    goal = session.exec(select(Goal).where(Goal.id == goal_id, Goal.user_id == user_id)).first()
+def update_goal(
+    session: Session, goal_id: UUID, user_id: UUID, data: GoalUpdate
+) -> Optional[Goal]:
+    goal = session.exec(
+        select(Goal).where(Goal.id == goal_id, Goal.user_id == user_id)
+    ).first()
     if not goal:
         return None
     for field, value in data.model_dump(exclude_none=True).items():
@@ -41,7 +49,9 @@ def update_goal(session: Session, goal_id: UUID, user_id: UUID, data: GoalUpdate
 
 
 def delete_goal(session: Session, goal_id: UUID, user_id: UUID) -> bool:
-    goal = session.exec(select(Goal).where(Goal.id == goal_id, Goal.user_id == user_id)).first()
+    goal = session.exec(
+        select(Goal).where(Goal.id == goal_id, Goal.user_id == user_id)
+    ).first()
     if not goal:
         return False
     session.delete(goal)

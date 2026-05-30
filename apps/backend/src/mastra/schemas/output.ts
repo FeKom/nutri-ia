@@ -67,7 +67,7 @@ export const recipeSchema = z.object({
 });
 
 export const recipeFullSchema = recipeSchema.extend({
-  ingredients: z.array(z.string()),
+  ingredients: z.array(z.string()).optional(),
   instructions: z.string().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),

@@ -10,6 +10,7 @@ def _cosine(a: list[float], b: list[float]) -> float:
 
 def generate_embeddings_batch(texts: list[str], **kwargs) -> list[list[float]]:
     from app.services.embedding_service import generate_embeddings_batch as _gen
+
     return _gen(texts, **kwargs)
 
 

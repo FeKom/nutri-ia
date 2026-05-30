@@ -5,6 +5,7 @@ To run these tests:
 1. Install test dependencies: pip install pytest pytest-asyncio httpx
 2. Run: pytest tests/test_tracking_service.py -v
 """
+
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -30,7 +31,7 @@ class TestLogMeal:
                 FoodLogItem(
                     food_id=sample_food.id,
                     quantity_g=Decimal("150"),
-                    name="Chicken Breast"
+                    name="Chicken Breast",
                 )
             ],
             notes="Post-workout meal",
@@ -59,9 +60,7 @@ class TestLogMeal:
             meal_type=MealType.LUNCH,
             foods=[
                 FoodLogItem(
-                    food_id=sample_food.id,
-                    quantity_g=quantity,
-                    name="Chicken Breast"
+                    food_id=sample_food.id, quantity_g=quantity, name="Chicken Breast"
                 )
             ],
         )
@@ -86,7 +85,7 @@ class TestLogMeal:
                 FoodLogItem(
                     food_id=sample_food.id,
                     quantity_g=Decimal("150"),
-                    name="Chicken Breast"
+                    name="Chicken Breast",
                 )
             ],
         )
@@ -130,7 +129,7 @@ class TestGetDailySummary:
                     FoodLogItem(
                         food_id=sample_food.id,
                         quantity_g=Decimal("150"),
-                        name="Chicken Breast"
+                        name="Chicken Breast",
                     )
                 ],
             )
@@ -158,7 +157,7 @@ class TestGetDailySummary:
                 FoodLogItem(
                     food_id=sample_food.id,
                     quantity_g=Decimal("150"),
-                    name="Chicken Breast"
+                    name="Chicken Breast",
                 )
             ],
         )
@@ -202,7 +201,7 @@ class TestGetWeeklyStats:
                 FoodLogItem(
                     food_id=sample_food.id,
                     quantity_g=Decimal("150"),
-                    name="Chicken Breast"
+                    name="Chicken Breast",
                 )
             ],
         )
@@ -230,7 +229,7 @@ class TestGetWeeklyStats:
                     FoodLogItem(
                         food_id=sample_food.id,
                         quantity_g=Decimal("150"),
-                        name="Chicken Breast"
+                        name="Chicken Breast",
                     )
                 ],
                 consumed_at=consumed_at,

@@ -37,7 +37,7 @@ help:
 	@echo "  make start              - Run all three apps concurrently"
 	@echo "  make frontend-start     - Run frontend only  (pnpm dev, :3000)"
 	@echo "  make backend-start      - Run backend only   (pnpm dev, :4111)"
-	@echo "  make catalog-start      - Run catalog only   (uvicorn,  :8000)"
+	@echo "  make catalog-start      - Run catalog only   (uvicorn,  :8004)"
 	@echo ""
 	@echo "$(GREEN)Quality:$(RESET)"
 	@echo "  make check              - lint + typecheck + test (full CI pass)"
@@ -88,13 +88,13 @@ start: migrate
 	@echo "$(CYAN)Starting frontend, backend and catalog...$(RESET)"
 	@echo "$(GREEN)  frontend$(RESET) → http://localhost:3000"
 	@echo "$(GREEN)  backend $(RESET) → http://localhost:4111"
-	@echo "$(GREEN)  catalog $(RESET) → http://localhost:8000"
+	@echo "$(GREEN)  catalog $(RESET) → http://localhost:8004"
 	@echo "Press Ctrl+C to stop all services."
 	@echo ""
 	@trap 'kill 0' INT; \
 	($(NVM_INIT) && cd apps/frontend && pnpm dev 2>&1 | sed 's/^/\033[0;36m[frontend]\033[0m /') & \
 	($(NVM_INIT) && cd apps/backend  && pnpm dev 2>&1 | sed 's/^/\033[0;33m[backend ]\033[0m /') & \
-	(cd apps/catalog  && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 2>&1 | sed 's/^/\033[0;32m[catalog ]\033[0m /') & \
+	(cd apps/catalog  && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8004 2>&1 | sed 's/^/\033[0;32m[catalog ]\033[0m /') & \
 	wait
 
 frontend-start:
@@ -104,7 +104,7 @@ backend-start:
 	@$(NVM_INIT) && cd apps/backend && pnpm dev
 
 catalog-start: migrate
-	cd apps/catalog && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd apps/catalog && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8004
 
 # ── Install ─────────────────────────────────────────────────────────────────
 
@@ -196,7 +196,7 @@ dev:
 	@echo "Services available:"
 	@echo "  Frontend:  http://localhost:3000"
 	@echo "  Backend:   http://localhost:4111"
-	@echo "  Catalog:   http://localhost:8000"
+	@echo "  Catalog:   http://localhost:8004"
 	@echo "  Postgres:  localhost:5432"
 
 build:

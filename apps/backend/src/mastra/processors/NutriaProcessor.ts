@@ -16,40 +16,15 @@ import type {
   ProcessInputStepResult,
 } from "@mastra/core/processors";
 
-import { searchFoodCatalogTool } from "../tools/search-food-catalog";
-import { calculateNutritionTool } from "../tools/calculate-nutrition";
-import { findSimilarFoodsTool } from "../tools/find-similar-foods";
-import { recommendationTool } from "../tools/recommendation";
-import { logMealTool } from "../tools/log-meal";
-import { getDailySummaryTool } from "../tools/get-daily-summary";
-import { getWeeklyStatsTool } from "../tools/get-weekly-stats";
-import { createMealPlanTool } from "../tools/create-meal-plan";
-import { listMealPlansTool } from "../tools/list-meal-plans";
-import { getMealPlanTool } from "../tools/get-meal-plan";
-import { updateMealPlanTool } from "../tools/update-meal-plan";
-import { deleteMealPlanTool } from "../tools/delete-meal-plan";
-import { confirmAndLogImageMealTool } from "../tools/confirm-and-log-image-meal";
-import { updateUserProfileTool } from "../tools/update-user-profile";
-import { calculateMacrosTool } from "../tools/calculate-macros";
-import { exportMealPlanPdfTool } from "../tools/export-meal-plan-pdf";
-import { searchRecipesTool } from "../tools/search-recipes";
-import { getRecipeTool } from "../tools/get-recipe";
-import { addGoalTool } from "../tools/add-goal";
-import { addActivityTool } from "../tools/add-activity";
-import { suggestRecipeTool } from "../tools/suggest-recipe";
+import { NUTRITION_TOOLS } from "../domains/nutrition";
+import { RECIPE_TOOLS } from "../domains/recipe";
+import { ALL_TOOLS } from "../tools";
 
 // -----------------------------------------------------------------------
 // Tool sets
 // -----------------------------------------------------------------------
 
-const STATIC_TOOLS = {
-  add_goal: addGoalTool,
-  add_activity: addActivityTool,
-  save_recipe: suggestRecipeTool,
-};
-
-const ALL_TOOLS = {
-  ...STATIC_TOOLS,
+const {
   searchFoodCatalogTool,
   calculateNutritionTool,
   findSimilarFoodsTool,
@@ -57,18 +32,26 @@ const ALL_TOOLS = {
   logMealTool,
   getDailySummaryTool,
   getWeeklyStatsTool,
+  confirmAndLogImageMealTool,
+  updateUserProfileTool,
+  calculateMacrosTool,
+  add_goal,
+  add_activity,
+} = NUTRITION_TOOLS;
+
+const {
+  searchRecipesTool,
+  getRecipeTool,
+  save_recipe,
   createMealPlanTool,
   listMealPlansTool,
   getMealPlanTool,
   updateMealPlanTool,
   deleteMealPlanTool,
-  confirmAndLogImageMealTool,
-  updateUserProfileTool,
-  calculateMacrosTool,
   exportMealPlanPdfTool,
-  searchRecipesTool,
-  getRecipeTool,
-};
+} = RECIPE_TOOLS;
+
+const STATIC_TOOLS = { add_goal, add_activity, save_recipe };
 
 const INTENT_TOOLS: Record<string, Record<string, unknown>> = {
   search_food: {
@@ -113,7 +96,7 @@ const INTENT_TOOLS: Record<string, Record<string, unknown>> = {
     ...STATIC_TOOLS,
     searchRecipesTool,
     getRecipeTool,
-    suggestRecipeTool,
+    save_recipe,
     searchFoodCatalogTool,
   },
   recommendation: {

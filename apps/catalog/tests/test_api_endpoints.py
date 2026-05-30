@@ -5,6 +5,7 @@ To run these tests:
 pip install httpx
 pytest tests/test_api_endpoints.py -v
 """
+
 from decimal import Decimal
 from uuid import uuid4
 
@@ -36,7 +37,11 @@ def client_fixture():
             yield session
 
     app.dependency_overrides[get_db] = get_test_db
-    app.dependency_overrides[get_current_user] = lambda: {"user_id": "00000000-0000-0000-0000-000000000001", "username": "test", "name": "Test User"}
+    app.dependency_overrides[get_current_user] = lambda: {
+        "user_id": "00000000-0000-0000-0000-000000000001",
+        "username": "test",
+        "name": "Test User",
+    }
 
     # Create test client
     client = TestClient(app)
@@ -108,8 +113,7 @@ class TestFoodEndpoints:
     def test_search_foods(self, client, test_food):
         """Test food search endpoint"""
         response = client.post(
-            "/api/v1/foods/search",
-            json={"query": ["chicken"], "limit": 10}
+            "/api/v1/foods/search", json={"query": ["chicken"], "limit": 10}
         )
         assert response.status_code == 200
         data = response.json()
@@ -124,11 +128,8 @@ class TestFoodEndpoints:
             json={
                 "query": ["chicken"],
                 "limit": 10,
-                "filters": {
-                    "category": "meat",
-                    "verified_only": True
-                }
-            }
+                "filters": {"category": "meat", "verified_only": True},
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -136,10 +137,7 @@ class TestFoodEndpoints:
 
     def test_search_foods_empty_query(self, client):
         """Test search with empty query should fail"""
-        response = client.post(
-            "/api/v1/foods/search",
-            json={"query": "", "limit": 10}
-        )
+        response = client.post("/api/v1/foods/search", json={"query": "", "limit": 10})
         assert response.status_code == 422  # Validation error
 
 
@@ -150,14 +148,7 @@ class TestNutritionEndpoints:
         """Test nutrition calculation endpoint"""
         response = client.post(
             "/api/v1/nutrition/calculate",
-            json={
-                "foods": [
-                    {
-                        "food_id": str(test_food.id),
-                        "quantity": 150
-                    }
-                ]
-            }
+            json={"foods": [{"food_id": str(test_food.id), "quantity": 150}]},
         )
         assert response.status_code == 200
         data = response.json()
@@ -173,25 +164,13 @@ class TestNutritionEndpoints:
         fake_id = str(uuid4())
         response = client.post(
             "/api/v1/nutrition/calculate",
-            json={
-                "foods": [
-                    {
-                        "food_id": fake_id,
-                        "quantity": 100
-                    }
-                ]
-            }
+            json={"foods": [{"food_id": fake_id, "quantity": 100}]},
         )
-        assert response.status_code == 200  # Still succeeds but returns zeros
-        data = response.json()
-        assert data["total"]["calories"] == 0
+        assert response.status_code == 404
 
     def test_calculate_nutrition_empty_foods_list(self, client):
         """Test calculation with empty foods list should fail"""
-        response = client.post(
-            "/api/v1/nutrition/calculate",
-            json={"foods": []}
-        )
+        response = client.post("/api/v1/nutrition/calculate", json={"foods": []})
         assert response.status_code == 422  # Validation error
 
 
@@ -230,11 +209,11 @@ class TestTrackingEndpoints:
                     {
                         "food_id": str(test_food.id),
                         "quantity_g": 150,
-                        "name": "Test Chicken"
+                        "name": "Test Chicken",
                     }
                 ],
-                "notes": "Test meal"
-            }
+                "notes": "Test meal",
+            },
         )
         assert response.status_code == 201
         data = response.json()
@@ -298,10 +277,7 @@ class TestRecommendationEndpoints:
         """Test recommendations endpoint"""
         response = client.post(
             "/api/v1/recommendations/",
-            json={
-                "user_id": str(test_user_with_restrictions.user_id),
-                "limit": 10
-            }
+            json={"user_id": str(test_user_with_restrictions.user_id), "limit": 10},
         )
         # Note: This might be 404 if endpoint doesn't exist yet
         # Adjust based on actual implementation

@@ -61,7 +61,9 @@ class MealLogUpdate(BaseModel):
 
     @field_validator("foods")
     @classmethod
-    def foods_not_empty(cls, v: Optional[List[FoodLogItem]]) -> Optional[List[FoodLogItem]]:
+    def foods_not_empty(
+        cls, v: Optional[List[FoodLogItem]]
+    ) -> Optional[List[FoodLogItem]]:
         if v is not None and not v:
             raise ValueError("Foods list cannot be empty if provided")
         return v

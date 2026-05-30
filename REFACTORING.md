@@ -30,7 +30,7 @@ Cada app tem suas próprias dependências e roda de forma independente. A comuni
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4111";
 
 // apps/frontend/src/app/api/meal-plans/route.ts
-const CATALOG_API_URL = process.env.CATALOG_API_URL || "http://localhost:8000";
+const CATALOG_API_URL = process.env.CATALOG_API_URL || "http://localhost:8004";
 
 // apps/catalog/app/core/config.py
 JWKS_URL: str = "http://localhost:3000/api/auth/jwks"

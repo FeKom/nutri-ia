@@ -71,9 +71,7 @@ def list_recipes(
     total = session.exec(count_statement).one()
 
     # Apply pagination and order
-    statement = (
-        statement.order_by(Recipe.created_at.desc()).offset(offset).limit(limit)
-    )
+    statement = statement.order_by(Recipe.created_at.desc()).offset(offset).limit(limit)
 
     # Execute
     recipes = list(session.exec(statement).all())
@@ -137,9 +135,7 @@ def search_recipes(
     total = session.exec(count_statement).one()
 
     # Apply pagination and order
-    statement = (
-        statement.order_by(Recipe.created_at.desc()).offset(offset).limit(limit)
-    )
+    statement = statement.order_by(Recipe.created_at.desc()).offset(offset).limit(limit)
 
     # Execute
     recipes = list(session.exec(statement).all())

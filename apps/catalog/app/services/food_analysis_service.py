@@ -35,32 +35,122 @@ _detic_metadata = None
 # Vocabulário customizado de alimentos (pode ser expandido dinamicamente)
 CUSTOM_FOOD_VOCABULARY = [
     # Frutas
-    "banana", "apple", "orange", "strawberry", "grape", "watermelon",
-    "pineapple", "mango", "papaya", "avocado", "coconut", "lemon",
-    "peach", "pear", "cherry", "kiwi", "plum", "melon",
+    "banana",
+    "apple",
+    "orange",
+    "strawberry",
+    "grape",
+    "watermelon",
+    "pineapple",
+    "mango",
+    "papaya",
+    "avocado",
+    "coconut",
+    "lemon",
+    "peach",
+    "pear",
+    "cherry",
+    "kiwi",
+    "plum",
+    "melon",
     # Vegetais
-    "broccoli", "carrot", "tomato", "lettuce", "cabbage", "spinach",
-    "onion", "garlic", "potato", "sweet potato", "bell pepper", "cucumber",
-    "zucchini", "eggplant", "corn", "peas", "beans",
+    "broccoli",
+    "carrot",
+    "tomato",
+    "lettuce",
+    "cabbage",
+    "spinach",
+    "onion",
+    "garlic",
+    "potato",
+    "sweet potato",
+    "bell pepper",
+    "cucumber",
+    "zucchini",
+    "eggplant",
+    "corn",
+    "peas",
+    "beans",
     # Proteínas
-    "chicken", "beef", "pork", "fish", "salmon", "tuna", "egg", "tofu",
-    "shrimp", "bacon", "sausage", "turkey", "lamb", "duck",
+    "chicken",
+    "beef",
+    "pork",
+    "fish",
+    "salmon",
+    "tuna",
+    "egg",
+    "tofu",
+    "shrimp",
+    "bacon",
+    "sausage",
+    "turkey",
+    "lamb",
+    "duck",
     # Grãos e Carboidratos
-    "rice", "pasta", "bread", "potato", "beans", "quinoa", "oats",
-    "noodles", "tortilla", "bagel", "croissant", "cereal",
+    "rice",
+    "pasta",
+    "bread",
+    "potato",
+    "beans",
+    "quinoa",
+    "oats",
+    "noodles",
+    "tortilla",
+    "bagel",
+    "croissant",
+    "cereal",
     # Fast Food
-    "pizza", "hamburger", "hot dog", "sandwich", "french fries",
-    "donut", "cake", "ice cream", "cookie", "burrito", "taco",
+    "pizza",
+    "hamburger",
+    "hot dog",
+    "sandwich",
+    "french fries",
+    "donut",
+    "cake",
+    "ice cream",
+    "cookie",
+    "burrito",
+    "taco",
     # Alimentos Brasileiros
-    "pao de queijo", "coxinha", "brigadeiro", "acai", "feijoada",
-    "tapioca", "mandioca", "farofa", "picanha", "pamonha",
-    "acaraje", "moqueca", "vatapa", "pastel", "empada",
+    "pao de queijo",
+    "coxinha",
+    "brigadeiro",
+    "acai",
+    "feijoada",
+    "tapioca",
+    "mandioca",
+    "farofa",
+    "picanha",
+    "pamonha",
+    "acaraje",
+    "moqueca",
+    "vatapa",
+    "pastel",
+    "empada",
     # Bebidas
-    "coffee", "juice", "soda", "water", "milk", "wine", "beer",
-    "smoothie", "tea", "cocktail",
+    "coffee",
+    "juice",
+    "soda",
+    "water",
+    "milk",
+    "wine",
+    "beer",
+    "smoothie",
+    "tea",
+    "cocktail",
     # Outros
-    "cheese", "yogurt", "butter", "oil", "sugar", "salt", "sauce",
-    "honey", "chocolate", "nuts", "soup", "salad"
+    "cheese",
+    "yogurt",
+    "butter",
+    "oil",
+    "sugar",
+    "salt",
+    "sauce",
+    "honey",
+    "chocolate",
+    "nuts",
+    "soup",
+    "salad",
 ]
 
 
@@ -87,7 +177,8 @@ def get_detic_predictor():
             from detectron2.engine import DefaultPredictor
             from detectron2.data import MetadataCatalog
             import sys
-            sys.path.insert(0, 'third_party/CenterNet2/')
+
+            sys.path.insert(0, "third_party/CenterNet2/")
             from centernet.config import add_centernet_config
             from detic.config import add_detic_config
             from detic.predictor import VisualizationDemo
@@ -103,18 +194,26 @@ def get_detic_predictor():
 
         # Caminho para o modelo (você precisa baixar o modelo)
         # Download: wget https://dl.fbaipublicfiles.com/detic/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth
-        model_path = os.getenv("DETIC_MODEL_PATH", "models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth")
-        config_path = os.getenv("DETIC_CONFIG_PATH", "configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml")
+        model_path = os.getenv(
+            "DETIC_MODEL_PATH",
+            "models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth",
+        )
+        config_path = os.getenv(
+            "DETIC_CONFIG_PATH",
+            "configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
+        )
 
         if not os.path.exists(model_path):
             logger.error(f"❌ Modelo DETIC não encontrado em: {model_path}")
-            logger.warning("⚠️ Para usar DETIC, baixe o modelo de: https://github.com/facebookresearch/Detic")
+            logger.warning(
+                "⚠️ Para usar DETIC, baixe o modelo de: https://github.com/facebookresearch/Detic"
+            )
             return None, None
 
         cfg.merge_from_file(config_path)
         cfg.MODEL.WEIGHTS = model_path
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-        cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = 'rand'
+        cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = "rand"
         cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = False
 
         # Cria o preditor
@@ -122,7 +221,9 @@ def get_detic_predictor():
         _detic_metadata = MetadataCatalog.get("__unused")
         _detic_metadata.thing_classes = CUSTOM_FOOD_VOCABULARY
 
-        logger.info(f"✅ DETIC carregado com {len(CUSTOM_FOOD_VOCABULARY)} categorias de alimentos")
+        logger.info(
+            f"✅ DETIC carregado com {len(CUSTOM_FOOD_VOCABULARY)} categorias de alimentos"
+        )
         return _detic_predictor, _detic_metadata
 
     except Exception as e:
@@ -160,7 +261,9 @@ def decode_base64_image(base64_string: str) -> Image.Image:
         raise ValueError(f"Falha ao decodificar imagem base64: {str(e)}")
 
 
-def detect_foods_with_detic(image: Image.Image, confidence_threshold: float = 0.5) -> List[str]:
+def detect_foods_with_detic(
+    image: Image.Image, confidence_threshold: float = 0.5
+) -> List[str]:
     """
     Detecta alimentos em uma imagem usando DETIC
 
@@ -200,7 +303,9 @@ def detect_foods_with_detic(image: Image.Image, confidence_threshold: float = 0.
 
         # Retorna nomes únicos
         unique_foods = list(set(detected_foods))
-        logger.info(f"✅ DETIC detectou {len(unique_foods)} tipo(s) de alimento(s) único(s)")
+        logger.info(
+            f"✅ DETIC detectou {len(unique_foods)} tipo(s) de alimento(s) único(s)"
+        )
         return unique_foods
 
     except Exception as e:
@@ -210,9 +315,7 @@ def detect_foods_with_detic(image: Image.Image, confidence_threshold: float = 0.
 
 
 def search_food_by_embedding_similarity(
-    session: Session,
-    query_embedding: List[float],
-    limit: int = 5
+    session: Session, query_embedding: List[float], limit: int = 5
 ) -> List[Tuple[Food, float]]:
     """
     Busca alimentos no catálogo usando similaridade vetorial (cosine distance)
@@ -230,8 +333,7 @@ def search_food_by_embedding_similarity(
         # Nota: cosine_distance retorna a distância (0=idêntico, 2=oposto)
         # Similarity = 1 - distance
         query = select(
-            Food,
-            Food.embedding.cosine_distance(query_embedding).label("distance")
+            Food, Food.embedding.cosine_distance(query_embedding).label("distance")
         )
         query = query.where(Food.embedding.isnot(None))
         query = query.order_by("distance")
@@ -251,7 +353,7 @@ async def analyze_food_image(
     session: Session,
     base64_image: str,
     top_k_per_food: int = 3,
-    confidence_threshold: float = 0.5
+    confidence_threshold: float = 0.5,
 ) -> Dict[str, any]:
     """
     Analisa uma imagem de alimentos e retorna os alimentos do catálogo correspondentes
@@ -309,7 +411,7 @@ async def analyze_food_image(
                 "catalog_matches": [],
                 "total_detected": 0,
                 "total_catalog_matches": 0,
-                "message": "Nenhum alimento detectado na imagem"
+                "message": "Nenhum alimento detectado na imagem",
             }
 
         # 3. Para cada alimento detectado, busca no catálogo
@@ -323,40 +425,41 @@ async def analyze_food_image(
 
             # Busca alimentos similares no catálogo
             similar_foods = search_food_by_embedding_similarity(
-                session,
-                query_embedding,
-                limit=top_k_per_food
+                session, query_embedding, limit=top_k_per_food
             )
 
             if similar_foods:
                 matches = []
                 for food, similarity in similar_foods:
-                    matches.append({
-                        "id": str(food.id),
-                        "name": food.name,
-                        "similarity": similarity,
-                        "category": food.category,
-                        "calories_per_100g": float(food.calorie_per_100g) if food.calorie_per_100g else None,
-                        "serving_size_g": float(food.serving_size_g),
-                        "serving_unit": food.serving_unit,
-                        "source": food.source,
-                        "is_verified": food.is_verified
-                    })
+                    matches.append(
+                        {
+                            "id": str(food.id),
+                            "name": food.name,
+                            "similarity": similarity,
+                            "category": food.category,
+                            "calories_per_100g": float(food.calorie_per_100g)
+                            if food.calorie_per_100g
+                            else None,
+                            "serving_size_g": float(food.serving_size_g),
+                            "serving_unit": food.serving_unit,
+                            "source": food.source,
+                            "is_verified": food.is_verified,
+                        }
+                    )
                     logger.info(f"  ✓ {food.name} (similaridade: {similarity:.2%})")
 
-                catalog_matches.append({
-                    "detected_name": food_name,
-                    "matches": matches
-                })
+                catalog_matches.append({"detected_name": food_name, "matches": matches})
 
-        logger.info(f"✅ Análise concluída: {len(detected_food_names)} alimento(s) processado(s)")
+        logger.info(
+            f"✅ Análise concluída: {len(detected_food_names)} alimento(s) processado(s)"
+        )
 
         return {
             "success": True,
             "detected_foods": detected_food_names,
             "catalog_matches": catalog_matches,
             "total_detected": len(detected_food_names),
-            "total_catalog_matches": sum(len(m["matches"]) for m in catalog_matches)
+            "total_catalog_matches": sum(len(m["matches"]) for m in catalog_matches),
         }
 
     except Exception as e:

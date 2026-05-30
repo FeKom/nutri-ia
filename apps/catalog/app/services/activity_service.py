@@ -7,7 +7,9 @@ from app.models.activity_log import ActivityLog
 from app.schemas.activity_log import ActivityLogCreate
 
 
-def create_activity(session: Session, user_id: UUID, data: ActivityLogCreate) -> ActivityLog:
+def create_activity(
+    session: Session, user_id: UUID, data: ActivityLogCreate
+) -> ActivityLog:
     activity = ActivityLog(
         user_id=user_id,
         type=data.type,
@@ -22,7 +24,9 @@ def create_activity(session: Session, user_id: UUID, data: ActivityLogCreate) ->
     return activity
 
 
-def list_activities(session: Session, user_id: UUID, limit: int = 50) -> List[ActivityLog]:
+def list_activities(
+    session: Session, user_id: UUID, limit: int = 50
+) -> List[ActivityLog]:
     return list(
         session.exec(
             select(ActivityLog)
@@ -35,7 +39,9 @@ def list_activities(session: Session, user_id: UUID, limit: int = 50) -> List[Ac
 
 def delete_activity(session: Session, activity_id: UUID, user_id: UUID) -> bool:
     activity = session.exec(
-        select(ActivityLog).where(ActivityLog.id == activity_id, ActivityLog.user_id == user_id)
+        select(ActivityLog).where(
+            ActivityLog.id == activity_id, ActivityLog.user_id == user_id
+        )
     ).first()
     if not activity:
         return False

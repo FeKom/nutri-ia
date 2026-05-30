@@ -1,8 +1,27 @@
 import os
+from functools import lru_cache
 from typing import List, Union
 
+import boto3
+from botocore import config
+from dotenv import load_dotenv
 from pydantic import PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+load_dotenv()
+
+
+@lru_cache(maxsize=1)
+def get_s3_client():
+    return boto3.client(
+        "s3",
+        endpoint_url=os.getenv("AWS_S3_ENDPOINT"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_DEFAULT_REGION"),
+        config=config.Config(signature_version="s3v4"),
+    )
+
 
 _APP_ENV = os.getenv("APP_ENV", "development")
 
@@ -27,7 +46,7 @@ class Settings(BaseSettings):
 
     # Server Configuration
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8004
 
     # Database Configuration
     DATABASE_URL: PostgresDsn
@@ -38,6 +57,9 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     JWT_ISSUER: str = "nutria-catalog"
     JWT_AUDIENCE: str = "nutria"
+
+    # S3 / Backblaze B2
+    AWS_S3_BUCKET: str = ""
 
     # Mastra backend URL
     MASTRA_URL: str = "http://localhost:4111"

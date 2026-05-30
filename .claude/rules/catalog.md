@@ -11,7 +11,7 @@ paths:
 
 ```bash
 make dev          # docker + migrations + server
-make run          # uvicorn app.main:app --reload (port 8000)
+make run          # uvicorn app.main:app --reload (port 8004)
 make migrate      # alembic upgrade head
 pytest tests/ -v  # all tests (76 passing)
 python -m app.eval.cli --help  # eval CLI

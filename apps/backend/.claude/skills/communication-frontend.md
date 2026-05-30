@@ -5,7 +5,7 @@ Contrato de comunicacao entre o nutria-frontend (Next.js) e o nutria-backend (Ma
 ## Arquitetura
 
 ```
-Browser -> Frontend (Next.js:3000) -> Backend (Mastra/Hono:4111) -> Catalog (FastAPI:8000)
+Browser -> Frontend (Next.js:3000) -> Backend (Mastra/Hono:4111) -> Catalog (FastAPI:8004)
                                   |                               |
                                   +--- API Routes (proxy) --------+--- catalog-client.ts
                                   +--- Chat (SSE) ----------------+--- /chat endpoint
@@ -15,7 +15,7 @@ Browser -> Frontend (Next.js:3000) -> Backend (Mastra/Hono:4111) -> Catalog (Fas
 - **Backend** roda em `localhost:4111` (Mastra framework com Hono server)
 - Variaveis de ambiente:
   - Frontend: `NEXT_PUBLIC_BACKEND_URL` (default `http://localhost:4111`)
-  - Frontend: `CATALOG_API_URL` (default `http://localhost:8000`) - para rotas que proxeiam direto ao catalog
+  - Frontend: `CATALOG_API_URL` (default `http://localhost:8004`) - para rotas que proxeiam direto ao catalog
   - Backend: `FRONTEND_URL` (default `http://localhost:3000`) - para CORS
 
 ## Auth Flow

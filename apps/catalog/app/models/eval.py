@@ -23,7 +23,7 @@ class DocumentChunk(UUIDMixin, TimestampMixin, SQLModel, table=True):
     content: str = Field(nullable=False)
     embedding: Optional[List[float]] = Field(
         default=None,
-        sa_column=Column(Vector(384), nullable=True),
+        sa_column=Column(Vector(768), nullable=True),
     )
     source_name: str = Field(nullable=False, index=True)
     source_type: SourceType = Field(

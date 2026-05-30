@@ -7,6 +7,7 @@ Usage (from apps/catalog/):
 Does not require a running server or database connection — FastAPI generates
 the spec statically from the route and schema definitions.
 """
+
 import json
 import os
 import sys
@@ -20,7 +21,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.main import app  # noqa: E402
 
 spec = app.openapi()
-out = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "openapi.json")
+out = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "openapi.json"
+)
 with open(out, "w") as f:
     json.dump(spec, f, indent=2)
     f.write("\n")

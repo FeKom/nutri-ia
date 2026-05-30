@@ -5,7 +5,7 @@ Contrato de comunicacao entre o nutria-backend (Mastra/Hono) e o nutria-catalog 
 ## Arquitetura
 
 ```
-Frontend (Next.js:3000) -> Backend (Mastra/Hono:4111) -> Catalog API (FastAPI:8000)
+Frontend (Next.js:3000) -> Backend (Mastra/Hono:4111) -> Catalog API (FastAPI:8004)
 ```
 
 - **Backend** usa `catalog-client.ts` para se comunicar com o Catalog
@@ -16,7 +16,7 @@ Frontend (Next.js:3000) -> Backend (Mastra/Hono:4111) -> Catalog API (FastAPI:80
 
 ```typescript
 // src/mastra/config/env.ts
-CATALOG_API_URL: string     // default "http://localhost:8000"
+CATALOG_API_URL: string     // default "http://localhost:8004"
 CATALOG_API_TIMEOUT: number // default 5000 (ms)
 CATALOG_API_RETRY_ATTEMPTS: number // default 3
 CATALOG_API_RETRY_DELAY: number    // default 1000 (ms)
@@ -32,7 +32,7 @@ Todas as funcoes aceitam `(request, config?, authToken?)`.
 
 ## Endpoints da Catalog API
 
-Base URL: `http://localhost:8000`
+Base URL: `http://localhost:8004`
 Prefixo: `/api/v1`
 
 ### Foods

@@ -11,6 +11,7 @@ Prerequisites:
 
 Run: python -m scripts.import_to_database
 """
+
 import csv
 import sys
 from datetime import datetime, timezone
@@ -41,7 +42,7 @@ def parse_decimal(value: str) -> Optional[Decimal]:
 
 def parse_bool(value: str) -> bool:
     """Parse boolean from string."""
-    return value.lower() in ('true', '1', 'yes')
+    return value.lower() in ("true", "1", "yes")
 
 
 def parse_uuid(value: str) -> UUID:
@@ -52,10 +53,10 @@ def parse_uuid(value: str) -> UUID:
 def parse_datetime(value: str) -> datetime:
     """Parse datetime from ISO format string."""
     # Handle timezone-aware datetime
-    if value.endswith('+00:00'):
+    if value.endswith("+00:00"):
         return datetime.fromisoformat(value)
     # Handle naive datetime, assume UTC
-    return datetime.fromisoformat(value.replace('Z', '+00:00'))
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def count_existing_foods(session: Session) -> int:
@@ -76,17 +77,15 @@ def import_foods(session: Session, foods_file: Path) -> dict:
     imported = 0
     skipped = 0
 
-    with open(foods_file, 'r', encoding='utf-8') as f:
+    with open(foods_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
 
         for row in reader:
-            csv_id = row['id']
-            usda_id = row['usda_id']
+            csv_id = row["id"]
+            usda_id = row["usda_id"]
 
             # Check if food already exists (by usda_id)
-            existing = session.exec(
-                select(Food).where(Food.usda_id == usda_id)
-            ).first()
+            existing = session.exec(select(Food).where(Food.usda_id == usda_id)).first()
 
             if existing:
                 foods_map[csv_id] = existing
@@ -94,7 +93,7 @@ def import_foods(session: Session, foods_file: Path) -> dict:
                 continue
 
             # Check if name_normalized already exists
-            name_normalized = row['name_normalized']
+            name_normalized = row["name_normalized"]
             existing_name = session.exec(
                 select(Food).where(Food.name_normalized == name_normalized)
             ).first()
@@ -107,15 +106,15 @@ def import_foods(session: Session, foods_file: Path) -> dict:
             # Create new food
             food = Food(
                 id=parse_uuid(csv_id),
-                name=row['name'],
+                name=row["name"],
                 name_normalized=name_normalized,
-                category=row['category'] if row['category'] else None,
-                serving_size_g=parse_decimal(row['serving_size_g']) or Decimal('100'),
-                serving_unit=row['serving_unit'] or 'g',
-                calorie_per_100g=parse_decimal(row['calorie_per_100g']),
+                category=row["category"] if row["category"] else None,
+                serving_size_g=parse_decimal(row["serving_size_g"]) or Decimal("100"),
+                serving_unit=row["serving_unit"] or "g",
+                calorie_per_100g=parse_decimal(row["calorie_per_100g"]),
                 usda_id=usda_id,
                 source=FoodSource.USDA,
-                is_verified=parse_bool(row['is_verified']),
+                is_verified=parse_bool(row["is_verified"]),
                 embedding=None,
             )
 
@@ -148,11 +147,11 @@ def import_nutrients(session: Session, nutrients_file: Path, foods_map: dict) ->
     imported = 0
     skipped = 0
 
-    with open(nutrients_file, 'r', encoding='utf-8') as f:
+    with open(nutrients_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
 
         for row in reader:
-            csv_food_id = row['food_id']
+            csv_food_id = row["food_id"]
 
             # Get the actual food from our mapping
             food = foods_map.get(csv_food_id)
@@ -171,19 +170,19 @@ def import_nutrients(session: Session, nutrients_file: Path, foods_map: dict) ->
 
             # Create new nutrient record
             nutrient = FoodNutrient(
-                id=parse_uuid(row['id']),
+                id=parse_uuid(row["id"]),
                 food_id=food.id,
-                calories_100g=parse_decimal(row['calories_100g']),
-                protein_g_100g=parse_decimal(row['protein_g_100g']),
-                carbs_g_100g=parse_decimal(row['carbs_g_100g']),
-                fat_g_100g=parse_decimal(row['fat_g_100g']),
-                saturated_fat_g_100g=parse_decimal(row['saturated_fat_g_100g']),
-                fiber_g_100g=parse_decimal(row['fiber_g_100g']),
-                sugar_g_100g=parse_decimal(row['sugar_g_100g']),
-                sodium_mg_100g=parse_decimal(row['sodium_mg_100g']),
-                calcium_mg_100g=parse_decimal(row['calcium_mg_100g']),
-                iron_mg_100g=parse_decimal(row['iron_mg_100g']),
-                vitamin_c_mg_100g=parse_decimal(row['vitamin_c_mg_100g']),
+                calories_100g=parse_decimal(row["calories_100g"]),
+                protein_g_100g=parse_decimal(row["protein_g_100g"]),
+                carbs_g_100g=parse_decimal(row["carbs_g_100g"]),
+                fat_g_100g=parse_decimal(row["fat_g_100g"]),
+                saturated_fat_g_100g=parse_decimal(row["saturated_fat_g_100g"]),
+                fiber_g_100g=parse_decimal(row["fiber_g_100g"]),
+                sugar_g_100g=parse_decimal(row["sugar_g_100g"]),
+                sodium_mg_100g=parse_decimal(row["sodium_mg_100g"]),
+                calcium_mg_100g=parse_decimal(row["calcium_mg_100g"]),
+                iron_mg_100g=parse_decimal(row["iron_mg_100g"]),
+                vitamin_c_mg_100g=parse_decimal(row["vitamin_c_mg_100g"]),
             )
 
             batch.append(nutrient)

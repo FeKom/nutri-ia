@@ -5,6 +5,7 @@ To run tests:
 1. Install test dependencies: pip install pytest pytest-asyncio httpx
 2. Run: pytest tests/
 """
+
 import pytest
 from datetime import datetime, date
 from decimal import Decimal

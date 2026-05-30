@@ -28,6 +28,7 @@ MAX_MEGAPIXELS = 16  # 16MP (ex: 4000x4000)
 
 class ImageValidationError(Exception):
     """Erro de validação de imagem"""
+
     pass
 
 
@@ -65,7 +66,7 @@ def validate_and_sanitize_image(base64_image: str) -> Tuple[Image.Image, dict]:
         max_base64_length = int(MAX_IMAGE_SIZE_BYTES * 1.4)
         if len(base64_data) > max_base64_length:
             raise ImageValidationError(
-                f"Imagem muito grande. Tamanho máximo: {MAX_IMAGE_SIZE_BYTES / (1024*1024):.1f}MB"
+                f"Imagem muito grande. Tamanho máximo: {MAX_IMAGE_SIZE_BYTES / (1024 * 1024):.1f}MB"
             )
 
         # 3. Decodifica base64 para bytes
@@ -77,8 +78,8 @@ def validate_and_sanitize_image(base64_image: str) -> Tuple[Image.Image, dict]:
         # 4. Valida tamanho real dos bytes
         if len(image_bytes) > MAX_IMAGE_SIZE_BYTES:
             raise ImageValidationError(
-                f"Imagem muito grande. Tamanho: {len(image_bytes)/(1024*1024):.1f}MB, "
-                f"máximo: {MAX_IMAGE_SIZE_BYTES/(1024*1024):.1f}MB"
+                f"Imagem muito grande. Tamanho: {len(image_bytes) / (1024 * 1024):.1f}MB, "
+                f"máximo: {MAX_IMAGE_SIZE_BYTES / (1024 * 1024):.1f}MB"
             )
 
         if len(image_bytes) < 100:
@@ -127,7 +128,9 @@ def validate_and_sanitize_image(base64_image: str) -> Tuple[Image.Image, dict]:
             rgb_image = Image.new("RGB", image.size, (255, 255, 255))
             if image.mode == "P":
                 image = image.convert("RGBA")
-            rgb_image.paste(image, mask=image.split()[-1] if image.mode in ("RGBA", "LA") else None)
+            rgb_image.paste(
+                image, mask=image.split()[-1] if image.mode in ("RGBA", "LA") else None
+            )
             image = rgb_image
         elif image.mode != "RGB":
             image = image.convert("RGB")
@@ -135,7 +138,9 @@ def validate_and_sanitize_image(base64_image: str) -> Tuple[Image.Image, dict]:
         # Salva como JPEG sem metadados (mais seguro)
         # exif=None remove todo EXIF
         # optimize=False evita processamento extra
-        image.save(sanitized_buffer, format="JPEG", quality=95, exif=None, optimize=False)
+        image.save(
+            sanitized_buffer, format="JPEG", quality=95, exif=None, optimize=False
+        )
         sanitized_buffer.seek(0)
 
         # Recarrega a imagem sanitizada
@@ -253,7 +258,11 @@ def validate_detection_results(detected_foods: list, catalog_matches: list) -> d
 
             # Valida similarity score
             similarity = match.get("similarity", 0)
-            if not isinstance(similarity, (int, float)) or similarity < 0 or similarity > 1:
+            if (
+                not isinstance(similarity, (int, float))
+                or similarity < 0
+                or similarity > 1
+            ):
                 logger.warning(f"⚠️ Similarity score inválido: {similarity}")
                 continue
 
@@ -266,14 +275,13 @@ def validate_detection_results(detected_foods: list, catalog_matches: list) -> d
             validated_match_list.append(match)
 
         if validated_match_list:
-            validated_matches.append({
-                "detected_name": detected_name,
-                "matches": validated_match_list
-            })
+            validated_matches.append(
+                {"detected_name": detected_name, "matches": validated_match_list}
+            )
 
     return {
         "detected_foods": validated_foods,
         "catalog_matches": validated_matches,
         "total_detected": len(validated_foods),
-        "total_catalog_matches": sum(len(m["matches"]) for m in validated_matches)
+        "total_catalog_matches": sum(len(m["matches"]) for m in validated_matches),
     }

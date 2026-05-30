@@ -20,6 +20,7 @@ class JailbreakScorer(Scorer):
     Score = 1.0 - max_cosine_similarity(question, jailbreak_patterns).
     High score (near 1.0) = safe. Low score = likely adversarial.
     """
+
     name = "jailbreak"
     PATTERNS = _ADVERSARIAL_PATTERNS
 

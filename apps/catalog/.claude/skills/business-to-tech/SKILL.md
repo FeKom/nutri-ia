@@ -407,7 +407,7 @@ Não use para:
 
 ## Recursos Adicionais
 
-- **Documentação da API:** http://localhost:8000/docs
+- **Documentação da API:** http://localhost:8004/docs
 - **README:** `nutria-catalog/README.md`
 - **Próximos Passos:** `proximos-passos-catalog-1.md`
 - **Daily Report:** `daily.md`

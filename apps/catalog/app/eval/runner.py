@@ -16,7 +16,12 @@ from app.eval.experiments import (
 )
 from app.eval.scorer import compute_weighted_score, load_weights
 from app.eval.scorers import ALL_SCORERS
-from app.schemas.eval import EvalExperimentCreate, EvalQuestion, GoldenDatasetItem, OverfittingDatasetItem
+from app.schemas.eval import (
+    EvalExperimentCreate,
+    EvalQuestion,
+    GoldenDatasetItem,
+    OverfittingDatasetItem,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +72,9 @@ def _call_mastra(
             if response.status_code == 429 or (
                 response.status_code == 500 and "Too Many Requests" in response.text
             ):
-                logger.warning(f"Rate limit (attempt {attempt + 1}/{max_retries}), waiting {wait}s...")
+                logger.warning(
+                    f"Rate limit (attempt {attempt + 1}/{max_retries}), waiting {wait}s..."
+                )
                 time.sleep(wait)
                 wait *= 2
                 continue
@@ -84,10 +91,20 @@ def _call_mastra(
 
         except httpx.HTTPError as e:
             logger.error(f"Mastra eval call failed: {e}")
-            return {"answer": f"[Error: {e}]", "context_used": None, "latency_ms": 0, "scores": None}
+            return {
+                "answer": f"[Error: {e}]",
+                "context_used": None,
+                "latency_ms": 0,
+                "scores": None,
+            }
 
     logger.error("Max retries exceeded")
-    return {"answer": "[Error: max retries]", "context_used": None, "latency_ms": 0, "scores": None}
+    return {
+        "answer": "[Error: max retries]",
+        "context_used": None,
+        "latency_ms": 0,
+        "scores": None,
+    }
 
 
 def run_experiment(session: Session, experiment_id: UUID) -> list:
@@ -176,7 +193,9 @@ def create_eval_experiment(session: Session, data: EvalExperimentCreate):
         "dataset_filename": data.dataset_filename,
         "agent_mode": data.agent_mode,
     }
-    return create_experiment(session, name=data.name, description=data.description, params=params)
+    return create_experiment(
+        session, name=data.name, description=data.description, params=params
+    )
 
 
 def run_eval_compat(session: Session, eval_question: EvalQuestion) -> list:

@@ -63,7 +63,9 @@ def list_meal_plans(
     offset = (page - 1) * page_size
 
     # Get total count
-    count_statement = select(func.count()).select_from(MealPlan).where(MealPlan.user_id == user_id)
+    count_statement = (
+        select(func.count()).select_from(MealPlan).where(MealPlan.user_id == user_id)
+    )
     total = session.exec(count_statement).one()
 
     # Get paginated plans
@@ -96,7 +98,9 @@ def get_meal_plan(session: Session, plan_id: UUID, user_id: UUID) -> Optional[Me
     Returns:
         MealPlan object or None if not found
     """
-    statement = select(MealPlan).where(MealPlan.id == plan_id, MealPlan.user_id == user_id)
+    statement = select(MealPlan).where(
+        MealPlan.id == plan_id, MealPlan.user_id == user_id
+    )
     return session.exec(statement).first()
 
 

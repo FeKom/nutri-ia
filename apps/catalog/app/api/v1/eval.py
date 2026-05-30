@@ -26,12 +26,20 @@ from app.eval.runner import (
     run_eval_compat,
     score_eval_compat,
 )
-from app.schemas.eval import (ChunkResult, ChunkSearchRequest,
-                              ChunkSearchResponse, EvalExperimentCreate,
-                              EvalExperimentResponse, EvalExperimentSummary,
-                              EvalListResponse, EvalQuestion,
-                              EvalResultResponse, EvalRunResponse,
-                              IngestResponse, ScoreRequest)
+from app.schemas.eval import (
+    ChunkResult,
+    ChunkSearchRequest,
+    ChunkSearchResponse,
+    EvalExperimentCreate,
+    EvalExperimentResponse,
+    EvalExperimentSummary,
+    EvalListResponse,
+    EvalQuestion,
+    EvalResultResponse,
+    EvalRunResponse,
+    IngestResponse,
+    ScoreRequest,
+)
 
 router = APIRouter()
 
@@ -77,7 +85,7 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
 class EmbeddingRequest(BaseModel):
     input: list[str]
-    model: str = "intfloat/multilingual-e5-small"
+    model: str = "intfloat/multilingual-e5-base"
 
 
 @router.post("/embeddings")

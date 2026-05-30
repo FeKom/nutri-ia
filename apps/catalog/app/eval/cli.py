@@ -2,6 +2,7 @@
 Nutria Eval CLI
 Usage: python3 -m app.eval.cli <command> [options]
 """
+
 import json
 import sys
 from pathlib import Path
@@ -26,15 +27,19 @@ console = Console()
 def _get_session():
     from app.database.database import engine
     from sqlmodel import Session
+
     return Session(engine)
 
 
 # ─── Experiment commands ───────────────────────────────────────────────────────
 
+
 @experiment_app.command("create")
 def experiment_create(
     name: str = typer.Option(..., help="Experiment name"),
-    prompt: str = typer.Option(..., help="Prompt filename (e.g. v1.md) or inline prompt text"),
+    prompt: str = typer.Option(
+        ..., help="Prompt filename (e.g. v1.md) or inline prompt text"
+    ),
     dataset: str = typer.Option("golden_dataset.json", help="Dataset filename"),
     retrieval_source: str = typer.Option("json", help="json | pdf | md"),
     agent_mode: str = typer.Option("direct", help="direct | production"),
@@ -51,7 +56,9 @@ def experiment_create(
         "agent_mode": agent_mode,
     }
     with _get_session() as session:
-        exp = create_experiment(session, name=name, description=description, params=params)
+        exp = create_experiment(
+            session, name=name, description=description, params=params
+        )
     console.print(f"[green]Created experiment:[/green] {exp.id}")
     console.print(f"  name: {exp.name}")
     console.print(f"  dataset: {dataset}")
@@ -81,10 +88,14 @@ def experiment_run(
             result = get_result_by_run(session, run.id)
             table.add_row(
                 run.question[:50],
-                f"{result.overall_score:.3f}" if result and result.overall_score else "—",
+                f"{result.overall_score:.3f}"
+                if result and result.overall_score
+                else "—",
                 f"{result.faithfulness:.3f}" if result and result.faithfulness else "—",
                 f"{result.jailbreak:.3f}" if result and result.jailbreak else "—",
-                f"{result.hallucination:.3f}" if result and result.hallucination else "—",
+                f"{result.hallucination:.3f}"
+                if result and result.hallucination
+                else "—",
             )
         console.print(table)
         console.print(f"[green]Done. {len(runs)} runs.[/green]")
@@ -93,7 +104,11 @@ def experiment_run(
 @experiment_app.command("list")
 def experiment_list():
     """List all experiments with average scores."""
-    from app.eval.experiments import list_experiments, list_runs_by_experiment, get_result_by_run
+    from app.eval.experiments import (
+        list_experiments,
+        list_runs_by_experiment,
+        get_result_by_run,
+    )
     import statistics
 
     with _get_session() as session:
@@ -129,7 +144,11 @@ def experiment_show(
     experiment_id: str = typer.Argument(..., help="Experiment UUID"),
 ):
     """Show per-question scores for an experiment."""
-    from app.eval.experiments import get_experiment_by_id, list_runs_by_experiment, get_result_by_run
+    from app.eval.experiments import (
+        get_experiment_by_id,
+        list_runs_by_experiment,
+        get_result_by_run,
+    )
 
     with _get_session() as session:
         exp = get_experiment_by_id(session, UUID(experiment_id))
@@ -145,7 +164,10 @@ def experiment_show(
 
         for run in runs:
             r = get_result_by_run(session, run.id)
-            def fmt(v): return f"{v:.3f}" if v is not None else "—"
+
+            def fmt(v):
+                return f"{v:.3f}" if v is not None else "—"
+
             table.add_row(
                 run.question[:45],
                 fmt(r.overall_score if r else None),
@@ -159,10 +181,16 @@ def experiment_show(
 
 @experiment_app.command("export")
 def experiment_export(
-    out: Path = typer.Option("tests/eval/analysis/results.json", help="Output file path"),
+    out: Path = typer.Option(
+        "tests/eval/analysis/results.json", help="Output file path"
+    ),
 ):
     """Export all experiment results to a JSON file for the notebook."""
-    from app.eval.experiments import list_experiments, list_runs_by_experiment, get_result_by_run
+    from app.eval.experiments import (
+        list_experiments,
+        list_runs_by_experiment,
+        get_result_by_run,
+    )
 
     with _get_session() as session:
         experiments = list_experiments(session)
@@ -172,32 +200,38 @@ def experiment_export(
             run_data = []
             for run in runs:
                 result = get_result_by_run(session, run.id)
-                run_data.append({
-                    "id": str(run.id),
-                    "question": run.question,
-                    "answer": run.answer,
-                    "expected_answer": run.expected_answer,
-                    "latency_ms": run.latency_ms,
-                    "weight": run.weight,
-                    "result": {
-                        "faithfulness": result.faithfulness,
-                        "answer_relevancy": result.answer_relevancy,
-                        "context_relevancy": result.context_relevancy,
-                        "context_recall": result.context_recall,
-                        "context_precision": result.context_precision,
-                        "hallucination": result.hallucination,
-                        "jailbreak": result.jailbreak,
-                        "overall_score": result.overall_score,
-                    } if result else None,
-                })
-            output.append({
-                "id": str(exp.id),
-                "name": exp.name,
-                "description": exp.description,
-                "params": exp.params,
-                "created_at": str(exp.created_at),
-                "runs": run_data,
-            })
+                run_data.append(
+                    {
+                        "id": str(run.id),
+                        "question": run.question,
+                        "answer": run.answer,
+                        "expected_answer": run.expected_answer,
+                        "latency_ms": run.latency_ms,
+                        "weight": run.weight,
+                        "result": {
+                            "faithfulness": result.faithfulness,
+                            "answer_relevancy": result.answer_relevancy,
+                            "context_relevancy": result.context_relevancy,
+                            "context_recall": result.context_recall,
+                            "context_precision": result.context_precision,
+                            "hallucination": result.hallucination,
+                            "jailbreak": result.jailbreak,
+                            "overall_score": result.overall_score,
+                        }
+                        if result
+                        else None,
+                    }
+                )
+            output.append(
+                {
+                    "id": str(exp.id),
+                    "name": exp.name,
+                    "description": exp.description,
+                    "params": exp.params,
+                    "created_at": str(exp.created_at),
+                    "runs": run_data,
+                }
+            )
 
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(output, indent=2, ensure_ascii=False))
@@ -206,10 +240,12 @@ def experiment_export(
 
 # ─── Dataset commands ──────────────────────────────────────────────────────────
 
+
 @dataset_app.command("list")
 def dataset_list():
     """List available dataset files."""
     from app.eval.datasets import list_datasets
+
     datasets = list_datasets()
     if not datasets:
         console.print("[yellow]No datasets found.[/yellow]")
@@ -224,6 +260,7 @@ def dataset_new(
 ):
     """Interactively build a Q&A dataset file."""
     from app.eval.datasets import DATASETS_DIR
+
     items = []
     console.print("[bold]Add Q&A pairs. Empty question to finish.[/bold]")
     while True:
@@ -232,7 +269,9 @@ def dataset_new(
             break
         expected = typer.prompt("Expected answer").strip()
         weight = typer.prompt("Weight", default="1.0")
-        items.append({"question": question, "expected_answer": expected, "weight": float(weight)})
+        items.append(
+            {"question": question, "expected_answer": expected, "weight": float(weight)}
+        )
     path = DATASETS_DIR / out
     path.write_text(json.dumps(items, indent=2, ensure_ascii=False))
     console.print(f"[green]Saved {len(items)} items to {path}[/green]")
@@ -242,17 +281,22 @@ def dataset_new(
 def dataset_ingest(filename: str = typer.Argument(...)):
     """Embed and store a dataset file in document_chunks."""
     from app.eval.datasets import ingest_dataset
+
     with _get_session() as session:
         result = ingest_dataset(session, filename)
-    console.print(f"[green]Ingested:[/green] {result.chunks_created} chunks (skipped {result.chunks_skipped})")
+    console.print(
+        f"[green]Ingested:[/green] {result.chunks_created} chunks (skipped {result.chunks_skipped})"
+    )
 
 
 # ─── Prompt commands ───────────────────────────────────────────────────────────
+
 
 @prompt_app.command("list")
 def prompt_list():
     """List available prompt files."""
     from app.eval.datasets import list_prompts
+
     prompts = list_prompts()
     if not prompts:
         console.print("[yellow]No prompts found.[/yellow]")
@@ -265,6 +309,7 @@ def prompt_list():
 def prompt_new(name: str = typer.Option(..., help="Prompt name without .md extension")):
     """Create a new prompt file from the default template."""
     from app.eval.datasets import PROMPTS_DIR
+
     PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
     path = PROMPTS_DIR / f"{name}.md"
     if path.exists():
@@ -283,6 +328,7 @@ def prompt_new(name: str = typer.Option(..., help="Prompt name without .md exten
 
 # ─── Score command ─────────────────────────────────────────────────────────────
 
+
 @app.command("score")
 def score_one(
     question: str = typer.Option(...),
@@ -297,7 +343,9 @@ def score_one(
 
     weights = load_weights(WEIGHTS_PATH)
     context_chunks = [c.strip() for c in context.split(",")] if context else []
-    scores = compute_weighted_score(question, answer, context_chunks, expected, ALL_SCORERS, weights)
+    scores = compute_weighted_score(
+        question, answer, context_chunks, expected, ALL_SCORERS, weights
+    )
 
     table = Table(title="Scores")
     table.add_column("Metric")

@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 def list_datasets() -> list[str]:
     if not DATASETS_DIR.exists():
         return []
-    return [f.name for f in DATASETS_DIR.iterdir() if f.suffix in (".json", ".pdf", ".md")]
+    return [
+        f.name for f in DATASETS_DIR.iterdir() if f.suffix in (".json", ".pdf", ".md")
+    ]
 
 
 def load_dataset(path_or_name: str) -> Any:
@@ -134,7 +136,9 @@ def ingest_dataset(session: Session, filename: str) -> IngestResponse:
     # check which chunk_indexes already exist for this source to avoid duplicates
     existing_indexes = set(
         session.exec(
-            select(DocumentChunk.chunk_index).where(DocumentChunk.source_name == filename)
+            select(DocumentChunk.chunk_index).where(
+                DocumentChunk.source_name == filename
+            )
         ).all()
     )
 
@@ -154,6 +158,7 @@ def ingest_dataset(session: Session, filename: str) -> IngestResponse:
 
     texts = [text for _, text in to_create]
     from app.services.embedding_service import generate_embeddings_batch
+
     embeddings = generate_embeddings_batch(texts)
 
     for (idx, text), embedding in zip(to_create, embeddings):
@@ -180,7 +185,9 @@ def ingest_dataset(session: Session, filename: str) -> IngestResponse:
     )
 
 
-def search_chunks(session: Session, query: str, retrieval_source: str, limit: int = 5) -> list[DocumentChunk]:
+def search_chunks(
+    session: Session, query: str, retrieval_source: str, limit: int = 5
+) -> list[DocumentChunk]:
     """
     Search document_chunks by semantic similarity filtered by retrieval_source.
     retrieval_source: "json" → TEXT, "pdf" → PDF, "md" → MARKDOWN

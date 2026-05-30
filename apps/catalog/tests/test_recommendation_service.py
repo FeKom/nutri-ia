@@ -4,6 +4,7 @@ Tests for recommendation service
 To run these tests:
 pytest tests/test_recommendation_service.py -v
 """
+
 from decimal import Decimal
 from uuid import uuid4
 
@@ -95,12 +96,16 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert
         assert len(recommendations) == len(sample_foods)
 
-    def test_recommend_foods_vegetarian_restriction(self, session: Session, sample_foods):
+    def test_recommend_foods_vegetarian_restriction(
+        self, session: Session, sample_foods
+    ):
         """Test vegetarian restrictions exclude meat"""
         # Arrange
         profile = UserProfile(
@@ -115,7 +120,9 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert - Should exclude chicken
         assert not any(f.name == "Chicken Breast" for f in recommendations)
@@ -137,14 +144,18 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert - Should exclude chicken and milk
         assert not any(f.name == "Chicken Breast" for f in recommendations)
         assert not any(f.name == "Milk" for f in recommendations)
         assert any(f.name == "Broccoli" for f in recommendations)
 
-    def test_recommend_foods_gluten_free_restriction(self, session: Session, sample_foods):
+    def test_recommend_foods_gluten_free_restriction(
+        self, session: Session, sample_foods
+    ):
         """Test gluten-free restrictions exclude wheat products"""
         # Arrange
         profile = UserProfile(
@@ -159,7 +170,9 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert - Should exclude wheat bread
         assert not any(f.name == "Wheat Bread" for f in recommendations)
@@ -180,7 +193,9 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert - Should exclude peanuts
         assert not any(f.name == "Peanuts" for f in recommendations)
@@ -201,13 +216,17 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert - Should exclude broccoli
         assert not any(f.name == "Broccoli" for f in recommendations)
         assert any(f.name == "Chicken Breast" for f in recommendations)
 
-    def test_recommend_foods_multiple_restrictions(self, session: Session, sample_foods):
+    def test_recommend_foods_multiple_restrictions(
+        self, session: Session, sample_foods
+    ):
         """Test multiple restrictions working together"""
         # Arrange
         profile = UserProfile(
@@ -224,10 +243,14 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=50)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=50
+        )
 
         # Assert
-        assert not any(f.name == "Chicken Breast" for f in recommendations)  # vegetarian
+        assert not any(
+            f.name == "Chicken Breast" for f in recommendations
+        )  # vegetarian
         assert not any(f.name == "Peanuts" for f in recommendations)  # allergy
         assert not any(f.name == "Milk" for f in recommendations)  # disliked
         assert any(f.name == "Broccoli" for f in recommendations)  # should be ok
@@ -246,7 +269,9 @@ class TestRecommendFoods:
         session.commit()
 
         # Act
-        recommendations = recomendation_service.recommend_foods(session, profile, limit=2)
+        recommendations = recomendation_service.recommend_foods(
+            session, profile, limit=2
+        )
 
         # Assert
         assert len(recommendations) <= 2
@@ -278,7 +303,9 @@ class TestGetFoodsByCategory:
         assert all(f.category == "vegetables" for f in vegetables)
         assert any(f.name == "Broccoli" for f in vegetables)
 
-    def test_get_foods_by_category_with_restrictions(self, session: Session, sample_foods):
+    def test_get_foods_by_category_with_restrictions(
+        self, session: Session, sample_foods
+    ):
         """Test category filtering respects dietary restrictions"""
         # Arrange
         profile = UserProfile(
@@ -300,7 +327,9 @@ class TestGetFoodsByCategory:
         # Assert - Should be empty because user is vegetarian
         assert len(meat) == 0
 
-    def test_get_foods_by_category_case_insensitive(self, session: Session, sample_foods):
+    def test_get_foods_by_category_case_insensitive(
+        self, session: Session, sample_foods
+    ):
         """Test that category search is case-insensitive"""
         # Arrange
         profile = UserProfile(

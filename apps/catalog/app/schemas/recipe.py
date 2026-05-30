@@ -43,7 +43,9 @@ class RecipeUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
-    category: Optional[str] = Field(None, pattern="^(cafe-da-manha|almoco|jantar|lanche)$")
+    category: Optional[str] = Field(
+        None, pattern="^(cafe-da-manha|almoco|jantar|lanche)$"
+    )
     prep_time_minutes: Optional[int] = Field(None, gt=0)
     difficulty: Optional[str] = Field(None, pattern="^(facil|medio|dificil)$")
     calories: Optional[int] = Field(None, ge=0)
@@ -76,9 +78,13 @@ class RecipeSearchRequest(BaseModel):
     """Schema for searching recipes."""
 
     query: Optional[str] = Field(None, description="Search query (name, ingredient)")
-    category: Optional[str] = Field(None, pattern="^(cafe-da-manha|almoco|jantar|lanche)$")
+    category: Optional[str] = Field(
+        None, pattern="^(cafe-da-manha|almoco|jantar|lanche)$"
+    )
     difficulty: Optional[str] = Field(None, pattern="^(facil|medio|dificil)$")
-    max_prep_time: Optional[int] = Field(None, ge=0, description="Max prep time in minutes")
+    max_prep_time: Optional[int] = Field(
+        None, ge=0, description="Max prep time in minutes"
+    )
     max_calories: Optional[int] = Field(None, ge=0)
     min_protein: Optional[float] = Field(None, ge=0)
     limit: int = Field(20, ge=1, le=100)

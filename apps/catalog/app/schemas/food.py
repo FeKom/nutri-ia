@@ -107,7 +107,9 @@ class FoodSearchFilters(BaseModel):
 class FoodSearchRequest(BaseModel):
     """Request schema for food search"""
 
-    query: List[str] = Field(..., min_length=1, max_length=255, description="Search query")
+    query: List[str] = Field(
+        ..., min_length=1, max_length=255, description="Search query"
+    )
     limit: int = Field(
         default=10, ge=1, le=100, description="Number of results to return"
     )
@@ -125,7 +127,7 @@ class FoodSearchRequest(BaseModel):
         cleaned_list = [s.strip() for s in v if s.strip()]
         if not cleaned_list:
             raise ValueError("Query cannot be empty")
-        
+
         return cleaned_list
 
 
@@ -401,7 +403,9 @@ class MacrosRequest(BaseModel):
     height_cm: float = Field(..., gt=0, description="Height in centimeters")
     age: int = Field(..., gt=0, le=120, description="Age in years")
     gender: GenderEnum = Field(..., description="Gender for BMR calculation")
-    activity_level: ActivityLevelEnum = Field(..., description="Physical activity level")
+    activity_level: ActivityLevelEnum = Field(
+        ..., description="Physical activity level"
+    )
     diet_goal: DietGoalEnum = Field(..., description="Nutritional goal")
 
 
@@ -421,7 +425,9 @@ class MacrosResponse(BaseModel):
     daily_protein_g: float = Field(..., description="Daily protein in grams")
     daily_carbs_g: float = Field(..., description="Daily carbohydrates in grams")
     daily_fat_g: float = Field(..., description="Daily fat in grams")
-    calorie_adjustment: float = Field(..., description="Caloric adjustment applied (deficit/surplus)")
+    calorie_adjustment: float = Field(
+        ..., description="Caloric adjustment applied (deficit/surplus)"
+    )
     diet_goal: str = Field(..., description="Goal of the plan")
     profile_used: MacrosProfileUsed
     explanation: str = Field(..., description="Calculation explanation in Portuguese")

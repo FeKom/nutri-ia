@@ -2,6 +2,7 @@
 Script to seed the database with sample food data
 Run: python seed_data.py
 """
+
 import sys
 from datetime import datetime
 from decimal import Decimal
@@ -119,7 +120,7 @@ def seed_sample_data():
                     "calcium_mg_100g": Decimal("38"),
                     "iron_mg_100g": Decimal("0.69"),
                     "vitamin_c_mg_100g": Decimal("19.6"),
-                }
+                },
             },
             {
                 "name": "Salmon, Atlantic, Raw",
@@ -142,7 +143,7 @@ def seed_sample_data():
                     "calcium_mg_100g": Decimal("12"),
                     "iron_mg_100g": Decimal("0.8"),
                     "vitamin_c_mg_100g": Decimal("0"),
-                }
+                },
             },
         ]
 

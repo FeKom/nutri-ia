@@ -4,6 +4,7 @@ Tests for food service
 To run these tests:
 pytest tests/test_food_service.py -v
 """
+
 from decimal import Decimal
 from uuid import uuid4
 
@@ -58,7 +59,9 @@ class TestSearchFoods:
         # Assert - All results should have >= 20g protein per 100g
         assert len(results) >= 1
 
-    def test_search_foods_with_verified_only_filter(self, session: Session, sample_food):
+    def test_search_foods_with_verified_only_filter(
+        self, session: Session, sample_food
+    ):
         """Test searching only verified foods"""
         # Arrange
         filters = FoodSearchFilters(verified_only=True)

@@ -10,6 +10,7 @@ Expected files in data/usda/:
 
 Run: python -m scripts.import_usda
 """
+
 import csv
 import sys
 from decimal import Decimal, InvalidOperation
@@ -27,17 +28,17 @@ BATCH_SIZE = 1000
 
 # USDA nutrient IDs -> FoodNutrient fields mapping
 NUTRIENT_MAP = {
-    1008: "calories_100g",        # Energy (kcal)
-    1003: "protein_g_100g",       # Protein
-    1005: "carbs_g_100g",         # Carbohydrate, by difference
-    1004: "fat_g_100g",           # Total lipid (fat)
-    1258: "saturated_fat_g_100g", # Fatty acids, total saturated
-    1079: "fiber_g_100g",         # Fiber, total dietary
-    2000: "sugar_g_100g",         # Sugars, total
-    1093: "sodium_mg_100g",       # Sodium, Na
-    1087: "calcium_mg_100g",      # Calcium, Ca
-    1089: "iron_mg_100g",         # Iron, Fe
-    1162: "vitamin_c_mg_100g",    # Vitamin C, total ascorbic acid
+    1008: "calories_100g",  # Energy (kcal)
+    1003: "protein_g_100g",  # Protein
+    1005: "carbs_g_100g",  # Carbohydrate, by difference
+    1004: "fat_g_100g",  # Total lipid (fat)
+    1258: "saturated_fat_g_100g",  # Fatty acids, total saturated
+    1079: "fiber_g_100g",  # Fiber, total dietary
+    2000: "sugar_g_100g",  # Sugars, total
+    1093: "sodium_mg_100g",  # Sodium, Na
+    1087: "calcium_mg_100g",  # Calcium, Ca
+    1089: "iron_mg_100g",  # Iron, Fe
+    1162: "vitamin_c_mg_100g",  # Vitamin C, total ascorbic acid
 }
 
 
@@ -77,14 +78,20 @@ def load_foods(filepath: Path) -> dict:
 
             # Filter by data_type (SR Legacy, Foundation, or Survey foods)
             data_type = row.get("data_type", "")
-            if data_type not in ["sr_legacy_food", "foundation_food", "survey_fndds_food"]:
+            if data_type not in [
+                "sr_legacy_food",
+                "foundation_food",
+                "survey_fndds_food",
+            ]:
                 continue
 
             # Map to Food model fields
             foods[fdc_id] = {
                 "name": description[:255],
                 "name_normalized": normalize_name(description)[:255],
-                "category": row.get("food_category_id")[:50] if row.get("food_category_id") else None,
+                "category": row.get("food_category_id")[:50]
+                if row.get("food_category_id")
+                else None,
                 "serving_size_g": Decimal("100"),
                 "serving_unit": "g",
                 "usda_id": fdc_id,
@@ -196,10 +203,9 @@ def import_usda_data():
                 batch_nutrients = []
                 for i, food in enumerate(batch_foods):
                     fdc = batch_fdc_ids[i]
-                    batch_nutrients.append(FoodNutrient(
-                        food_id=food.id,
-                        **nutrients_data[fdc]
-                    ))
+                    batch_nutrients.append(
+                        FoodNutrient(food_id=food.id, **nutrients_data[fdc])
+                    )
 
                 session.add_all(batch_nutrients)
                 session.commit()
@@ -218,10 +224,9 @@ def import_usda_data():
             batch_nutrients = []
             for i, food in enumerate(batch_foods):
                 fdc = batch_fdc_ids[i]
-                batch_nutrients.append(FoodNutrient(
-                    food_id=food.id,
-                    **nutrients_data[fdc]
-                ))
+                batch_nutrients.append(
+                    FoodNutrient(food_id=food.id, **nutrients_data[fdc])
+                )
 
             session.add_all(batch_nutrients)
             session.commit()

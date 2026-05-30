@@ -1,14 +1,17 @@
 import { Mastra } from "@mastra/core/mastra";
 import { registerApiRoute } from "@mastra/core/server";
 import { toAISdkStream } from "@mastra/ai-sdk";
-import { createUIMessageStream, createUIMessageStreamResponse, generateText } from "ai";
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  generateText,
+} from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { PinoLogger } from "@mastra/loggers";
-import { nutritionAnalystAgent } from "./agents/nutrition-analyst";
+import { nutritionAnalystAgent, chefAgent, AgentFactory } from "./agents";
 import { createMealPlanWorkflow } from "./workflows/create-meal-plan";
 import { logImageMealWorkflow } from "./workflows/log-image-meal";
 import { weeklyProgressReportWorkflow } from "./workflows/weekly-progress-report";
-import { createEvalAgent } from "./agents/eval-agent";
 import { verifyJwt, extractBearerToken } from "../lib/jwt-auth";
 import { checkRateLimit } from "../lib/rate-limiter";
 import { asyncContext } from "../lib/async-context";
@@ -30,8 +33,13 @@ const logger = new PinoLogger({ name: "NutriAI", level: "info" });
 
 export const mastra = new Mastra({
   storage: sharedStorage,
-  workflows: { createMealPlanWorkflow, logImageMealWorkflow, weeklyProgressReportWorkflow },
+  workflows: {
+    createMealPlanWorkflow,
+    logImageMealWorkflow,
+    weeklyProgressReportWorkflow,
+  },
   agents: {
+    chefAgent,
     nutritionAnalystAgent,
   },
   logger: new PinoLogger({
@@ -85,7 +93,9 @@ export const mastra = new Mastra({
             const today = new Date().toISOString().split("T")[0];
             const [userProfile, dailySummary] = await Promise.all([
               getUserProfileFromDB(userId),
-              getDailySummary(userId, today, undefined, token).catch(() => null),
+              getDailySummary(userId, today, undefined, token).catch(
+                () => null,
+              ),
             ]);
 
             const contextMessages: { role: "system"; content: string }[] = [];
@@ -96,9 +106,10 @@ export const mastra = new Mastra({
 
               if (dailySummary) {
                 const { totals, targets, num_meals } = dailySummary;
-                const calPct = targets.calories > 0
-                  ? Math.round((totals.calories / targets.calories) * 100)
-                  : 0;
+                const calPct =
+                  targets.calories > 0
+                    ? Math.round((totals.calories / targets.calories) * 100)
+                    : 0;
                 contextMessages.push({
                   role: "system" as const,
                   content:
@@ -109,12 +120,18 @@ export const mastra = new Mastra({
                     `Gordura ${Math.round(totals.fat_g)}g/${Math.round(targets.fat_g)}g · ` +
                     `${num_meals} refeição(ões) registrada(s).`,
                 });
-                logger.info(`[Chat] daily progress injected — userId: ${userId}, meals: ${num_meals}, calPct: ${calPct}%`);
+                logger.info(
+                  `[Chat] daily progress injected — userId: ${userId}, meals: ${num_meals}, calPct: ${calPct}%`,
+                );
               } else {
-                logger.warn(`[Chat] could not fetch daily progress, skipping — userId: ${userId}`);
+                logger.warn(
+                  `[Chat] could not fetch daily progress, skipping — userId: ${userId}`,
+                );
               }
             } else {
-              logger.warn(`[Chat] user has no profile — continuing without personalisation — userId: ${userId}`);
+              logger.warn(
+                `[Chat] user has no profile — continuing without personalisation — userId: ${userId}`,
+              );
               contextMessages.push({
                 role: "system" as const,
                 content:
@@ -122,16 +139,33 @@ export const mastra = new Mastra({
               });
             }
 
-            logger.info(`chat request received — userId: ${userId}, username: ${userUsername}, messages: ${messages.length}`);
+            logger.info(
+              `chat request received — userId: ${userId}, username: ${userUsername}, messages: ${messages.length}`,
+            );
 
             // Enforce per-user message rate limit before any expensive work
             const rateLimit = checkRateLimit(userId);
             if (!rateLimit.allowed) {
-              c.header("X-RateLimit-Limit", String(process.env.RATE_LIMIT_MAX_REQUESTS ?? 30));
+              c.header(
+                "X-RateLimit-Limit",
+                String(process.env.RATE_LIMIT_MAX_REQUESTS ?? 30),
+              );
               c.header("X-RateLimit-Remaining", "0");
-              c.header("X-RateLimit-Reset", String(Math.ceil(rateLimit.resetAt / 1000)));
-              c.header("Retry-After", String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)));
-              return c.json({ error: "Rate limit exceeded. Too many messages — try again later." }, 429);
+              c.header(
+                "X-RateLimit-Reset",
+                String(Math.ceil(rateLimit.resetAt / 1000)),
+              );
+              c.header(
+                "Retry-After",
+                String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+              );
+              return c.json(
+                {
+                  error:
+                    "Rate limit exceeded. Too many messages — try again later.",
+                },
+                429,
+              );
             }
 
             // jwt_token is propagated via asyncContext so tools can read it.
@@ -139,69 +173,82 @@ export const mastra = new Mastra({
             // routes — Mastra's middleware never runs for them. We pass resourceId and
             // threadId directly to agent.stream() so memory is routed correctly without
             // depending on the framework's requestContext middleware.
-            return asyncContext.run({ userId, jwtToken: token, userProfile }, async () => {
-              const mastra = c.get("mastra");
-              const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
+            return asyncContext.run(
+              { userId, jwtToken: token, userProfile },
+              async () => {
+                const mastra = c.get("mastra");
+                const nutritionAgent = mastra.getAgent("nutritionAnalystAgent");
 
-              if (!nutritionAgent) {
-                return c.json({ error: "Agent não encontrado" }, 500);
-              }
-
-              // Summarize older messages when thread grows long to save tokens
-              let streamMessages = messages;
-              if (messages.length > 8) {
-                try {
-                  const openai = createOpenAI({
-                    apiKey: process.env.GITHUB_TOKEN ?? "",
-                    baseURL: "https://models.inference.ai.azure.com",
-                  });
-                  const modelId = env.MODEL.replace("github-models/", "").replace("openai/", "");
-                  const summaryModel = openai.chat(modelId);
-
-                  const { summary, tokensSaved } = await summarizeHistory(messages, summaryModel);
-                  if (summary) {
-                    const recentMessages = messages.slice(-3);
-                    contextMessages.push(injectSummaryAsContext(summary));
-                    streamMessages = recentMessages;
-                    logger.info(`[Chat] conversation summarized — userId: ${userId}, tokensSaved: ${tokensSaved}`);
-                  }
-                } catch (err) {
-                  logger.warn(`[Chat] summarization failed, using original messages — userId: ${userId}: ${err}`);
+                if (!nutritionAgent) {
+                  return c.json({ error: "Agent não encontrado" }, 500);
                 }
-              }
 
-              const requestContext = new RequestContext();
-              if (userProfile) {
-                requestContext.set(USER_PROFILE_KEY, userProfile);
-              }
+                // Summarize older messages when thread grows long to save tokens
+                let streamMessages = messages;
+                if (messages.length > 8) {
+                  try {
+                    const openai = createOpenAI({
+                      apiKey: process.env.GITHUB_TOKEN ?? "",
+                      baseURL: "https://models.inference.ai.azure.com",
+                    });
+                    const modelId = env.MODEL.replace(
+                      "github-models/",
+                      "",
+                    ).replace("openai/", "");
+                    const summaryModel = openai.chat(modelId);
 
-              // Use the conversation ID sent from the frontend as the thread ID so
-              // each conversation gets its own isolated memory context.
-              // Falls back to the legacy per-user thread for requests without an id.
-              const memoryThread = threadId || `chat-${userId}`;
-
-              const result = await nutritionAgent.stream(streamMessages, {
-                context: contextMessages,
-                memory: { resource: userId, thread: memoryThread },
-                requestContext,
-              });
-
-              const uiMessageStream = createUIMessageStream({
-                originalMessages: messages,
-                execute: async ({ writer }) => {
-                  for await (const part of toAISdkStream(result, {
-                    from: "agent",
-                  })) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await writer.write(part as any);
+                    const { summary, tokensSaved } = await summarizeHistory(
+                      messages,
+                      summaryModel,
+                    );
+                    if (summary) {
+                      const recentMessages = messages.slice(-3);
+                      contextMessages.push(injectSummaryAsContext(summary));
+                      streamMessages = recentMessages;
+                      logger.info(
+                        `[Chat] conversation summarized — userId: ${userId}, tokensSaved: ${tokensSaved}`,
+                      );
+                    }
+                  } catch (err) {
+                    logger.warn(
+                      `[Chat] summarization failed, using original messages — userId: ${userId}: ${err}`,
+                    );
                   }
-                },
-              });
+                }
 
-              return createUIMessageStreamResponse({
-                stream: uiMessageStream,
-              });
-            });
+                const requestContext = new RequestContext();
+                if (userProfile) {
+                  requestContext.set(USER_PROFILE_KEY, userProfile);
+                }
+
+                // Use the conversation ID sent from the frontend as the thread ID so
+                // each conversation gets its own isolated memory context.
+                // Falls back to the legacy per-user thread for requests without an id.
+                const memoryThread = threadId || `chat-${userId}`;
+
+                const result = await nutritionAgent.stream(streamMessages, {
+                  context: contextMessages,
+                  memory: { resource: userId, thread: memoryThread },
+                  requestContext,
+                });
+
+                const uiMessageStream = createUIMessageStream({
+                  originalMessages: messages,
+                  execute: async ({ writer }) => {
+                    for await (const part of toAISdkStream(result, {
+                      from: "agent",
+                    })) {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      await writer.write(part as any);
+                    }
+                  },
+                });
+
+                return createUIMessageStreamResponse({
+                  stream: uiMessageStream,
+                });
+              },
+            );
           } catch (error) {
             logger.error(`error in /chat endpoint: ${error}`);
             return c.json(
@@ -220,7 +267,13 @@ export const mastra = new Mastra({
         handler: async (c) => {
           try {
             const body = await c.req.json();
-            const { prompt, question, retrieval_source, expected_answer, agent_mode = "direct" } = body;
+            const {
+              prompt,
+              question,
+              retrieval_source,
+              expected_answer,
+              agent_mode = "direct",
+            } = body;
 
             if (!question || !retrieval_source) {
               return c.json(
@@ -231,7 +284,8 @@ export const mastra = new Mastra({
 
             const start = Date.now();
             let answer: string;
-            let contextChunks: Array<{ content: string; source_name: string }> = [];
+            let contextChunks: Array<{ content: string; source_name: string }> =
+              [];
             let contextTexts: string[] = [];
 
             if (agent_mode === "production" || agent_mode === "test") {
@@ -239,14 +293,17 @@ export const mastra = new Mastra({
               const agent =
                 agent_mode === "production"
                   ? nutritionAnalystAgent
-                  : createEvalAgent(prompt ?? "");
+                  : AgentFactory.eval(prompt ?? "");
 
               const result = await agent.generate(question);
               answer = result.text;
 
               // Extract context from tool call results so metrics are meaningful
               const toolTexts: string[] = [];
-              const allToolResults = (result as any).toolResults ?? result.steps?.flatMap((s: any) => s.toolResults ?? []) ?? [];
+              const allToolResults =
+                (result as any).toolResults ??
+                result.steps?.flatMap((s: any) => s.toolResults ?? []) ??
+                [];
               for (const toolResult of allToolResults) {
                 const content = toolResult.result;
                 if (content && typeof content === "object") {
@@ -257,7 +314,10 @@ export const mastra = new Mastra({
                 }
               }
               contextTexts = toolTexts;
-              contextChunks = toolTexts.map((t) => ({ content: t, source_name: "tool_result" }));
+              contextChunks = toolTexts.map((t) => ({
+                content: t,
+                source_name: "tool_result",
+              }));
             } else {
               // "direct" — manual RAG + generateText, no tools
               const chunksRes = await fetch(
@@ -265,11 +325,17 @@ export const mastra = new Mastra({
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ query: question, retrieval_source, limit: 5 }),
+                  body: JSON.stringify({
+                    query: question,
+                    retrieval_source,
+                    limit: 5,
+                  }),
                 },
               );
 
-              const chunksData = chunksRes.ok ? await chunksRes.json() : { chunks: [] };
+              const chunksData = chunksRes.ok
+                ? await chunksRes.json()
+                : { chunks: [] };
               contextChunks = chunksData.chunks ?? [];
               contextTexts = contextChunks.map((ch: any) => ch.content);
               const context = contextTexts.join("\n\n");
@@ -278,7 +344,10 @@ export const mastra = new Mastra({
                 apiKey: process.env.GITHUB_TOKEN ?? "",
                 baseURL: "https://models.inference.ai.azure.com",
               });
-              const modelId = env.MODEL.replace("github-models/", "").replace("openai/", "");
+              const modelId = env.MODEL.replace("github-models/", "").replace(
+                "openai/",
+                "",
+              );
 
               const { text } = await generateText({
                 model: openai.chat(modelId),
@@ -286,7 +355,9 @@ export const mastra = new Mastra({
                 messages: [
                   {
                     role: "user",
-                    content: context ? `Contexto:\n${context}\n\nPergunta: ${question}` : question,
+                    content: context
+                      ? `Contexto:\n${context}\n\nPergunta: ${question}`
+                      : question,
                   },
                 ],
               });
@@ -296,16 +367,19 @@ export const mastra = new Mastra({
             const latency_ms = Date.now() - start;
 
             // Score via catalog
-            const scoreRes = await fetch(`${env.CATALOG_API_URL}/api/v1/eval/score`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                question,
-                answer,
-                context_chunks: contextTexts,
-                expected_answer: expected_answer ?? null,
-              }),
-            });
+            const scoreRes = await fetch(
+              `${env.CATALOG_API_URL}/api/v1/eval/score`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  question,
+                  answer,
+                  context_chunks: contextTexts,
+                  expected_answer: expected_answer ?? null,
+                }),
+              },
+            );
             const scores = scoreRes.ok ? await scoreRes.json() : null;
 
             return c.json({

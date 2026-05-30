@@ -26,7 +26,7 @@ migrate:
 	uv run alembic upgrade head
 
 run:
-	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8004
 
 dev: docker-up
 	@echo "Waiting for PostgreSQL to initialize..."

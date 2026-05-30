@@ -42,6 +42,6 @@ USER appuser
 
 ENV HF_HOME=/cache/huggingface
 
-EXPOSE 8000
+EXPOSE 8004
 
-CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8004"]

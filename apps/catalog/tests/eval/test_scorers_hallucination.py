@@ -18,7 +18,9 @@ def test_fully_hallucinated_answer():
         context_vec = [1.0, 0.0]
         orthogonal_vec = [0.0, 1.0]
         mock.return_value = [context_vec, orthogonal_vec, orthogonal_vec]
-        score = scorer.score("q", "bad sentence one. bad sentence two.", ["some context"])
+        score = scorer.score(
+            "q", "bad sentence one. bad sentence two.", ["some context"]
+        )
     assert score == pytest.approx(0.0)
 
 

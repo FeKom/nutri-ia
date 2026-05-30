@@ -2,11 +2,25 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import jwt
+from fastapi.templating import Jinja2Templates
+from fastapi_csrf_protect import CsrfProtect
 from passlib.context import CryptContext
+from pydantic_settings import BaseSettings
 
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
+templates = Jinja2Templates(directory="templates")
+
+
+class CsrfSettings(BaseSettings):
+    secret_key: str = settings.JWT_SECRET_KEY
+
+
+@CsrfProtect.load_config
+def gef_csrf_config():
+    return CsrfSettings()
 
 
 def _to_bcrypt_bytes(password: str) -> bytes:

@@ -60,14 +60,14 @@ python seed_data.py
 ### 7. Inicie a API
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8004
 ```
 
 ## Pronto!
 
-- API: http://localhost:8000
-- Documentação Interativa: http://localhost:8000/docs
-- Documentação ReDoc: http://localhost:8000/redoc
+- API: http://localhost:8004
+- Documentação Interativa: http://localhost:8004/docs
+- Documentação ReDoc: http://localhost:8004/redoc
 
 ## Usando o Makefile (atalho)
 
@@ -89,7 +89,7 @@ make run          # Iniciar servidor
 ### 1. Buscar alimentos
 
 ```bash
-curl -X POST "http://localhost:8000/api/foods/search" \
+curl -X POST "http://localhost:8004/api/foods/search" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "chicken",
@@ -101,7 +101,7 @@ curl -X POST "http://localhost:8000/api/foods/search" \
 
 ```bash
 # Primeiro, pegue um food_id da busca acima, depois:
-curl -X POST "http://localhost:8000/api/nutrition/calculate" \
+curl -X POST "http://localhost:8004/api/nutrition/calculate" \
   -H "Content-Type: application/json" \
   -d '{
     "foods": [
@@ -127,7 +127,7 @@ docker-compose restart postgres
 make reset-db
 ```
 
-### Porta 8000 já está em uso
+### Porta 8004 já está em uso
 ```bash
 # Use outra porta
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
@@ -136,7 +136,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ## Próximos Passos
 
 1. Veja o [README.md](README.md) completo para mais detalhes
-2. Explore a documentação em http://localhost:8000/docs
+2. Explore a documentação em http://localhost:8004/docs
 3. Adicione seus próprios dados de alimentos
 4. Integre com seu agente AI (Mastra.ai)
 

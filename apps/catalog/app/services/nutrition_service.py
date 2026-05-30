@@ -12,7 +12,9 @@ from app.schemas.food import (
 )
 
 
-def validate_food_ids(session: Session, food_ids: List[UUID]) -> tuple[bool, List[UUID]]:
+def validate_food_ids(
+    session: Session, food_ids: List[UUID]
+) -> tuple[bool, List[UUID]]:
     """
     Validate that all food IDs exist in the database
 

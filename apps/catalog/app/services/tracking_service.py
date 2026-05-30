@@ -176,9 +176,7 @@ def update_meal(
             meal_log.total_protein_g = float(totals.protein_g)
             meal_log.total_carbs_g = float(totals.carbs_g)
             meal_log.total_fat_g = float(totals.fat_g)
-            meal_log.total_fiber_g = (
-                float(totals.fiber_g) if totals.fiber_g else None
-            )
+            meal_log.total_fiber_g = float(totals.fiber_g) if totals.fiber_g else None
             meal_log.total_sodium_mg = (
                 float(totals.sodium_mg) if totals.sodium_mg else None
             )

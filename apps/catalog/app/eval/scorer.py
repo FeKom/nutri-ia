@@ -36,7 +36,9 @@ def compute_weighted_score(
     """
     raw_scores: dict[str, float | None] = {}
     for scorer in scorers:
-        raw_scores[scorer.name] = scorer.score(question, answer, context, expected_answer)
+        raw_scores[scorer.name] = scorer.score(
+            question, answer, context, expected_answer
+        )
 
     active = {name: score for name, score in raw_scores.items() if score is not None}
 
@@ -46,9 +48,6 @@ def compute_weighted_score(
     if total == 0 or not active:
         overall = None
     else:
-        overall = sum(
-            active[name] * (active_weights[name] / total)
-            for name in active
-        )
+        overall = sum(active[name] * (active_weights[name] / total) for name in active)
 
     return {**raw_scores, "overall_score": overall}

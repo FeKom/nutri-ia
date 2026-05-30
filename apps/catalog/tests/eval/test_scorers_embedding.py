@@ -51,5 +51,7 @@ def test_answer_relevancy_scorer(mock_emb):
 def test_context_recall_requires_expected(mock_emb):
     scorer = ContextRecallScorer()
     assert scorer.score("question", "answer", ["context"], expected_answer=None) is None
-    score = scorer.score("question", "answer", ["context"], expected_answer="expected answer")
+    score = scorer.score(
+        "question", "answer", ["context"], expected_answer="expected answer"
+    )
     assert score is not None

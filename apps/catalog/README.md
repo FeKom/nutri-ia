@@ -137,7 +137,7 @@ make install
 make dev
 ```
 
-Pronto! A API estará rodando em http://localhost:8000
+Pronto! A API estará rodando em http://localhost:8004
 
 ### Instalação Manual (Passo a Passo)
 
@@ -183,14 +183,14 @@ Pronto! A API estará rodando em http://localhost:8000
 
 8. **Iniciar o servidor da API**:
    ```bash
-   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8004
    # OU use: make run
    ```
 
 9. **Acessar a API**:
-   - API: http://localhost:8000
-   - Documentação Swagger: http://localhost:8000/docs
-   - Documentação ReDoc: http://localhost:8000/redoc
+   - API: http://localhost:8004
+   - Documentação Swagger: http://localhost:8004/docs
+   - Documentação ReDoc: http://localhost:8004/redoc
 
 ## Comandos do Makefile
 
@@ -214,8 +214,8 @@ make reset-db     # Reseta banco de dados (CUIDADO: apaga dados)
 - **[TRACKING_QUICKSTART.md](docs/TRACKING_QUICKSTART.md)** - Guia rápido para começar
 - **[Eval Framework](tests/eval/README.md)** - Guia completo do framework de avaliação do agente
 - **[Tests README](tests/README.md)** - Guia de execução de testes
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8004/docs
+- **ReDoc**: http://localhost:8004/redoc
 
 ## 🔗 Endpoints da API
 

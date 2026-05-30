@@ -71,8 +71,8 @@ class Food(UUIDMixin, TimestampMixin, SQLModel, table=True):
     # Vector Embedding for Semantic Search
     embedding: Optional[List[float]] = Field(
         default=None,
-        sa_column=Column(Vector(384), nullable=True),
-        description="Vector embedding for semantic search (384 dimensions for all-MiniLM-L6-v2)"
+        sa_column=Column(Vector(768), nullable=True),
+        description="Vector embedding for semantic search (768 dimensions for multilingual-e5-base)"
     )
 
     # Relationships

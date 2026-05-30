@@ -5,6 +5,7 @@ Revises: 20260406_1540
 Create Date: 2026-04-20 12:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -17,10 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('eval_results', sa.Column('hallucination', sa.Float(), nullable=True))
-    op.add_column('eval_results', sa.Column('jailbreak', sa.Float(), nullable=True))
+    op.add_column("eval_results", sa.Column("hallucination", sa.Float(), nullable=True))
+    op.add_column("eval_results", sa.Column("jailbreak", sa.Float(), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('eval_results', 'jailbreak')
-    op.drop_column('eval_results', 'hallucination')
+    op.drop_column("eval_results", "jailbreak")
+    op.drop_column("eval_results", "hallucination")

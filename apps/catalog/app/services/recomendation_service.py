@@ -11,7 +11,9 @@ from app.models.user import UserProfile, DietGoal
 logger = logging.getLogger(__name__)
 
 
-def _calculate_food_score(food: Food, nutrients: Optional[FoodNutrient], diet_goal: Optional[DietGoal]) -> float:
+def _calculate_food_score(
+    food: Food, nutrients: Optional[FoodNutrient], diet_goal: Optional[DietGoal]
+) -> float:
     """
     Calculate a relevance score for a food based on user's diet goal.
 
@@ -93,11 +95,78 @@ def _food_matches_restriction(food: Food, restrictions: Set[str]) -> bool:
     food_category = _normalize_text(food.category) if food.category else ""
 
     restriction_mappings = {
-        "vegetariano": ["carne", "frango", "peixe", "bacon", "presunto", "salsicha", "linguiça", "meat", "chicken", "fish", "beef", "pork"],
-        "vegano": ["carne", "frango", "peixe", "leite", "queijo", "ovo", "mel", "manteiga", "iogurte", "meat", "chicken", "fish", "milk", "cheese", "egg", "honey", "butter", "yogurt"],
-        "sem_gluten": ["trigo", "centeio", "cevada", "aveia", "pão", "massa", "wheat", "rye", "barley", "oat", "bread", "pasta", "gluten"],
-        "sem_lactose": ["leite", "queijo", "iogurte", "manteiga", "creme", "milk", "cheese", "yogurt", "butter", "cream", "lactose"],
-        "kosher": ["porco", "bacon", "presunto", "camarão", "lagosta", "pork", "shrimp", "lobster"],
+        "vegetariano": [
+            "carne",
+            "frango",
+            "peixe",
+            "bacon",
+            "presunto",
+            "salsicha",
+            "linguiça",
+            "meat",
+            "chicken",
+            "fish",
+            "beef",
+            "pork",
+        ],
+        "vegano": [
+            "carne",
+            "frango",
+            "peixe",
+            "leite",
+            "queijo",
+            "ovo",
+            "mel",
+            "manteiga",
+            "iogurte",
+            "meat",
+            "chicken",
+            "fish",
+            "milk",
+            "cheese",
+            "egg",
+            "honey",
+            "butter",
+            "yogurt",
+        ],
+        "sem_gluten": [
+            "trigo",
+            "centeio",
+            "cevada",
+            "aveia",
+            "pão",
+            "massa",
+            "wheat",
+            "rye",
+            "barley",
+            "oat",
+            "bread",
+            "pasta",
+            "gluten",
+        ],
+        "sem_lactose": [
+            "leite",
+            "queijo",
+            "iogurte",
+            "manteiga",
+            "creme",
+            "milk",
+            "cheese",
+            "yogurt",
+            "butter",
+            "cream",
+            "lactose",
+        ],
+        "kosher": [
+            "porco",
+            "bacon",
+            "presunto",
+            "camarão",
+            "lagosta",
+            "pork",
+            "shrimp",
+            "lobster",
+        ],
         "halal": ["porco", "bacon", "presunto", "álcool", "pork", "alcohol"],
     }
 
@@ -125,13 +194,72 @@ def _food_contains_allergen(food: Food, allergies: Set[str]) -> bool:
 
     allergen_mappings = {
         "amendoim": ["amendoim", "peanut"],
-        "nozes": ["nozes", "castanha", "amêndoa", "avelã", "nut", "almond", "hazelnut", "walnut", "cashew"],
-        "gluten": ["trigo", "centeio", "cevada", "aveia", "pão", "massa", "wheat", "rye", "barley", "oat", "bread", "pasta", "gluten"],
-        "lactose": ["leite", "queijo", "iogurte", "manteiga", "creme", "milk", "cheese", "yogurt", "butter", "cream", "lactose"],
+        "nozes": [
+            "nozes",
+            "castanha",
+            "amêndoa",
+            "avelã",
+            "nut",
+            "almond",
+            "hazelnut",
+            "walnut",
+            "cashew",
+        ],
+        "gluten": [
+            "trigo",
+            "centeio",
+            "cevada",
+            "aveia",
+            "pão",
+            "massa",
+            "wheat",
+            "rye",
+            "barley",
+            "oat",
+            "bread",
+            "pasta",
+            "gluten",
+        ],
+        "lactose": [
+            "leite",
+            "queijo",
+            "iogurte",
+            "manteiga",
+            "creme",
+            "milk",
+            "cheese",
+            "yogurt",
+            "butter",
+            "cream",
+            "lactose",
+        ],
         "ovo": ["ovo", "egg"],
         "soja": ["soja", "tofu", "soy"],
-        "frutos_do_mar": ["camarão", "lagosta", "caranguejo", "ostra", "mexilhão", "shrimp", "lobster", "crab", "oyster", "mussel", "shellfish"],
-        "peixe": ["peixe", "salmão", "atum", "sardinha", "bacalhau", "fish", "salmon", "tuna", "sardine", "cod"],
+        "frutos_do_mar": [
+            "camarão",
+            "lagosta",
+            "caranguejo",
+            "ostra",
+            "mexilhão",
+            "shrimp",
+            "lobster",
+            "crab",
+            "oyster",
+            "mussel",
+            "shellfish",
+        ],
+        "peixe": [
+            "peixe",
+            "salmão",
+            "atum",
+            "sardinha",
+            "bacalhau",
+            "fish",
+            "salmon",
+            "tuna",
+            "sardine",
+            "cod",
+        ],
     }
 
     for allergy in allergies:
@@ -161,13 +289,18 @@ def _food_is_disliked(food: Food, disliked_foods: Set[str]) -> bool:
 
     for disliked in disliked_foods:
         disliked_normalized = _normalize_text(disliked)
-        if disliked_normalized in food_name_normalized or food_name_normalized in disliked_normalized:
+        if (
+            disliked_normalized in food_name_normalized
+            or food_name_normalized in disliked_normalized
+        ):
             return True
 
     return False
 
 
-def _build_exclusion_filters(restrictions: Set[str], allergies: Set[str], disliked_foods: Set[str]):
+def _build_exclusion_filters(
+    restrictions: Set[str], allergies: Set[str], disliked_foods: Set[str]
+):
     """
     Build SQL WHERE clauses to exclude foods based on restrictions, allergies, and dislikes.
 
@@ -177,23 +310,149 @@ def _build_exclusion_filters(restrictions: Set[str], allergies: Set[str], dislik
 
     # Mapping of restrictions to excluded terms
     restriction_mappings = {
-        "vegetariano": ["carne", "frango", "peixe", "bacon", "presunto", "salsicha", "linguiça", "meat", "chicken", "fish", "beef", "pork"],
-        "vegano": ["carne", "frango", "peixe", "leite", "queijo", "ovo", "mel", "manteiga", "iogurte", "meat", "chicken", "fish", "milk", "cheese", "egg", "honey", "butter", "yogurt"],
-        "sem_gluten": ["trigo", "centeio", "cevada", "aveia", "pão", "massa", "wheat", "rye", "barley", "oat", "bread", "pasta", "gluten"],
-        "sem_lactose": ["leite", "queijo", "iogurte", "manteiga", "creme", "milk", "cheese", "yogurt", "butter", "cream", "lactose"],
-        "kosher": ["porco", "bacon", "presunto", "camarão", "lagosta", "pork", "shrimp", "lobster"],
+        "vegetariano": [
+            "carne",
+            "frango",
+            "peixe",
+            "bacon",
+            "presunto",
+            "salsicha",
+            "linguiça",
+            "meat",
+            "chicken",
+            "fish",
+            "beef",
+            "pork",
+        ],
+        "vegano": [
+            "carne",
+            "frango",
+            "peixe",
+            "leite",
+            "queijo",
+            "ovo",
+            "mel",
+            "manteiga",
+            "iogurte",
+            "meat",
+            "chicken",
+            "fish",
+            "milk",
+            "cheese",
+            "egg",
+            "honey",
+            "butter",
+            "yogurt",
+        ],
+        "sem_gluten": [
+            "trigo",
+            "centeio",
+            "cevada",
+            "aveia",
+            "pão",
+            "massa",
+            "wheat",
+            "rye",
+            "barley",
+            "oat",
+            "bread",
+            "pasta",
+            "gluten",
+        ],
+        "sem_lactose": [
+            "leite",
+            "queijo",
+            "iogurte",
+            "manteiga",
+            "creme",
+            "milk",
+            "cheese",
+            "yogurt",
+            "butter",
+            "cream",
+            "lactose",
+        ],
+        "kosher": [
+            "porco",
+            "bacon",
+            "presunto",
+            "camarão",
+            "lagosta",
+            "pork",
+            "shrimp",
+            "lobster",
+        ],
         "halal": ["porco", "bacon", "presunto", "álcool", "pork", "alcohol"],
     }
 
     allergen_mappings = {
         "amendoim": ["amendoim", "peanut"],
-        "nozes": ["nozes", "castanha", "amêndoa", "avelã", "nut", "almond", "hazelnut", "walnut", "cashew"],
-        "gluten": ["trigo", "centeio", "cevada", "aveia", "pão", "massa", "wheat", "rye", "barley", "oat", "bread", "pasta", "gluten"],
-        "lactose": ["leite", "queijo", "iogurte", "manteiga", "creme", "milk", "cheese", "yogurt", "butter", "cream", "lactose"],
+        "nozes": [
+            "nozes",
+            "castanha",
+            "amêndoa",
+            "avelã",
+            "nut",
+            "almond",
+            "hazelnut",
+            "walnut",
+            "cashew",
+        ],
+        "gluten": [
+            "trigo",
+            "centeio",
+            "cevada",
+            "aveia",
+            "pão",
+            "massa",
+            "wheat",
+            "rye",
+            "barley",
+            "oat",
+            "bread",
+            "pasta",
+            "gluten",
+        ],
+        "lactose": [
+            "leite",
+            "queijo",
+            "iogurte",
+            "manteiga",
+            "creme",
+            "milk",
+            "cheese",
+            "yogurt",
+            "butter",
+            "cream",
+            "lactose",
+        ],
         "ovo": ["ovo", "egg"],
         "soja": ["soja", "tofu", "soy"],
-        "frutos_do_mar": ["camarão", "lagosta", "caranguejo", "ostra", "mexilhão", "shrimp", "lobster", "crab", "oyster", "mussel", "shellfish"],
-        "peixe": ["peixe", "salmão", "atum", "sardinha", "bacalhau", "fish", "salmon", "tuna", "sardine", "cod"],
+        "frutos_do_mar": [
+            "camarão",
+            "lagosta",
+            "caranguejo",
+            "ostra",
+            "mexilhão",
+            "shrimp",
+            "lobster",
+            "crab",
+            "oyster",
+            "mussel",
+            "shellfish",
+        ],
+        "peixe": [
+            "peixe",
+            "salmão",
+            "atum",
+            "sardinha",
+            "bacalhau",
+            "fish",
+            "salmon",
+            "tuna",
+            "sardine",
+            "cod",
+        ],
     }
 
     # Build restriction exclusions
@@ -234,9 +493,7 @@ def _build_exclusion_filters(restrictions: Set[str], allergies: Set[str], dislik
 
 
 def recommend_foods(
-    session: Session,
-    profile: UserProfile,
-    limit: Optional[int] = 50
+    session: Session, profile: UserProfile, limit: Optional[int] = 50
 ) -> List[Food]:
     """
     Recommends foods based on user dietary restrictions, allergies, and disliked foods.
@@ -262,8 +519,9 @@ def recommend_foods(
 
     # Join with nutrients for scoring
     statement = (
-        select(Food, FoodNutrient)
-        .join(FoodNutrient, Food.id == FoodNutrient.food_id, isouter=True)  # type: ignore
+        select(Food, FoodNutrient).join(
+            FoodNutrient, Food.id == FoodNutrient.food_id, isouter=True
+        )  # type: ignore
     )
 
     if has_filters:
@@ -273,14 +531,18 @@ def recommend_foods(
         )
 
         # Build exclusion conditions (foods to exclude)
-        exclusion_conditions = _build_exclusion_filters(restrictions, allergies, disliked_foods)
+        exclusion_conditions = _build_exclusion_filters(
+            restrictions, allergies, disliked_foods
+        )
 
         if exclusion_conditions:
             # Exclude foods that match ANY exclusion condition
             # Use NOT(OR(...)) to exclude if any condition is true
             statement = statement.where(not_(or_(*exclusion_conditions)))
     else:
-        logger.info(f"No dietary restrictions for user {profile.id}, returning all foods.")
+        logger.info(
+            f"No dietary restrictions for user {profile.id}, returning all foods."
+        )
 
     # Fetch foods with nutrients (no limit yet - we need to score first)
     # Apply a reasonable upper limit to prevent loading entire database
@@ -312,10 +574,7 @@ def recommend_foods(
 
 
 def get_foods_by_category(
-    session: Session,
-    profile: UserProfile,
-    category: str,
-    limit: Optional[int] = 20
+    session: Session, profile: UserProfile, category: str, limit: Optional[int] = 20
 ) -> List[Food]:
     """
     Get recommended foods filtered by category.
@@ -333,12 +592,15 @@ def get_foods_by_category(
 
     category_normalized = _normalize_text(category)
     filtered = [
-        food for food in all_recommended
+        food
+        for food in all_recommended
         if food.category and _normalize_text(food.category) == category_normalized
     ]
 
     if limit:
         filtered = filtered[:limit]
 
-    logger.info(f"Returning {len(filtered)} foods in category '{category}' for user {profile.id}")
+    logger.info(
+        f"Returning {len(filtered)} foods in category '{category}' for user {profile.id}"
+    )
     return filtered

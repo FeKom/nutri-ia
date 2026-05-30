@@ -3,7 +3,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import activities, auth, eval, foods, goals, meal_plans, nutrition, recipes, recommendations, tracking, users
+from app.api.v1 import (
+    activities,
+    auth,
+    documents,
+    eval,
+    foods,
+    goals,
+    meal_plans,
+    nutrition,
+    recipes,
+    recommendations,
+    tracking,
+    users,
+)
 from app.core.config import settings
 from app.services.embedding_service import _get_model
 
@@ -42,6 +55,7 @@ app = FastAPI(
         {"name": "tracking", "description": "Meal logging and nutrition tracking"},
         {"name": "users", "description": "User profile management"},
         {"name": "meal-plans", "description": "Meal plan management and diet creation"},
+        {"name": "documents", "description": "PDF document upload and retrieval"},
     ],
 )
 
@@ -59,7 +73,9 @@ if settings.BACKEND_CORS_ORIGINS:
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(eval.router, prefix=f"{settings.API_V1_STR}/eval", tags=["eval"])
 app.include_router(foods.router, prefix=f"{settings.API_V1_STR}/foods", tags=["foods"])
-app.include_router(recipes.router, prefix=f"{settings.API_V1_STR}/recipes", tags=["recipes"])
+app.include_router(
+    recipes.router, prefix=f"{settings.API_V1_STR}/recipes", tags=["recipes"]
+)
 app.include_router(
     nutrition.router, prefix=f"{settings.API_V1_STR}/nutrition", tags=["nutrition"]
 )
@@ -76,7 +92,12 @@ app.include_router(
     meal_plans.router, prefix=f"{settings.API_V1_STR}/meal-plans", tags=["meal-plans"]
 )
 app.include_router(goals.router, prefix=f"{settings.API_V1_STR}/goals", tags=["goals"])
-app.include_router(activities.router, prefix=f"{settings.API_V1_STR}/activities", tags=["activities"])
+app.include_router(
+    activities.router, prefix=f"{settings.API_V1_STR}/activities", tags=["activities"]
+)
+app.include_router(
+    documents.router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"]
+)
 
 
 @app.get("/", tags=["health"])

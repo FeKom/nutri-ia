@@ -1,6 +1,7 @@
 """
 Script para criar perfil de usuário no banco de dados
 """
+
 import sys
 from pathlib import Path
 

@@ -27,11 +27,15 @@ def test_compute_weighted_score_basic():
 def test_compute_weighted_score_normalizes():
     class FixedA(Scorer):
         name = "a"
-        def score(self, q, a, c, e=None): return 0.6
+
+        def score(self, q, a, c, e=None):
+            return 0.6
 
     class FixedB(Scorer):
         name = "b"
-        def score(self, q, a, c, e=None): return 1.0
+
+        def score(self, q, a, c, e=None):
+            return 1.0
 
     scorers = [FixedA(), FixedB()]
     weights = {"a": 3.0, "b": 1.0}  # not normalized — engine must normalize
@@ -43,7 +47,9 @@ def test_compute_weighted_score_normalizes():
 def test_none_scorer_excluded_from_average():
     class FixedA(Scorer):
         name = "a"
-        def score(self, q, a, c, e=None): return 1.0
+
+        def score(self, q, a, c, e=None):
+            return 1.0
 
     scorers = [FixedA(), NoneScorer()]
     weights = {"a": 0.5, "none_scorer": 0.5}
@@ -55,6 +61,7 @@ def test_none_scorer_excluded_from_average():
 
 def test_load_weights_returns_dict(tmp_path):
     import json
+
     w = {"faithfulness": 0.5, "answer_relevancy": 0.5}
     (tmp_path / "weights.json").write_text(json.dumps(w))
     result = load_weights(tmp_path / "weights.json")

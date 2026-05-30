@@ -48,7 +48,9 @@ def test_list_experiments(session):
 
 def test_create_and_list_runs(session):
     exp = create_experiment(session, name="exp", params={})
-    run = create_run(session, experiment_id=exp.id, question="Q?", answer="A", weight=1.0)
+    run = create_run(
+        session, experiment_id=exp.id, question="Q?", answer="A", weight=1.0
+    )
     assert run.id is not None
     runs = list_runs_by_experiment(session, exp.id)
     assert len(runs) == 1
@@ -57,7 +59,9 @@ def test_create_and_list_runs(session):
 
 def test_save_and_get_result(session):
     exp = create_experiment(session, name="exp", params={})
-    run = create_run(session, experiment_id=exp.id, question="Q?", answer="A", weight=1.0)
+    run = create_run(
+        session, experiment_id=exp.id, question="Q?", answer="A", weight=1.0
+    )
     result = save_result(session, run_id=run.id, faithfulness=0.9, overall_score=0.85)
     assert result.faithfulness == pytest.approx(0.9)
     fetched = get_result_by_run(session, run.id)

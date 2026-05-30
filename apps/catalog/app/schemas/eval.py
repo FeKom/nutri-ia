@@ -10,6 +10,7 @@ class GoldenDatasetItem(BaseModel):
     Has expected_answer for full automated scoring.
     weight: optional multiplier for weighted average scoring (default 1.0).
     """
+
     question: str = Field(..., min_length=1)
     expected_answer: str = Field(..., min_length=1)
     weight: Optional[float] = Field(default=1.0, ge=0.0)
@@ -21,6 +22,7 @@ class OverfittingDatasetItem(BaseModel):
     model_answer is populated after the run for embedding comparison.
     weight: optional multiplier for weighted average scoring (default 1.0).
     """
+
     question: str = Field(..., min_length=1)
     model_answer: Optional[str] = None
     weight: Optional[float] = Field(default=1.0, ge=0.0)
@@ -36,6 +38,7 @@ class EvalQuestion(BaseModel):
     items         → loaded from dataset_filename (golden or overfitting)
     experiment_id → which experiment these runs belong to
     """
+
     items: List[DatasetItem] = Field(..., min_length=1)
     experiment_id: UUID
 
@@ -45,8 +48,12 @@ class EvalExperimentCreate(BaseModel):
     description: Optional[str] = None
     prompt: str = Field(..., min_length=1, description="System prompt to test")
     retrieval_source: str = Field(default="json", description="json | pdf | md")
-    dataset_filename: str = Field(default="golden_dataset.json", description="Dataset file inside tests/eval/datasets/")
+    dataset_filename: str = Field(
+        default="golden_dataset.json",
+        description="Dataset file inside tests/eval/datasets/",
+    )
     agent_mode: str = Field(default="direct", description="direct | production | test")
+
 
 class ScoreRequest(BaseModel):
     question: str
@@ -67,11 +74,11 @@ class EvalResultResponse(BaseModel):
 class EvalRunResponse(BaseModel):
     id: UUID
     question: str
-    expected_answer: Optional[str]   # golden dataset
-    model_answer: Optional[str]       # overfitting dataset
-    answer: Optional[str]             # what the agent responded
+    expected_answer: Optional[str]  # golden dataset
+    model_answer: Optional[str]  # overfitting dataset
+    answer: Optional[str]  # what the agent responded
     latency_ms: Optional[int]
-    weight: float = 1.0              # for weighted average scoring
+    weight: float = 1.0  # for weighted average scoring
     result: Optional[EvalResultResponse] = None
 
     class Config:
@@ -121,10 +128,12 @@ class ChunkSearchRequest(BaseModel):
     retrieval_source: str = Field(default="json", description="json | pdf | md")
     limit: int = Field(default=5, ge=1, le=20)
 
+
 class ChunkResult(BaseModel):
     content: str
     source_name: str
     chunk_index: int
+
 
 class ChunkSearchResponse(BaseModel):
     chunks: List[ChunkResult]

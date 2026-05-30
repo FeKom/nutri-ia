@@ -5,6 +5,7 @@ Revises: 20260326_weight
 Create Date: 2026-04-01 12:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

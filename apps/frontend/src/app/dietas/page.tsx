@@ -8,7 +8,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, Trash2, Edit, X, Flame, Beef, Wheat, Droplets, Sparkles, UserPen, FileDown } from 'lucide-react';
+import { Plus, Calendar, Trash2, Edit, X, Flame, Beef, Wheat, Droplets, Sparkles, UserPen, FileDown, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface MealPlan {
   id: string;
@@ -29,6 +29,8 @@ export default function DietasPage() {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<MealPlan | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+  const [pdfToast, setPdfToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -77,21 +79,35 @@ export default function DietasPage() {
     }
   };
 
-  const handleDownloadPdf = async (planId: string, planName: string) => {
+  const showPdfToast = (type: 'success' | 'error', message: string) => {
+    setPdfToast({ type, message });
+    setTimeout(() => setPdfToast(null), 3500);
+  };
+
+  const handleDownloadPdf = async (planId: string, planName: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (downloadingPdf) return;
+    setDownloadingPdf(planId);
     try {
       const response = await authFetch(`/api/meal-plans/${planId}/pdf`);
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${planName}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      }
+      if (!response.ok) throw new Error(`status ${response.status}`);
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${planName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showPdfToast('success', `PDF "${planName}" baixado com sucesso!`);
     } catch (error) {
       console.error('Error downloading PDF:', error);
+      showPdfToast('error', 'Erro ao gerar o PDF. Tente novamente.');
+    } finally {
+      setDownloadingPdf(null);
     }
   };
 
@@ -181,15 +197,28 @@ export default function DietasPage() {
                           <><UserPen className="w-3 h-3" /> Manual</>
                         )}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePlan(plan.id);
-                        }}
-                        className="p-1.5 rounded-lg text-slate-900/20 hover:text-red-600 hover:bg-red-600/5 transition-all duration-200 opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                        <button
+                          onClick={(e) => handleDownloadPdf(plan.id, plan.plan_name, e)}
+                          className="p-1.5 rounded-lg text-slate-900/20 hover:text-green-600 hover:bg-green-600/5 transition-all duration-200"
+                          title="Baixar PDF"
+                        >
+                          {downloadingPdf === plan.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                          ) : (
+                            <FileDown className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePlan(plan.id);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-900/20 hover:text-red-600 hover:bg-red-600/5 transition-all duration-200"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Content */}
@@ -313,11 +342,16 @@ export default function DietasPage() {
             <div className="flex gap-3 p-6 pt-0">
               <Button
                 onClick={() => handleDownloadPdf(selectedPlan.id, selectedPlan.plan_name)}
+                disabled={downloadingPdf === selectedPlan.id}
                 variant="outline"
-                className="flex-1 rounded-xl border-gray-200 hover:border-green-600/30"
+                className="flex-1 rounded-xl border-gray-200 hover:border-green-600/30 disabled:opacity-60"
               >
-                <FileDown className="w-4 h-4 mr-2" />
-                Baixar PDF
+                {downloadingPdf === selectedPlan.id ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 mr-2" />
+                )}
+                {downloadingPdf === selectedPlan.id ? 'Gerando...' : 'Baixar PDF'}
               </Button>
               <Button
                 onClick={() => {
@@ -336,6 +370,22 @@ export default function DietasPage() {
               Criado em {new Date(selectedPlan.created_at).toLocaleDateString('pt-BR')}
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* PDF toast */}
+      {pdfToast && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg text-sm font-medium animate-slide-up ${
+          pdfToast.type === 'success'
+            ? 'bg-green-600 text-white'
+            : 'bg-red-600 text-white'
+        }`}>
+          {pdfToast.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 shrink-0" />
+          )}
+          {pdfToast.message}
         </div>
       )}
     </div>

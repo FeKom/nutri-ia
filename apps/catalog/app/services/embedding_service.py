@@ -46,7 +46,7 @@ def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
         logger.info("Carregando modelo SentenceTransformer (primeira chamada)...")
-        _model = SentenceTransformer("intfloat/multilingual-e5-small")
+        _model = SentenceTransformer("intfloat/multilingual-e5-base")
         logger.info("Modelo carregado.")
     return _model
 
@@ -149,4 +149,3 @@ def generate_food_embedding(food: "Food", nutrients: "FoodNutrient") -> List[flo
     """
     description = generate_food_description(food, nutrients)
     return generate_embedding(description, is_query=False)
-

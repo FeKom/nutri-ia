@@ -15,6 +15,7 @@ class HallucinationScorer(Scorer):
     Score = fraction of answer sentences grounded in context.
     High score (near 1.0) = answer is grounded. Low score = hallucination.
     """
+
     name = "hallucination"
 
     def score(self, question, answer, context, expected_answer=None):

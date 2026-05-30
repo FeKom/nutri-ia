@@ -23,6 +23,8 @@ import {
   Clock,
   Circle,
   XCircle,
+  FileText,
+  Loader2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useSession } from '@/lib/auth-client';
@@ -140,6 +142,15 @@ function ToolSidebarItem({ part }: { part: ToolUIPart }) {
   );
 }
 
+// ─── PDF attachment type ──────────────────────────────────────────────────────
+
+type PdfAttachment = {
+  localId: string;
+  name: string;
+  documentId: string | null;
+  status: 'uploading' | 'done' | 'error';
+};
+
 // ─── Main chat component ──────────────────────────────────────────────────────
 
 function ChatContent({ conversationId }: { conversationId: string }) {
@@ -149,7 +160,9 @@ function ChatContent({ conversationId }: { conversationId: string }) {
   const tokenRef = useRef<string | null>(token);
   const [input, setInput] = useState<string>('');
   const [attachments, setAttachments] = useState<FileUIPart[]>([]);
+  const [pdfAttachments, setPdfAttachments] = useState<PdfAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const [redirectAttempts, setRedirectAttempts] = useState(0);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({});
@@ -233,19 +246,86 @@ function ChatContent({ conversationId }: { conversationId: string }) {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const removePdfAttachment = (index: number) => {
+    setPdfAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handlePdfSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    e.target.value = '';
+
+    for (const file of Array.from(files)) {
+      const localId = nanoid();
+      setPdfAttachments((prev) => [
+        ...prev,
+        { localId, name: file.name, documentId: null, status: 'uploading' },
+      ]);
+
+      try {
+        // 1. Request presigned upload URL
+        const urlRes = await authFetch('/api/documents/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: file.name, mime_type: 'application/pdf' }),
+        });
+        if (!urlRes.ok) throw new Error('Failed to get upload URL');
+        const { document_id, upload_url } = await urlRes.json() as {
+          document_id: string;
+          upload_url: string;
+        };
+
+        // 2. PUT file directly to B2 — no auth, credentials are baked into the URL
+        const putRes = await fetch(upload_url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/pdf' },
+          body: file,
+        });
+        if (!putRes.ok) throw new Error('Upload to storage failed');
+
+        // 3. Confirm the upload landed
+        const confirmRes = await authFetch(`/api/documents/${document_id}/confirm`, {
+          method: 'POST',
+        });
+        if (!confirmRes.ok) throw new Error('Failed to confirm upload');
+
+        setPdfAttachments((prev) =>
+          prev.map((a) =>
+            a.localId === localId ? { ...a, documentId: document_id, status: 'done' } : a,
+          ),
+        );
+      } catch {
+        setPdfAttachments((prev) =>
+          prev.map((a) => (a.localId === localId ? { ...a, status: 'error' } : a)),
+        );
+      }
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!input.trim() && attachments.length === 0) return;
+    const donePdfs = pdfAttachments.filter((p) => p.status === 'done');
+    if (!input.trim() && attachments.length === 0 && donePdfs.length === 0) return;
 
     // Register conversation on first message
     if (messages.length === 0) {
       const title = input.trim().slice(0, 60);
       upsert(conversationId, title);
-      // Update URL so a reload returns to this conversation
       window.history.replaceState({}, '', `/chat?conv=${conversationId}`);
     }
 
+    // Append document references to message text so the agent knows they exist
+    let text = input;
+    if (donePdfs.length > 0) {
+      const refs = donePdfs
+        .map((p) => `${p.name} (id: ${p.documentId})`)
+        .join(', ');
+      text = text
+        ? `${text}\n\n[Documentos enviados: ${refs}]`
+        : `[Documentos enviados: ${refs}]`;
+    }
+
     sendMessage({
-      text: input || 'Analise esta imagem e identifique os alimentos com suas calorias.',
+      text: text || 'Analise esta imagem e identifique os alimentos com suas calorias.',
       files: attachments.map((att) => ({
         type: 'file' as const,
         url: att.url,
@@ -255,6 +335,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
     });
     setInput('');
     setAttachments([]);
+    setPdfAttachments([]);
   };
 
   const handleNewConversation = () => {
@@ -524,7 +605,7 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                 <div className="flex gap-2 mb-2.5">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => pdfInputRef.current?.click()}
                     disabled={isGenerating}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-900 hover:bg-white/60 transition-[color,background-color,opacity] duration-150 active:scale-[0.97] disabled:opacity-40"
                   >
@@ -561,6 +642,39 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                         ))}
                       </MessageAttachments>
                     )}
+                    {pdfAttachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 p-3 pb-0">
+                        {pdfAttachments.map((pdf, index) => (
+                          <div
+                            key={pdf.localId}
+                            className={cn(
+                              'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs max-w-[220px]',
+                              pdf.status === 'done' && 'bg-green-50 border-green-200 text-green-700',
+                              pdf.status === 'uploading' && 'bg-gray-50 border-gray-200 text-slate-500',
+                              pdf.status === 'error' && 'bg-red-50 border-red-200 text-red-600',
+                            )}
+                          >
+                            {pdf.status === 'uploading' ? (
+                              <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" />
+                            ) : pdf.status === 'done' ? (
+                              <FileText className="w-3.5 h-3.5 shrink-0" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5 shrink-0" />
+                            )}
+                            <span className="truncate">{pdf.name}</span>
+                            {pdf.status !== 'uploading' && (
+                              <button
+                                type="button"
+                                onClick={() => removePdfAttachment(index)}
+                                className="ml-auto shrink-0 opacity-60 hover:opacity-100"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <PromptInputBody>
                       <input
                         ref={fileInputRef}
@@ -568,6 +682,14 @@ function ChatContent({ conversationId }: { conversationId: string }) {
                         accept="image/*"
                         multiple
                         onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <input
+                        ref={pdfInputRef}
+                        type="file"
+                        accept="application/pdf"
+                        multiple
+                        onChange={handlePdfSelect}
                         className="hidden"
                       />
                       <PromptInputTextarea

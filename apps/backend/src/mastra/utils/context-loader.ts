@@ -69,6 +69,10 @@ export function loadPrompts(agentName: string, fileNames: string[]): string {
     .join('\n\n');
 }
 
+export function loadChefInstructions(): string {
+  return loadPrompt('chef', 'base');
+}
+
 /**
  * Carrega todas as instruções do nutrition-analyst
  * Versão controlada por variável de ambiente para testes A/B:

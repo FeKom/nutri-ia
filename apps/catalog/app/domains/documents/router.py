@@ -1,10 +1,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlmodel import Session
 
 from app.api.dependencies import get_current_user_id, get_db
+from app.domains.documents.service import index_document
 from app.core.config import settings
 from app.domains.documents.repository import DocumentRepository
 from app.domains.documents.schemas import (
@@ -73,7 +74,9 @@ async def request_upload_url(
 @router.post("/{document_id}/confirm", response_model=ConfirmUploadResponse)
 async def confirm_upload(
     document_id: UUID,
+    background_tasks: BackgroundTasks,
     repo: _Repo,
+    session: Session = Depends(get_db),
     current_user_id: str = Depends(get_current_user_id),
 ) -> ConfirmUploadResponse:
     _require_bucket()
@@ -89,6 +92,7 @@ async def confirm_upload(
         )
 
     doc = repo.update_after_upload(document_id, size_bytes)
+    background_tasks.add_task(index_document, session, document_id)
     return ConfirmUploadResponse(
         document_id=doc.id,
         status=doc.status,

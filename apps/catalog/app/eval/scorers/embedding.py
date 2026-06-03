@@ -14,15 +14,6 @@ def generate_embeddings_batch(texts: list[str], **kwargs) -> list[list[float]]:
     return _gen(texts, **kwargs)
 
 
-class FaithfulnessScorer(Scorer):
-    name = "faithfulness"
-
-    def score(self, question, answer, context, expected_answer=None):
-        ctx = "\n\n".join(context)
-        embs = generate_embeddings_batch([answer, ctx])
-        return _cosine(embs[0], embs[1])
-
-
 class AnswerRelevancyScorer(Scorer):
     name = "answer_relevancy"
 

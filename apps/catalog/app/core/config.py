@@ -64,8 +64,8 @@ class Settings(BaseSettings):
     # Mastra backend URL
     MASTRA_URL: str = "http://localhost:4111"
 
-    # OpenRouter (usado pelo RAGAS para avaliação)
-    OPENROUTER_API_KEY: str = ""
+    # GitHub Models — used by LLM-as-judge eval scorers (same token as backend)
+    GITHUB_TOKEN: str = ""
 
     # CORS Configuration - usando str para evitar JSON parsing automático
     BACKEND_CORS_ORIGINS: Union[List[str], str] = ""

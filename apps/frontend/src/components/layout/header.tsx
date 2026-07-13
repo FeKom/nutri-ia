@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 interface HeaderProps {
   title?: string;
@@ -11,17 +11,15 @@ interface HeaderProps {
 }
 
 export function Header({
-  title = 'Assistente de Nutricao',
+  title = "Assistente de Nutricao",
   subtitle,
   onNewConversation,
   rightAction,
 }: HeaderProps) {
   return (
-    <header className="h-[72px] border-b border-gray-200 bg-white/80 backdrop-blur-sm flex items-center justify-between px-6">
+    <header className="h-80px border-b border-gray-200 bg-white/80 backdrop-blur-sm flex items-center justify-between px-6">
       <div>
-        <h1 className="heading-serif text-lg text-slate-900">
-          {title}
-        </h1>
+        <h1 className="heading-serif text-lg text-slate-800">{title}</h1>
         {subtitle && (
           <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
         )}

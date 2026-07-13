@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Serif_Display, Plus_Jakarta_Sans, Caprasimo } from "next/font/google";
 import "./globals.css";
 import { JwtProvider } from "@/lib/jwt-context";
 
@@ -11,6 +11,12 @@ const serif = DM_Serif_Display({
 
 const sans = Plus_Jakarta_Sans({
   variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const caprasimo = Caprasimo({
+  weight: "400", // Caprasimo only ships a single weight (400)
+  variable: "--font-caprasimo",
   subsets: ["latin"],
 });
 
@@ -27,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${serif.variable} ${sans.variable} font-sans antialiased`}
+        className={`${serif.variable} ${sans.variable} ${caprasimo.variable} font-sans antialiased`}
       >
         <JwtProvider>{children}</JwtProvider>
       </body>

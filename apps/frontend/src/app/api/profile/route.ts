@@ -3,7 +3,8 @@ import { CATALOG_URL } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
   const token = request.headers.get("Authorization");
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const res = await fetch(`${CATALOG_URL}/api/v1/users/profiles/me`, {
     headers: { Authorization: token },
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get("Authorization");
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
 
@@ -26,10 +28,16 @@ export async function POST(request: NextRequest) {
     body: JSON.stringify(body),
   });
 
-  if (postRes.status !== 400) {
-    const data = await postRes.json();
-    return NextResponse.json(data, { status: postRes.status });
-  }
+  const data = await postRes.json();
+  return NextResponse.json(data, { status: postRes.status });
+}
+
+export async function PUT(request: NextRequest) {
+  const token = request.headers.get("Authorization");
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
 
   const putRes = await fetch(`${CATALOG_URL}/api/v1/users/profiles/me`, {
     method: "PUT",

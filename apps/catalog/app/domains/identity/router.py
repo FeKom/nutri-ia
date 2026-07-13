@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestFormi
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
 from app.api.dependencies import get_current_user, get_current_user_id, get_db
@@ -121,7 +121,7 @@ async def update_my_profile(
             status_code=404,
             detail=f"Perfil não encontrado para o usuário {current_user_id}",
         )
-    return profile
+    return UserProfileResponse.model_validate(profile)
 
 
 @users_router.delete("/profiles/me", status_code=status.HTTP_204_NO_CONTENT)
